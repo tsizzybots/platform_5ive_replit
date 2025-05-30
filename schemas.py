@@ -8,8 +8,8 @@ class EmailInquirySchema(Schema):
     sender_email = fields.Email(required=True)
     sender_name = fields.String(allow_none=True, validate=validate.Length(max=255))
     received_date = fields.DateTime(required=True)
-    status = fields.String(validate=validate.OneOf(['pending', 'processed', 'ignored']), missing='pending')
-    engaged = fields.Boolean(missing=False)
+    status = fields.String(validate=validate.OneOf(['pending', 'processed', 'ignored']), load_default='pending')
+    engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
@@ -25,8 +25,8 @@ class EmailInquiryQuerySchema(Schema):
     sender_email = fields.Email()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
-    page = fields.Integer(validate=validate.Range(min=1), missing=1)
-    per_page = fields.Integer(validate=validate.Range(min=1, max=100), missing=20)
+    page = fields.Integer(validate=validate.Range(min=1), load_default=1)
+    per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 
 # Schema instances
 email_inquiry_schema = EmailInquirySchema()
