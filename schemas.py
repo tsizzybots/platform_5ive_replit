@@ -22,7 +22,7 @@ class EmailInquiryUpdateSchema(Schema):
     ai_response = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['pending', 'processed', 'ignored']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']))
     engaged = fields.Boolean()
     sender_email = fields.Email()
     ticket_id = fields.String()

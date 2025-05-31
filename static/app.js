@@ -185,7 +185,6 @@ function displayTickets(tickets, pagination) {
                 <th>Sender</th>
                 <th>Received</th>
                 <th>Status</th>
-                <th>Engaged</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -194,9 +193,6 @@ function displayTickets(tickets, pagination) {
 
     tickets.forEach(ticket => {
         const statusBadge = getStatusBadge(ticket.status);
-        const engagedBadge = ticket.engaged 
-            ? '<span class="badge bg-success">Yes</span>' 
-            : '<span class="badge bg-secondary">No</span>';
         
         html += `
             <tr>
@@ -210,11 +206,7 @@ function displayTickets(tickets, pagination) {
                 </td>
                 <td>${formatDate(ticket.received_date)}</td>
                 <td>${statusBadge}</td>
-                <td>${engagedBadge}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editTicket(${ticket.id})" title="Edit Ticket">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewTicketDetails(${ticket.id})" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -255,72 +247,7 @@ function displayTickets(tickets, pagination) {
     container.innerHTML = html;
 }
 
-// Edit ticket
-async function editTicket(id) {
-    const result = await apiRequest(`/api/inquiries/${id}`);
-    
-    if (result.ok) {
-        const ticket = result.data.data;
-        
-        // Pre-fill update form
-        document.getElementById('update_inquiry_id').value = ticket.id;
-        document.getElementById('update_status').value = ticket.status || '';
-        document.getElementById('update_engaged').value = ticket.engaged ? 'true' : 'false';
-        document.getElementById('update_ai_response').value = ticket.ai_response || '';
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('updateTicketModal'));
-        modal.show();
-    } else {
-        showAlert('Failed to load ticket details: ' + result.data.message, 'danger');
-    }
-}
-
-// Update ticket
-async function updateTicket() {
-    const inquiryId = document.getElementById('update_inquiry_id').value;
-    
-    if (!inquiryId) {
-        showAlert('No ticket selected for update', 'warning');
-        return;
-    }
-
-    const updateData = {};
-    
-    // Only include fields that have values
-    const status = document.getElementById('update_status').value;
-    if (status) updateData.status = status;
-    
-    const engaged = document.getElementById('update_engaged').value;
-    if (engaged !== '') updateData.engaged = engaged === 'true';
-    
-    const aiResponse = document.getElementById('update_ai_response').value;
-    if (aiResponse) updateData.ai_response = aiResponse;
-
-    if (Object.keys(updateData).length === 0) {
-        showAlert('Please provide at least one field to update', 'warning');
-        return;
-    }
-
-    const result = await apiRequest(`/api/inquiries/${inquiryId}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-    });
-
-    if (result.ok) {
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('updateTicketModal'));
-        modal.hide();
-        
-        // Refresh data
-        loadStats();
-        loadTickets();
-        
-        showAlert('Ticket updated successfully!', 'success');
-    } else {
-        showAlert('Failed to update ticket: ' + result.data.message, 'danger');
-    }
-}
+// Removed edit functionality as requested
 
 // View ticket details
 async function viewTicketDetails(id) {
@@ -339,13 +266,12 @@ async function viewTicketDetails(id) {
                 </div>
                 <div class="col-md-6">
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
-                    <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(ticket.status)}">${ticket.status}</span></p>
-                    <p><strong>Engaged:</strong> <span class="badge bg-${ticket.engaged ? 'success' : 'secondary'}">${ticket.engaged ? 'Yes' : 'No'}</span></p>
+                    <p><strong>Status:</strong> ${getStatusBadge(ticket.status)}</p>
                 </div>
             </div>
             <div class="mt-3">
                 <h6>Message Content:</h6>
-                <div class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">`
                     ${escapeHtml(ticket.body).replace(/\n/g, '<br>')}
                 </div>
             </div>
@@ -389,18 +315,18 @@ async function deleteTicket(id) {
 // Helper functions
 function getStatusBadge(status) {
     const badges = {
-        'pending': '<span class="badge bg-warning">Pending</span>',
-        'processed': '<span class="badge bg-success">Processed</span>',
-        'ignored': '<span class="badge bg-secondary">Ignored</span>'
+        'engaged': '<span class="badge bg-success">Engaged</span>',
+        'skipped': '<span class="badge bg-secondary">Skipped</span>',
+        'escalated': '<span class="badge bg-warning">Escalated</span>'
     };
     return badges[status] || '<span class="badge bg-light text-dark">Unknown</span>';
 }
 
 function getStatusColor(status) {
     const colors = {
-        'pending': 'warning',
-        'processed': 'success',
-        'ignored': 'secondary'
+        'engaged': 'success',
+        'skipped': 'secondary',
+        'escalated': 'warning'
     };
     return colors[status] || 'light';
 }
