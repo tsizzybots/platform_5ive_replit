@@ -1,10 +1,13 @@
-# Email Helpdesk API Endpoints
+# Gorgias Integration API Endpoints
 
 ## Base URL
 All API endpoints are relative to your application's base URL.
 
 ## Authentication
 Currently, no authentication is required for these endpoints.
+
+## Overview
+This API is designed to receive tickets from Gorgias through your AI automation system. The AI agent decides whether to engage with each ticket and logs all interactions in the database for monitoring and analytics.
 
 ---
 

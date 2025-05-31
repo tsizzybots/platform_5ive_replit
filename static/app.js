@@ -6,7 +6,6 @@ let currentFilters = {};
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadTickets();
-    setCurrentDateTime();
 });
 
 // Theme toggle functionality
@@ -24,14 +23,7 @@ function toggleTheme() {
     }
 }
 
-// Set current date and time for the received_date field
-function setCurrentDateTime() {
-    const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-    document.getElementById('received_date').value = localDateTime;
-}
+
 
 // API helper function
 async function apiRequest(url, options = {}) {
@@ -128,40 +120,7 @@ function displayStats(stats) {
     `;
 }
 
-// Create new ticket
-async function createTicket() {
-    const formData = {
-        ticket_id: document.getElementById('ticket_id').value,
-        subject: document.getElementById('subject').value,
-        body: document.getElementById('body').value,
-        sender_email: document.getElementById('sender_email').value,
-        sender_name: document.getElementById('sender_name').value || null,
-        received_date: new Date(document.getElementById('received_date').value).toISOString()
-    };
 
-    const result = await apiRequest('/api/inquiries', {
-        method: 'POST',
-        body: JSON.stringify(formData)
-    });
-
-    if (result.ok) {
-        // Clear form and close modal
-        document.getElementById('createForm').reset();
-        setCurrentDateTime();
-        
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('createTicketModal'));
-        modal.hide();
-        
-        // Refresh data
-        loadStats();
-        loadTickets();
-        
-        showAlert('Ticket created successfully!', 'success');
-    } else {
-        showAlert('Failed to create ticket: ' + result.data.message, 'danger');
-    }
-}
 
 // Apply filters
 function applyFilters() {
@@ -371,17 +330,38 @@ async function viewTicketDetails(id) {
         const ticket = result.data.data;
         
         const details = `
-            <strong>Ticket ID:</strong> ${escapeHtml(ticket.ticket_id || 'N/A')}<br>
-            <strong>Subject:</strong> ${escapeHtml(ticket.subject)}<br>
-            <strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')} (${escapeHtml(ticket.sender_email)})<br>
-            <strong>Received:</strong> ${formatDate(ticket.received_date)}<br>
-            <strong>Status:</strong> ${ticket.status}<br>
-            <strong>Engaged:</strong> ${ticket.engaged ? 'Yes' : 'No'}<br>
-            <strong>Body:</strong><br>${escapeHtml(ticket.body).replace(/\n/g, '<br>')}<br>
-            ${ticket.ai_response ? `<strong>AI Response:</strong><br>${escapeHtml(ticket.ai_response).replace(/\n/g, '<br>')}` : ''}
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Ticket ID:</strong> ${escapeHtml(ticket.ticket_id || 'N/A')}</p>
+                    <p><strong>Subject:</strong> ${escapeHtml(ticket.subject)}</p>
+                    <p><strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')}</p>
+                    <p><strong>Email:</strong> ${escapeHtml(ticket.sender_email)}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(ticket.status)}">${ticket.status}</span></p>
+                    <p><strong>Engaged:</strong> <span class="badge bg-${ticket.engaged ? 'success' : 'secondary'}">${ticket.engaged ? 'Yes' : 'No'}</span></p>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h6>Message Content:</h6>
+                <div class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                    ${escapeHtml(ticket.body).replace(/\n/g, '<br>')}
+                </div>
+            </div>
+            ${ticket.ai_response ? `
+                <div class="mt-3">
+                    <h6>AI Response:</h6>
+                    <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
+                        ${escapeHtml(ticket.ai_response).replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+            ` : ''}
         `;
         
-        showAlert(details, 'info');
+        document.getElementById('ticketDetailsContent').innerHTML = details;
+        const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
+        modal.show();
     } else {
         showAlert('Failed to load ticket details: ' + result.data.message, 'danger');
     }
@@ -414,6 +394,15 @@ function getStatusBadge(status) {
         'ignored': '<span class="badge bg-secondary">Ignored</span>'
     };
     return badges[status] || '<span class="badge bg-light text-dark">Unknown</span>';
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'pending': 'warning',
+        'processed': 'success',
+        'ignored': 'secondary'
+    };
+    return colors[status] || 'light';
 }
 
 function formatDate(dateString) {
