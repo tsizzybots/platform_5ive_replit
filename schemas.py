@@ -9,14 +9,15 @@ class EmailInquirySchema(Schema):
     sender_email = fields.Email(required=True)
     sender_name = fields.String(allow_none=True, validate=validate.Length(max=255))
     received_date = fields.DateTime(required=True)
-    status = fields.String(validate=validate.OneOf(['pending', 'processed', 'ignored']), load_default='pending')
+    inquiry_type = fields.String(allow_none=True, validate=validate.Length(max=100))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']), load_default='escalated')
     engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
 class EmailInquiryUpdateSchema(Schema):
-    status = fields.String(validate=validate.OneOf(['pending', 'processed', 'ignored']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']))
     engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
 

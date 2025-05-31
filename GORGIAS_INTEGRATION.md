@@ -34,7 +34,8 @@ X-API-Key: your-api-key-here
   "body": "Hi, I would like to return my recent order as the size doesn't fit properly. The item was delivered yesterday and is in perfect condition. Can you please help me with the return process?",
   "sender_email": "customer@example.com",
   "sender_name": "John Smith",
-  "received_date": "2025-05-31T10:30:00Z"
+  "received_date": "2025-05-31T10:30:00Z",
+  "inquiry_type": "return_request"
 }
 ```
 
@@ -45,6 +46,7 @@ X-API-Key: your-api-key-here
 - `sender_email` (required): Customer's email address
 - `sender_name` (optional): Customer's name
 - `received_date` (required): When the email was received (ISO 8601 format)
+- `inquiry_type` (optional): Type of inquiry (e.g., "return_request", "complaint", "general_inquiry")
 
 **Success Response (201):**
 ```json
@@ -59,6 +61,7 @@ X-API-Key: your-api-key-here
     "sender_email": "customer@example.com",
     "sender_name": "John Smith",
     "received_date": "2025-05-31T10:30:00",
+    "inquiry_type": "return_request",
     "status": "pending",
     "engaged": false,
     "ai_response": null,
