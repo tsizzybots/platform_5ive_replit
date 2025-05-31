@@ -1,4 +1,4 @@
-from flask import request, jsonify, render_template
+from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
 from models import EmailInquiry
 from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema
@@ -10,6 +10,19 @@ import os
 from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+# Hardcoded login credentials
+ADMIN_USERNAME = "sweatsADMIN"
+ADMIN_PASSWORD = "ctp4kbk8HGW5emb!yze"
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # API Key Authentication
 def require_api_key(f):
@@ -31,7 +44,32 @@ def require_api_key(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Handle login page and authentication"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            flash('Successfully logged in!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Handle logout"""
+    session.pop('logged_in', None)
+    flash('Successfully logged out!', 'info')
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     """Render the main interface for testing the API"""
     return render_template('index.html')

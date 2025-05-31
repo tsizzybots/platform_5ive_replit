@@ -29,21 +29,45 @@
     </style>
 </head>
 <body>
-    <!-- Theme Toggle Button -->
-    <button class="btn btn-outline-secondary theme-toggle" onclick="toggleTheme()">
-        <i class="fas fa-moon" id="themeIcon"></i>
-    </button>
-
     <div class="container mt-4">
+        <!-- Header with logout -->
         <div class="row">
             <div class="col-12">
-                <h1 class="mb-4">
-                    <i class="fas fa-ticket-alt text-primary me-2"></i>
-                    Email Helpdesk Dashboard
-                </h1>
-                <p class="lead">Monitor and manage helpdesk tickets</p>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="mb-2">
+                            <i class="fas fa-ticket-alt text-primary me-2"></i>
+                            Email Helpdesk Dashboard
+                        </h1>
+                        <p class="lead mb-0">Monitor and manage helpdesk tickets</p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-outline-secondary me-2" onclick="toggleTheme()">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
 
         <!-- Stats Dashboard -->
         <div class="row mb-4" id="statsContainer">
