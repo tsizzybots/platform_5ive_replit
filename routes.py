@@ -139,6 +139,9 @@ def list_inquiries():
         if 'sender_email' in query_params:
             query = query.filter(EmailInquiry.sender_email == query_params['sender_email'])
             
+        if 'ticket_id' in query_params:
+            query = query.filter(EmailInquiry.ticket_id == query_params['ticket_id'])
+            
         if 'date_from' in query_params:
             query = query.filter(EmailInquiry.received_date >= query_params['date_from'])
             

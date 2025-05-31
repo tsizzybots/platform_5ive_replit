@@ -6,6 +6,7 @@ class EmailInquiry(db.Model):
     __tablename__ = 'email_inquiries'
     
     id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.String(100), nullable=False, unique=True)
     subject = db.Column(db.Text, nullable=False)
     body = db.Column(db.Text, nullable=False)
     sender_email = db.Column(db.String(255), nullable=False)
@@ -19,6 +20,7 @@ class EmailInquiry(db.Model):
     
     # Add indexes for frequently queried fields
     __table_args__ = (
+        Index('idx_ticket_id', 'ticket_id'),
         Index('idx_status', 'status'),
         Index('idx_received_date', 'received_date'),
         Index('idx_sender_email', 'sender_email'),
@@ -29,6 +31,7 @@ class EmailInquiry(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'ticket_id': self.ticket_id,
             'subject': self.subject,
             'body': self.body,
             'sender_email': self.sender_email,
