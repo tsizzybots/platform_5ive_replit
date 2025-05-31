@@ -6,8 +6,30 @@ from marshmallow import ValidationError
 from sqlalchemy import and_, or_
 from datetime import datetime
 import logging
+import os
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+# API Key Authentication
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        expected_api_key = os.environ.get('API_KEY')
+        
+        if not expected_api_key:
+            # If no API key is set, allow access (for development)
+            return f(*args, **kwargs)
+            
+        if not api_key or api_key != expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or missing API key'
+            }), 401
+            
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def index():
@@ -15,6 +37,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/inquiries', methods=['POST'])
+@require_api_key
 def create_inquiry():
     """Create a new email inquiry"""
     try:
@@ -75,6 +98,7 @@ def get_inquiry(inquiry_id):
         }), 500
 
 @app.route('/api/inquiries/<int:inquiry_id>', methods=['PUT'])
+@require_api_key
 def update_inquiry(inquiry_id):
     """Update an email inquiry (status, engagement, AI response)"""
     try:
