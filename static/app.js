@@ -271,7 +271,7 @@ async function viewTicketDetails(id) {
             </div>
             <div class="mt-3">
                 <h6>Message Content:</h6>
-                <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">`
+                <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
                     ${escapeHtml(ticket.body).replace(/\n/g, '<br>')}
                 </div>
             </div>
