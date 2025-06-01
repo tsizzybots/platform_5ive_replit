@@ -10,19 +10,20 @@ class EmailInquirySchema(Schema):
     sender_name = fields.String(allow_none=True, validate=validate.Length(max=255))
     received_date = fields.DateTime(required=True)
     inquiry_type = fields.String(allow_none=True, validate=validate.Length(max=100))
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']), load_default='escalated')
+    ticket_url = fields.String(allow_none=True, validate=validate.Length(max=500))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped']), load_default='skipped')
     engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
 class EmailInquiryUpdateSchema(Schema):
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped']))
     engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped']))
     engaged = fields.Boolean()
     sender_email = fields.Email()
     ticket_id = fields.String()

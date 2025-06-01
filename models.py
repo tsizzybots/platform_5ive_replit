@@ -13,7 +13,8 @@ class EmailInquiry(db.Model):
     sender_name = db.Column(db.String(255), nullable=True)
     received_date = db.Column(db.DateTime, nullable=False)
     inquiry_type = db.Column(db.String(100), nullable=True)
-    status = db.Column(db.String(50), nullable=False, default='escalated')  # engaged, skipped, escalated
+    ticket_url = db.Column(db.String(500), nullable=True)
+    status = db.Column(db.String(50), nullable=False, default='skipped')  # engaged, skipped
     engaged = db.Column(db.Boolean, nullable=False, default=False)
     ai_response = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

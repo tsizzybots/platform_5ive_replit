@@ -37,7 +37,7 @@
                     <div>
                         <h1 class="mb-2">
                             <i class="fas fa-ticket-alt text-primary me-2"></i>
-                            Email Helpdesk Dashboard
+                            Sweats Collective Email AI Dashboard
                         </h1>
                         <p class="lead mb-0">Monitor and manage helpdesk tickets</p>
                     </div>
@@ -85,7 +85,7 @@
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fas fa-tickets-alt me-2"></i>Gorgias Tickets</h5>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="loadTickets()">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshData()" id="refreshBtn">
                                 <i class="fas fa-sync-alt me-1"></i>Refresh
                             </button>
                         </div>
@@ -93,31 +93,42 @@
                     <div class="card-body">
                         <!-- Filters -->
                         <div class="row mb-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Engagement Status</label>
-                                <select class="form-select" id="engagedFilter">
-                                    <option value="">All Tickets</option>
-                                    <option value="true">Engaged</option>
-                                    <option value="false">Not Engaged</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label">Status</label>
                                 <select class="form-select" id="statusFilter">
                                     <option value="">All Statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="processed">Processed</option>
-                                    <option value="ignored">Ignored</option>
+                                    <option value="engaged">Engaged</option>
+                                    <option value="skipped">Skipped</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label">Ticket ID</label>
                                 <input type="text" class="form-control" id="ticketIdFilter" placeholder="Search by Ticket ID">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Date Range</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
+                                        <i class="fas fa-calendar me-1"></i>Select Date Range
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
+                                    </ul>
+                                    <input type="date" class="form-control" id="dateFrom" placeholder="From">
+                                    <input type="date" class="form-control" id="dateTo" placeholder="To">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-grid">
-                                    <button class="btn btn-outline-primary" onclick="applyFilters()">
+                                    <button class="btn btn-outline-primary" onclick="applyFilters()" id="applyFiltersBtn">
                                         <i class="fas fa-filter me-1"></i>Apply Filters
                                     </button>
                                 </div>

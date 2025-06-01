@@ -263,10 +263,12 @@ async function viewTicketDetails(id) {
                     <p><strong>Subject:</strong> ${escapeHtml(ticket.subject)}</p>
                     <p><strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')}</p>
                     <p><strong>Email:</strong> ${escapeHtml(ticket.sender_email)}</p>
+                    ${ticket.ticket_url ? `<p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>` : ''}
                 </div>
                 <div class="col-md-6">
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
                     <p><strong>Status:</strong> ${getStatusBadge(ticket.status)}</p>
+                    ${ticket.inquiry_type ? `<p><strong>Type:</strong> <span class="badge bg-info">${escapeHtml(ticket.inquiry_type)}</span></p>` : ''}
                 </div>
             </div>
             <div class="mt-3">
@@ -316,8 +318,7 @@ async function deleteTicket(id) {
 function getStatusBadge(status) {
     const badges = {
         'engaged': '<span class="badge bg-success">Engaged</span>',
-        'skipped': '<span class="badge bg-secondary">Skipped</span>',
-        'escalated': '<span class="badge bg-warning">Escalated</span>'
+        'skipped': '<span class="badge bg-secondary">Skipped</span>'
     };
     return badges[status] || '<span class="badge bg-light text-dark">Unknown</span>';
 }
@@ -325,8 +326,7 @@ function getStatusBadge(status) {
 function getStatusColor(status) {
     const colors = {
         'engaged': 'success',
-        'skipped': 'secondary',
-        'escalated': 'warning'
+        'skipped': 'secondary'
     };
     return colors[status] || 'light';
 }
