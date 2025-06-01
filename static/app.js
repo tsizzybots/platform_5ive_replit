@@ -47,9 +47,11 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// Load statistics
-async function loadStats() {
-    const result = await apiRequest('/api/inquiries/stats');
+// Load statistics with optional date filtering
+async function loadStats(dateFilters = {}) {
+    const params = new URLSearchParams(dateFilters);
+    const url = '/api/inquiries/stats' + (params.toString() ? '?' + params.toString() : '');
+    const result = await apiRequest(url);
     
     if (result.ok) {
         displayStats(result.data.data);
@@ -69,7 +71,7 @@ async function loadStats() {
 function displayStats(stats) {
     const container = document.getElementById('statsContainer');
     container.innerHTML = `
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
             <div class="card stats-card bg-primary text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.total_inquiries}</h3>
@@ -77,7 +79,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
             <div class="card stats-card bg-success text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.engaged_inquiries}</h3>
@@ -85,49 +87,112 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card stats-card bg-warning text-dark">
-                <div class="card-body text-center">
-                    <h3 class="card-title">${stats.pending_inquiries}</h3>
-                    <p class="card-text mb-0">Pending</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card stats-card bg-info text-white">
-                <div class="card-body text-center">
-                    <h3 class="card-title">${stats.processed_inquiries}</h3>
-                    <p class="card-text mb-0">Processed</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="col-lg-3 col-md-6 mb-3">
             <div class="card stats-card bg-secondary text-white">
                 <div class="card-body text-center">
-                    <h3 class="card-title">${stats.ignored_inquiries}</h3>
-                    <p class="card-text mb-0">Ignored</p>
+                    <h3 class="card-title">${stats.total_inquiries - stats.engaged_inquiries}</h3>
+                    <p class="card-text mb-0">Skipped</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-            <div class="card stats-card bg-dark text-white">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card bg-info text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.engagement_rate}%</h3>
-                    <p class="card-text mb-0">Engagement Rate</p>
+                    <p class="card-text mb-0">AI Engagement Rate</p>
                 </div>
             </div>
         </div>
-    `;
 }
 
 
 
+// Date range functionality
+function setDateRange(preset) {
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const dropdown = document.getElementById('dateRangeDropdown');
+    
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    switch (preset) {
+        case 'today':
+            dateFrom.value = todayStr;
+            dateTo.value = todayStr;
+            dropdown.textContent = 'Today';
+            break;
+        case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            dateFrom.value = yesterdayStr;
+            dateTo.value = yesterdayStr;
+            dropdown.textContent = 'Yesterday';
+            break;
+        case 'thisWeek':
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            dateFrom.value = startOfWeek.toISOString().split('T')[0];
+            dateTo.value = todayStr;
+            dropdown.textContent = 'This Week';
+            break;
+        case 'lastWeek':
+            const lastWeekStart = new Date(today);
+            lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
+            const lastWeekEnd = new Date(lastWeekStart);
+            lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+            dateFrom.value = lastWeekStart.toISOString().split('T')[0];
+            dateTo.value = lastWeekEnd.toISOString().split('T')[0];
+            dropdown.textContent = 'Last Week';
+            break;
+        case 'thisMonth':
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            dateFrom.value = startOfMonth.toISOString().split('T')[0];
+            dateTo.value = todayStr;
+            dropdown.textContent = 'This Month';
+            break;
+        case 'lastMonth':
+            const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+            dateFrom.value = lastMonthStart.toISOString().split('T')[0];
+            dateTo.value = lastMonthEnd.toISOString().split('T')[0];
+            dropdown.textContent = 'Last Month';
+            break;
+    }
+    applyFilters();
+}
+
+function clearDateRange() {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('dateRangeDropdown').textContent = 'Select Date Range';
+    applyFilters();
+}
+
+// Refresh data with loading state
+function refreshData() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    
+    // Show loading state
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+    refreshBtn.disabled = true;
+    applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+    applyBtn.disabled = true;
+    
+    Promise.all([loadStats(), loadTickets()]).finally(() => {
+        // Reset button states
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Refresh';
+        refreshBtn.disabled = false;
+        applyBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Apply Filters';
+        applyBtn.disabled = false;
+    });
+}
+
 // Apply filters
 function applyFilters() {
     currentFilters = {};
-    
-    const engaged = document.getElementById('engagedFilter').value;
-    if (engaged !== '') currentFilters.engaged = engaged;
     
     const status = document.getElementById('statusFilter').value;
     if (status) currentFilters.status = status;
@@ -135,7 +200,20 @@ function applyFilters() {
     const ticketId = document.getElementById('ticketIdFilter').value;
     if (ticketId) currentFilters.ticket_id = ticketId;
     
+    // Date range filters
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    if (dateFrom) currentFilters.date_from = dateFrom + 'T00:00:00';
+    if (dateTo) currentFilters.date_to = dateTo + 'T23:59:59';
+    
     currentPage = 1; // Reset to first page
+    
+    // Update stats with the same date filters
+    const dateFilters = {};
+    if (currentFilters.date_from) dateFilters.date_from = currentFilters.date_from;
+    if (currentFilters.date_to) dateFilters.date_to = currentFilters.date_to;
+    
+    loadStats(dateFilters);
     loadTickets();
 }
 
