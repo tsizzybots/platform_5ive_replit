@@ -317,12 +317,13 @@ function displayTickets(tickets, pagination) {
     html += `
         <thead>
             <tr>
-                <th>Ticket ID</th>
-                <th>Subject</th>
-                <th>Sender</th>
-                <th>Received</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th style="width: 12%;">Received</th>
+                <th style="width: 10%;">Ticket ID</th>
+                <th style="width: 12%;">Inquiry Type</th>
+                <th style="width: 25%;">Subject</th>
+                <th style="width: 20%;">Sender</th>
+                <th style="width: 10%;">Status</th>
+                <th style="width: 11%;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -333,7 +334,11 @@ function displayTickets(tickets, pagination) {
         
         html += `
             <tr>
+                <td>${formatDate(ticket.received_date)}</td>
                 <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
+                <td>
+                    <span class="badge bg-secondary">${escapeHtml(ticket.inquiry_type || 'N/A')}</span>
+                </td>
                 <td class="text-truncate" style="max-width: 200px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
                 </td>
@@ -341,7 +346,6 @@ function displayTickets(tickets, pagination) {
                     <div><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
                     <small class="text-muted">${escapeHtml(ticket.sender_email)}</small>
                 </td>
-                <td>${formatDate(ticket.received_date)}</td>
                 <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewTicketDetails(${ticket.id})" title="View Details">
