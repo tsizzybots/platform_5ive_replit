@@ -198,8 +198,8 @@ function applyFilters() {
     const status = document.getElementById('statusFilter').value;
     if (status) currentFilters.status = status;
     
-    const ticketId = document.getElementById('ticketIdFilter').value;
-    if (ticketId) currentFilters.ticket_id = ticketId;
+    const email = document.getElementById('emailFilter').value;
+    if (email) currentFilters.sender_email = email;
     
     // Date range filters
     const dateFrom = document.getElementById('dateFrom').value;
