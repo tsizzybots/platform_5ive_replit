@@ -426,6 +426,20 @@ async function viewTicketDetails(id) {
         
         document.getElementById('ticketDetailsContent').innerHTML = details;
         const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
+        
+        // Add event listener to ensure proper cleanup when modal is hidden
+        const modalElement = document.getElementById('ticketDetailsModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+            // Ensure backdrop is completely removed
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Restore body scroll and remove modal classes
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, { once: true });
+        
         modal.show();
     } else {
         showAlert('Failed to load ticket details: ' + result.data.message, 'danger');
@@ -473,6 +487,7 @@ function getStatusBadge(status) {
     const statusLower = status ? status.toLowerCase() : '';
     const badges = {
         'engaged': '<span class="badge bg-success">Engaged</span>',
+        'escalated': '<span class="badge bg-warning">Escalated</span>',
         'skipped': '<span class="badge bg-secondary">Skipped</span>'
     };
     return badges[statusLower] || '<span class="badge bg-light text-dark">Unknown</span>';
@@ -482,6 +497,7 @@ function getStatusColor(status) {
     const statusLower = status ? status.toLowerCase() : '';
     const colors = {
         'engaged': 'success',
+        'escalated': 'warning',
         'skipped': 'secondary'
     };
     return colors[statusLower] || 'light';
