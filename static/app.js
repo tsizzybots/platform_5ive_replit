@@ -395,19 +395,21 @@ async function deleteTicket(id) {
 
 // Helper functions
 function getStatusBadge(status) {
+    const statusLower = status ? status.toLowerCase() : '';
     const badges = {
         'engaged': '<span class="badge bg-success">Engaged</span>',
         'skipped': '<span class="badge bg-secondary">Skipped</span>'
     };
-    return badges[status] || '<span class="badge bg-light text-dark">Unknown</span>';
+    return badges[statusLower] || '<span class="badge bg-light text-dark">Unknown</span>';
 }
 
 function getStatusColor(status) {
+    const statusLower = status ? status.toLowerCase() : '';
     const colors = {
         'engaged': 'success',
         'skipped': 'secondary'
     };
-    return colors[status] || 'light';
+    return colors[statusLower] || 'light';
 }
 
 function formatDate(dateString) {
