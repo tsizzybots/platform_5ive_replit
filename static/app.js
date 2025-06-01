@@ -226,7 +226,7 @@ function resetFilters() {
     const applyBtn = document.getElementById('applyFiltersBtn');
     const resetBtn = document.getElementById('resetFiltersBtn');
     
-    resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Resetting...';
+    resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     resetBtn.disabled = true;
     applyBtn.disabled = true;
     
@@ -508,6 +508,12 @@ function showAlert(message, type) {
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure calendar icon is displayed in date button
+    const dateButton = document.getElementById('dateRangeDropdown');
+    if (dateButton) {
+        dateButton.innerHTML = '<i class="fas fa-calendar"></i>';
+    }
+    
     // Load inquiry types for dropdown
     loadInquiryTypes();
     
