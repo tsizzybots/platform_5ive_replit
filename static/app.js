@@ -47,6 +47,27 @@ async function apiRequest(url, options = {}) {
     }
 }
 
+// Load inquiry types and populate dropdown
+async function loadInquiryTypes() {
+    const result = await apiRequest('/api/inquiries/types');
+    
+    if (result.ok) {
+        const dropdown = document.getElementById('inquiryTypeFilter');
+        // Clear existing options except "All Types"
+        dropdown.innerHTML = '<option value="">All Types</option>';
+        
+        // Add each inquiry type as an option
+        result.data.data.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            dropdown.appendChild(option);
+        });
+    } else {
+        console.error('Failed to load inquiry types:', result.data.message);
+    }
+}
+
 // Load statistics with optional date filtering
 async function loadStats(dateFilters = {}) {
     const params = new URLSearchParams(dateFilters);
@@ -487,3 +508,13 @@ function showAlert(message, type) {
         }
     }, 5000);
 }
+
+// Initialize page when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Load inquiry types for dropdown
+    loadInquiryTypes();
+    
+    // Load initial data
+    loadStats();
+    loadTickets();
+});

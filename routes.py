@@ -256,6 +256,29 @@ def list_inquiries():
             'error': str(e)
         }), 500
 
+@app.route('/api/inquiries/types', methods=['GET'])
+def get_inquiry_types():
+    """Get distinct inquiry types from the database"""
+    try:
+        # Query distinct inquiry types, excluding null values
+        types_query = db.session.query(EmailInquiry.inquiry_type).distinct().filter(EmailInquiry.inquiry_type.isnot(None)).all()
+        
+        # Extract the type values and sort them
+        inquiry_types = sorted([type_row[0] for type_row in types_query if type_row[0]])
+        
+        return jsonify({
+            'status': 'success',
+            'data': inquiry_types
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting inquiry types: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve inquiry types',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/inquiries/stats', methods=['GET'])
 def get_stats():
     """Get statistics about email inquiries with optional date filtering"""
