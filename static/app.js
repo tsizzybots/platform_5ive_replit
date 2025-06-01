@@ -154,18 +154,24 @@ function setDateRange(preset) {
             dateTo.value = yesterdayStr;
             break;
         case 'thisWeek':
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            dateFrom.value = startOfWeek.toISOString().split('T')[0];
+            const startOfThisWeek = new Date(today);
+            // Calculate Monday as start of week (0=Sunday, 1=Monday, etc.)
+            const dayOfWeek = today.getDay();
+            const daysFromMonday = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Sunday = 6 days from Monday
+            startOfThisWeek.setDate(today.getDate() - daysFromMonday);
+            dateFrom.value = startOfThisWeek.toISOString().split('T')[0];
             dateTo.value = todayStr;
             break;
         case 'lastWeek':
-            const lastWeekStart = new Date(today);
-            lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
-            const lastWeekEnd = new Date(lastWeekStart);
-            lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
-            dateFrom.value = lastWeekStart.toISOString().split('T')[0];
-            dateTo.value = lastWeekEnd.toISOString().split('T')[0];
+            const startOfLastWeek = new Date(today);
+            const currentDayOfWeek = today.getDay();
+            const daysFromLastMonday = (currentDayOfWeek === 0) ? 6 : currentDayOfWeek - 1;
+            // Go back to last Monday (7 days + days from current Monday)
+            startOfLastWeek.setDate(today.getDate() - daysFromLastMonday - 7);
+            const endOfLastWeek = new Date(startOfLastWeek);
+            endOfLastWeek.setDate(startOfLastWeek.getDate() + 6); // Sunday
+            dateFrom.value = startOfLastWeek.toISOString().split('T')[0];
+            dateTo.value = endOfLastWeek.toISOString().split('T')[0];
             break;
         case 'thisMonth':
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
