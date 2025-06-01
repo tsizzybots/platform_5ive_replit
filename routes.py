@@ -255,22 +255,40 @@ def list_inquiries():
 
 @app.route('/api/inquiries/stats', methods=['GET'])
 def get_stats():
-    """Get statistics about email inquiries"""
+    """Get statistics about email inquiries with optional date filtering"""
     try:
-        total_inquiries = EmailInquiry.query.count()
-        engaged_inquiries = EmailInquiry.query.filter(EmailInquiry.engaged == True).count()
-        pending_inquiries = EmailInquiry.query.filter(EmailInquiry.status == 'pending').count()
-        processed_inquiries = EmailInquiry.query.filter(EmailInquiry.status == 'processed').count()
-        ignored_inquiries = EmailInquiry.query.filter(EmailInquiry.status == 'ignored').count()
+        # Parse date filters from query parameters
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Build base query
+        query = EmailInquiry.query
+        
+        # Apply date filters if provided
+        if date_from:
+            try:
+                from datetime import datetime
+                date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+                query = query.filter(EmailInquiry.received_date >= date_from_obj)
+            except ValueError:
+                pass  # Ignore invalid date format
+                
+        if date_to:
+            try:
+                from datetime import datetime
+                date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+                query = query.filter(EmailInquiry.received_date <= date_to_obj)
+            except ValueError:
+                pass  # Ignore invalid date format
+        
+        total_inquiries = query.count()
+        engaged_inquiries = query.filter(EmailInquiry.engaged == True).count()
         
         return jsonify({
             'status': 'success',
             'data': {
                 'total_inquiries': total_inquiries,
                 'engaged_inquiries': engaged_inquiries,
-                'pending_inquiries': pending_inquiries,
-                'processed_inquiries': processed_inquiries,
-                'ignored_inquiries': ignored_inquiries,
                 'engagement_rate': round((engaged_inquiries / total_inquiries * 100), 2) if total_inquiries > 0 else 0
             }
         })

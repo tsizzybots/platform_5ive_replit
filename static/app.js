@@ -103,6 +103,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
+    `;
 }
 
 
