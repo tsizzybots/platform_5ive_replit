@@ -101,27 +101,42 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Inquiry Type</label>
+                                <select class="form-select" id="inquiryTypeFilter">
+                                    <option value="">All Types</option>
+                                    <option value="Return">Return</option>
+                                    <option value="Exchange">Exchange</option>
+                                    <option value="Canclation">Canclation</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">Email Address</label>
                                 <input type="email" class="form-control" id="emailFilter" placeholder="Search by Email">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Date Range</label>
-                                <div class="input-group">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
-                                        <i class="fas fa-calendar me-1"></i>Select Date Range
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
-                                    </ul>
-                                    <input type="date" class="form-control" id="dateFrom" placeholder="From">
-                                    <input type="date" class="form-control" id="dateTo" placeholder="To">
+                                <div class="row g-1">
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
+                                            <i class="fas fa-calendar me-1"></i>Quick
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="date" class="form-control" id="dateFrom" placeholder="From">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="date" class="form-control" id="dateTo" placeholder="To">
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-2">

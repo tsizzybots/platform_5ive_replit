@@ -198,10 +198,11 @@ function refreshData() {
 function resetFilters() {
     // Clear all filter inputs
     document.getElementById('statusFilter').value = '';
+    document.getElementById('inquiryTypeFilter').value = '';
     document.getElementById('emailFilter').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.getElementById('dateRangeDropdown').textContent = 'Select Date Range';
+    document.getElementById('dateRangeDropdown').textContent = 'Quick';
     
     // Clear current filters
     currentFilters = {};
@@ -230,6 +231,9 @@ function applyFilters() {
     
     const status = document.getElementById('statusFilter').value;
     if (status) currentFilters.status = status;
+    
+    const inquiryType = document.getElementById('inquiryTypeFilter').value;
+    if (inquiryType) currentFilters.inquiry_type = inquiryType;
     
     const email = document.getElementById('emailFilter').value;
     if (email) currentFilters.sender_email = email;
