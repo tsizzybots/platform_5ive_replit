@@ -216,7 +216,7 @@ function resetFilters() {
     document.getElementById('emailFilter').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.getElementById('dateRangeDropdown').textContent = 'Quick';
+    document.getElementById('dateRangeDropdown').innerHTML = '<i class="fas fa-calendar"></i>';
     
     // Clear current filters
     currentFilters = {};
