@@ -175,18 +175,51 @@ function clearDateRange() {
 function refreshData() {
     const refreshBtn = document.getElementById('refreshBtn');
     const applyBtn = document.getElementById('applyFiltersBtn');
+    const resetBtn = document.getElementById('resetFiltersBtn');
     
     // Show loading state
     refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
     refreshBtn.disabled = true;
     applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
     applyBtn.disabled = true;
+    resetBtn.disabled = true;
     
     Promise.all([loadStats(), loadTickets()]).finally(() => {
         // Reset button states
         refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Refresh';
         refreshBtn.disabled = false;
-        applyBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Apply Filters';
+        applyBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Apply';
+        applyBtn.disabled = false;
+        resetBtn.disabled = false;
+    });
+}
+
+// Reset all filters and refresh data
+function resetFilters() {
+    // Clear all filter inputs
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('emailFilter').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('dateRangeDropdown').textContent = 'Select Date Range';
+    
+    // Clear current filters
+    currentFilters = {};
+    currentPage = 1;
+    
+    // Show loading state
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    const resetBtn = document.getElementById('resetFiltersBtn');
+    
+    resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Resetting...';
+    resetBtn.disabled = true;
+    applyBtn.disabled = true;
+    
+    // Refresh data without any filters
+    Promise.all([loadStats(), loadTickets()]).finally(() => {
+        // Reset button states
+        resetBtn.innerHTML = '<i class="fas fa-times me-1"></i>Reset';
+        resetBtn.disabled = false;
         applyBtn.disabled = false;
     });
 }
