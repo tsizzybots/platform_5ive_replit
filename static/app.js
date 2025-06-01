@@ -91,6 +91,9 @@ async function loadStats(dateFilters = {}) {
 // Display statistics as cards
 function displayStats(stats) {
     const container = document.getElementById('statsContainer');
+    const escalatedCount = stats.escalated_inquiries || 0;
+    const skippedCount = stats.total_inquiries - stats.engaged_inquiries - escalatedCount;
+    
     container.innerHTML = `
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card stats-card bg-primary text-white">
@@ -109,18 +112,18 @@ function displayStats(stats) {
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card bg-secondary text-white">
+            <div class="card stats-card bg-warning text-white">
                 <div class="card-body text-center">
-                    <h3 class="card-title">${stats.total_inquiries - stats.engaged_inquiries}</h3>
-                    <p class="card-text mb-0">Skipped</p>
+                    <h3 class="card-title">${escalatedCount}</h3>
+                    <p class="card-text mb-0">Escalated</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card bg-info text-white">
+            <div class="card stats-card bg-secondary text-white">
                 <div class="card-body text-center">
-                    <h3 class="card-title">${stats.engagement_rate}%</h3>
-                    <p class="card-text mb-0">AI Engagement Rate</p>
+                    <h3 class="card-title">${skippedCount}</h3>
+                    <p class="card-text mb-0">Skipped</p>
                 </div>
             </div>
         </div>
@@ -429,24 +432,41 @@ async function viewTicketDetails(id) {
     }
 }
 
-// Delete ticket
+// Delete ticket with modal confirmation
+let ticketToDelete = null;
+
 async function deleteTicket(id) {
-    if (!confirm('Are you sure you want to delete this ticket?')) {
-        return;
-    }
-
-    const result = await apiRequest(`/api/inquiries/${id}`, {
-        method: 'DELETE'
-    });
-
-    if (result.ok) {
-        loadStats();
-        loadTickets();
-        showAlert('Ticket deleted successfully!', 'success');
-    } else {
-        showAlert('Failed to delete ticket: ' + result.data.message, 'danger');
-    }
+    ticketToDelete = id;
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
 }
+
+// Handle confirm delete button click
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', async function() {
+            if (ticketToDelete) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                modal.hide();
+                
+                const result = await apiRequest(`/api/inquiries/${ticketToDelete}`, {
+                    method: 'DELETE'
+                });
+
+                if (result.ok) {
+                    loadStats();
+                    loadTickets();
+                    showAlert('Ticket deleted successfully!', 'success');
+                } else {
+                    showAlert('Failed to delete ticket: ' + result.data.message, 'danger');
+                }
+                
+                ticketToDelete = null;
+            }
+        });
+    }
+});
 
 // Helper functions
 function getStatusBadge(status) {

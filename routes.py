@@ -308,13 +308,15 @@ def get_stats():
                 pass  # Ignore invalid date format
         
         total_inquiries = query.count()
-        engaged_inquiries = query.filter(EmailInquiry.engaged == True).count()
+        engaged_inquiries = query.filter(EmailInquiry.status == 'Engaged').count()
+        escalated_inquiries = query.filter(EmailInquiry.status == 'Escalated').count()
         
         return jsonify({
             'status': 'success',
             'data': {
                 'total_inquiries': total_inquiries,
                 'engaged_inquiries': engaged_inquiries,
+                'escalated_inquiries': escalated_inquiries,
                 'engagement_rate': round((engaged_inquiries / total_inquiries * 100), 2) if total_inquiries > 0 else 0
             }
         })

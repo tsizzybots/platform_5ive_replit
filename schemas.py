@@ -18,12 +18,12 @@ class EmailInquirySchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
 
 class EmailInquiryUpdateSchema(Schema):
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated']))
     engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['Engaged', 'Skipped']))
+    status = fields.String(validate=validate.OneOf(['Engaged', 'Escalated', 'Skipped']))
     engaged = fields.Boolean()
     sender_email = fields.Email()
     ticket_id = fields.String()
