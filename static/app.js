@@ -142,7 +142,6 @@ function setDateRange(preset) {
         case 'today':
             dateFrom.value = todayStr;
             dateTo.value = todayStr;
-            dropdown.textContent = 'Today';
             break;
         case 'yesterday':
             const yesterday = new Date(today);
@@ -150,14 +149,12 @@ function setDateRange(preset) {
             const yesterdayStr = yesterday.toISOString().split('T')[0];
             dateFrom.value = yesterdayStr;
             dateTo.value = yesterdayStr;
-            dropdown.textContent = 'Yesterday';
             break;
         case 'thisWeek':
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - today.getDay());
             dateFrom.value = startOfWeek.toISOString().split('T')[0];
             dateTo.value = todayStr;
-            dropdown.textContent = 'This Week';
             break;
         case 'lastWeek':
             const lastWeekStart = new Date(today);
@@ -166,20 +163,17 @@ function setDateRange(preset) {
             lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
             dateFrom.value = lastWeekStart.toISOString().split('T')[0];
             dateTo.value = lastWeekEnd.toISOString().split('T')[0];
-            dropdown.textContent = 'Last Week';
             break;
         case 'thisMonth':
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             dateFrom.value = startOfMonth.toISOString().split('T')[0];
             dateTo.value = todayStr;
-            dropdown.textContent = 'This Month';
             break;
         case 'lastMonth':
             const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
             dateFrom.value = lastMonthStart.toISOString().split('T')[0];
             dateTo.value = lastMonthEnd.toISOString().split('T')[0];
-            dropdown.textContent = 'Last Month';
             break;
     }
     applyFilters();
@@ -188,7 +182,6 @@ function setDateRange(preset) {
 function clearDateRange() {
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.getElementById('dateRangeDropdown').textContent = 'Select Date Range';
     applyFilters();
 }
 
