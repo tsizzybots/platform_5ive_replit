@@ -23,10 +23,11 @@ class EmailInquiryUpdateSchema(Schema):
     ai_response = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped']))
+    status = fields.String(validate=validate.OneOf(['Engaged', 'Skipped']))
     engaged = fields.Boolean()
     sender_email = fields.Email()
     ticket_id = fields.String()
+    inquiry_type = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
