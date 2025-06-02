@@ -602,8 +602,9 @@ async function loadDailyStats() {
         const response = await apiRequest(`/api/inquiries/daily-stats?${params}`);
         console.log('Daily Stats Response:', response);
         
-        if (response.status === 'success') {
-            renderChart(response.data);
+        if (response.data && response.data.status === 'success') {
+            renderChart(response.data.data);
+            updateChartDateRange(dateFrom, dateTo);
         } else {
             showAlert('Failed to load daily statistics', 'danger');
         }
@@ -720,5 +721,29 @@ function changeChartType(type) {
     if (dailyChart && dailyChart.data.datasets.length > 0) {
         dailyChart.config.type = type;
         dailyChart.update();
+    }
+}
+
+function updateChartDateRange(dateFrom, dateTo) {
+    const chartDateRangeElement = document.getElementById('chartDateRange');
+    
+    if (dateFrom && dateTo) {
+        const fromDate = new Date(dateFrom);
+        const toDate = new Date(dateTo);
+        
+        const fromFormatted = fromDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        const toFormatted = toDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        
+        chartDateRangeElement.textContent = `${fromFormatted} - ${toFormatted}`;
+    } else {
+        chartDateRangeElement.textContent = 'Current Month';
     }
 }
