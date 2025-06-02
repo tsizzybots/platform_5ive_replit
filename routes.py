@@ -329,6 +329,72 @@ def get_stats():
             'error': str(e)
         }), 500
 
+@app.route('/api/inquiries/daily-stats', methods=['GET'])
+def get_daily_stats():
+    """Get daily statistics for chart visualization"""
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, case
+        
+        # Parse date filters from query parameters
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Default to current month if no dates provided
+        if not date_from or not date_to:
+            today = datetime.now()
+            date_from = today.replace(day=1).strftime('%Y-%m-%d')
+            date_to = today.strftime('%Y-%m-%d')
+        
+        # Parse dates
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid date format. Use YYYY-MM-DD'
+            }), 400
+        
+        # Query daily statistics
+        daily_stats = db.session.query(
+            func.date(EmailInquiry.received_date).label('date'),
+            func.count(EmailInquiry.id).label('total'),
+            func.sum(case((EmailInquiry.status == 'Engaged', 1), else_=0)).label('engaged'),
+            func.sum(case((EmailInquiry.status == 'Escalated', 1), else_=0)).label('escalated'),
+            func.sum(case((EmailInquiry.status == 'Skipped', 1), else_=0)).label('skipped')
+        ).filter(
+            func.date(EmailInquiry.received_date) >= date_from_obj.date(),
+            func.date(EmailInquiry.received_date) <= date_to_obj.date()
+        ).group_by(
+            func.date(EmailInquiry.received_date)
+        ).order_by(
+            func.date(EmailInquiry.received_date)
+        ).all()
+        
+        # Format results
+        chart_data = []
+        for stat in daily_stats:
+            chart_data.append({
+                'date': stat.date.strftime('%Y-%m-%d'),
+                'total': stat.total or 0,
+                'engaged': stat.engaged or 0,
+                'escalated': stat.escalated or 0,
+                'skipped': stat.skipped or 0
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'data': chart_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting daily stats: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get daily statistics'
+        }), 500
+
 @app.route('/api/inquiries/<int:inquiry_id>', methods=['DELETE'])
 def delete_inquiry(inquiry_id):
     """Delete an email inquiry"""

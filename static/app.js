@@ -1,11 +1,28 @@
 // Global variables
 let currentPage = 1;
 let currentFilters = {};
+let dailyChart = null;
+let currentChartType = 'bar';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    setDateRange('thisMonth'); // Set default date range to "This Month"
     loadStats();
     loadTickets();
+    loadInquiryTypes();
+    
+    // Setup chart collapse event listeners
+    const chartCollapse = document.getElementById('dailyStatsChart');
+    chartCollapse.addEventListener('shown.bs.collapse', function () {
+        document.getElementById('chartToggleIcon').className = 'fas fa-chevron-up ms-2';
+        document.getElementById('chartControls').style.display = 'block';
+        loadDailyStats();
+    });
+    
+    chartCollapse.addEventListener('hidden.bs.collapse', function () {
+        document.getElementById('chartToggleIcon').className = 'fas fa-chevron-down ms-2';
+        document.getElementById('chartControls').style.display = 'none';
+    });
 });
 
 // Theme toggle functionality
