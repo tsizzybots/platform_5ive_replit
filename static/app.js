@@ -450,6 +450,12 @@ async function viewTicketDetails(id) {
                 <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
                     ${escapeHtml(ticket.body).replace(/\n/g, '<br>')}
                 </div>
+                ${ticket.status === 'Skipped' ? `
+                    <div class="alert alert-info mt-3" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This ticket was not engaged by AI, and was left in the Gorgias inbox for the Sweats team to respond to.
+                    </div>
+                ` : ''}
             </div>
             ${ticket.ai_response ? `
                 <div class="mt-3">
@@ -713,24 +719,24 @@ function renderChart(data) {
                 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
+                x: {
                     ticks: {
-                        stepSize: 1,
-                        color: 'var(--bs-body-color)',
-                        callback: function(value) {
-                            if (Number.isInteger(value)) {
-                                return value;
-                            }
-                        }
+                        color: 'var(--bs-body-color)'
                     },
                     grid: {
                         color: 'var(--bs-border-color)'
                     }
                 },
-                x: {
+                y: {
+                    beginAtZero: true,
                     ticks: {
-                        color: 'var(--bs-body-color)'
+                        color: 'var(--bs-body-color)',
+                        stepSize: 1,
+                        callback: function(value) {
+                            if (Number.isInteger(value)) {
+                                return value;
+                            }
+                        }
                     },
                     grid: {
                         color: 'var(--bs-border-color)'
