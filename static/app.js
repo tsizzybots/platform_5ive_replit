@@ -424,7 +424,7 @@ async function viewTicketDetails(id) {
                 <div class="mt-3">
                     <h6>AI Response:</h6>
                     <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                        ${escapeHtml(ticket.ai_response).replace(/\n/g, '<br>')}
+                        ${ticket.ai_response}
                     </div>
                 </div>
             ` : ''}
