@@ -301,6 +301,12 @@ function applyFilters() {
     
     loadStats(dateFilters);
     loadTickets();
+    
+    // Update chart if it's visible
+    const chartCollapse = document.getElementById('dailyStatsChart');
+    if (chartCollapse && chartCollapse.classList.contains('show')) {
+        loadDailyStats();
+    }
 }
 
 // Load tickets (renamed from loadInquiries)
