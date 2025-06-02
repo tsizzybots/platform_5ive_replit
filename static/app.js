@@ -653,7 +653,9 @@ function getThemeColors() {
     const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     return {
         textColor: isDarkMode ? '#ffffff' : '#212529',
-        gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+        gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+        titleColor: isDarkMode ? '#ffffff' : '#212529',
+        legendColor: isDarkMode ? '#ffffff' : '#212529'
     };
 }
 
@@ -726,12 +728,12 @@ function renderChart(data) {
                 title: {
                     display: true,
                     text: 'Daily Ticket Statistics',
-                    color: themeColors.textColor
+                    color: themeColors.titleColor
                 },
                 legend: {
                     display: true,
                     labels: {
-                        color: themeColors.textColor,
+                        color: themeColors.legendColor,
                         usePointStyle: false,
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
