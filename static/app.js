@@ -224,7 +224,15 @@ function refreshData() {
     applyBtn.disabled = true;
     resetBtn.disabled = true;
     
-    Promise.all([loadStats(), loadTickets()]).finally(() => {
+    const promises = [loadStats(), loadTickets()];
+    
+    // Reload chart if it's visible
+    const chartCollapse = document.getElementById('dailyStatsChart');
+    if (chartCollapse && chartCollapse.classList.contains('show')) {
+        promises.push(loadDailyStats());
+    }
+    
+    Promise.all(promises).finally(() => {
         // Reset button states
         refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Refresh';
         refreshBtn.disabled = false;
@@ -580,3 +588,137 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadTickets();
 });
+
+// Daily Statistics Chart Functions
+async function loadDailyStats() {
+    try {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        const params = new URLSearchParams();
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        
+        const response = await apiRequest(`/api/inquiries/daily-stats?${params}`);
+        console.log('Daily Stats Response:', response);
+        
+        if (response.status === 'success') {
+            renderChart(response.data);
+        } else {
+            showAlert('Failed to load daily statistics', 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading daily stats:', error);
+        showAlert('Error loading daily statistics', 'danger');
+    }
+}
+
+function renderChart(data) {
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (dailyChart) {
+        dailyChart.destroy();
+    }
+    
+    // Prepare chart data
+    const labels = data.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    const datasets = [
+        {
+            label: 'Total',
+            data: data.map(item => item.total),
+            backgroundColor: 'rgba(108, 117, 125, 0.6)',
+            borderColor: 'rgba(108, 117, 125, 1)',
+            borderWidth: 2
+        },
+        {
+            label: 'Engaged',
+            data: data.map(item => item.engaged),
+            backgroundColor: 'rgba(25, 135, 84, 0.6)',
+            borderColor: 'rgba(25, 135, 84, 1)',
+            borderWidth: 2
+        },
+        {
+            label: 'Escalated',
+            data: data.map(item => item.escalated),
+            backgroundColor: 'rgba(255, 193, 7, 0.6)',
+            borderColor: 'rgba(255, 193, 7, 1)',
+            borderWidth: 2
+        },
+        {
+            label: 'Skipped',
+            data: data.map(item => item.skipped),
+            backgroundColor: 'rgba(220, 53, 69, 0.6)',
+            borderColor: 'rgba(220, 53, 69, 1)',
+            borderWidth: 2
+        }
+    ];
+    
+    // Chart configuration
+    const config = {
+        type: currentChartType,
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Daily Ticket Statistics',
+                    color: 'var(--bs-body-color)'
+                },
+                legend: {
+                    labels: {
+                        color: 'var(--bs-body-color)'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        color: 'var(--bs-body-color)'
+                    },
+                    grid: {
+                        color: 'var(--bs-border-color)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'var(--bs-body-color)'
+                    },
+                    grid: {
+                        color: 'var(--bs-border-color)'
+                    }
+                }
+            }
+        }
+    };
+    
+    // Create new chart
+    dailyChart = new Chart(ctx, config);
+}
+
+function changeChartType(type) {
+    currentChartType = type;
+    
+    // Update button states
+    document.querySelectorAll('#chartControls button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('button').classList.add('active');
+    
+    // Re-render chart with new type
+    if (dailyChart && dailyChart.data.datasets.length > 0) {
+        dailyChart.config.type = type;
+        dailyChart.update();
+    }
+}
