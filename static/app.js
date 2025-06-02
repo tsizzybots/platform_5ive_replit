@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTickets();
     loadInquiryTypes();
     
+    // Auto-dismiss success alerts after 2 seconds
+    const successAlerts = document.querySelectorAll('.alert-success');
+    successAlerts.forEach(alert => {
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 2000);
+    });
+    
     // Setup chart collapse event listeners
     const chartCollapse = document.getElementById('dailyStatsChart');
     chartCollapse.addEventListener('shown.bs.collapse', function () {
@@ -37,6 +46,20 @@ function toggleTheme() {
     } else {
         html.setAttribute('data-bs-theme', 'dark');
         themeIcon.className = 'fas fa-sun';
+    }
+    
+    // Re-render chart with new theme colors if chart exists
+    if (dailyChart && dailyChart.data.datasets.length > 0) {
+        const chartData = dailyChart.data.datasets[0].data.map((_, index) => {
+            return {
+                date: dailyChart.data.labels[index],
+                total: dailyChart.data.datasets[0].data[index] || 0,
+                engaged: dailyChart.data.datasets[1].data[index] || 0,
+                escalated: dailyChart.data.datasets[2].data[index] || 0,
+                skipped: dailyChart.data.datasets[3].data[index] || 0
+            };
+        });
+        renderChart(chartData);
     }
 }
 
@@ -626,6 +649,14 @@ async function loadDailyStats() {
     }
 }
 
+function getThemeColors() {
+    const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    return {
+        textColor: isDarkMode ? '#ffffff' : '#212529',
+        gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+    };
+}
+
 function renderChart(data) {
     const ctx = document.getElementById('dailyChart').getContext('2d');
     
@@ -633,6 +664,8 @@ function renderChart(data) {
     if (dailyChart) {
         dailyChart.destroy();
     }
+    
+    const themeColors = getThemeColors();
     
     // Prepare chart data
     const labels = data.map(item => {
@@ -693,12 +726,12 @@ function renderChart(data) {
                 title: {
                     display: true,
                     text: 'Daily Ticket Statistics',
-                    color: 'var(--bs-body-color)'
+                    color: themeColors.textColor
                 },
                 legend: {
                     display: true,
                     labels: {
-                        color: 'var(--bs-body-color)',
+                        color: themeColors.textColor,
                         usePointStyle: false,
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
@@ -721,16 +754,16 @@ function renderChart(data) {
             scales: {
                 x: {
                     ticks: {
-                        color: 'var(--bs-body-color)'
+                        color: themeColors.textColor
                     },
                     grid: {
-                        color: 'var(--bs-border-color)'
+                        color: themeColors.gridColor
                     }
                 },
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        color: 'var(--bs-body-color)',
+                        color: themeColors.textColor,
                         stepSize: 1,
                         callback: function(value) {
                             if (Number.isInteger(value)) {
@@ -739,7 +772,7 @@ function renderChart(data) {
                         }
                     },
                     grid: {
-                        color: 'var(--bs-border-color)'
+                        color: themeColors.gridColor
                     }
                 }
             },
