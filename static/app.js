@@ -631,31 +631,35 @@ function renderChart(data) {
     const datasets = [
         {
             label: 'Total',
-            data: data.map(item => item.total),
+            data: data.map(item => item.total || 0),
             backgroundColor: 'rgba(108, 117, 125, 0.6)',
             borderColor: 'rgba(108, 117, 125, 1)',
-            borderWidth: 2
+            borderWidth: 2,
+            fill: false
         },
         {
             label: 'Engaged',
-            data: data.map(item => item.engaged),
+            data: data.map(item => item.engaged || 0),
             backgroundColor: 'rgba(25, 135, 84, 0.6)',
             borderColor: 'rgba(25, 135, 84, 1)',
-            borderWidth: 2
+            borderWidth: 2,
+            fill: false
         },
         {
             label: 'Escalated',
-            data: data.map(item => item.escalated),
+            data: data.map(item => item.escalated || 0),
             backgroundColor: 'rgba(255, 193, 7, 0.6)',
             borderColor: 'rgba(255, 193, 7, 1)',
-            borderWidth: 2
+            borderWidth: 2,
+            fill: false
         },
         {
             label: 'Skipped',
-            data: data.map(item => item.skipped),
+            data: data.map(item => item.skipped || 0),
             backgroundColor: 'rgba(220, 53, 69, 0.6)',
             borderColor: 'rgba(220, 53, 69, 1)',
-            borderWidth: 2
+            borderWidth: 2,
+            fill: false
         }
     ];
     
@@ -669,6 +673,10 @@ function renderChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 title: {
                     display: true,
@@ -676,9 +684,26 @@ function renderChart(data) {
                     color: 'var(--bs-body-color)'
                 },
                 legend: {
+                    display: true,
                     labels: {
-                        color: 'var(--bs-body-color)'
+                        color: 'var(--bs-body-color)',
+                        usePointStyle: false,
+                        generateLabels: function(chart) {
+                            const datasets = chart.data.datasets;
+                            return datasets.map((dataset, i) => ({
+                                text: dataset.label,
+                                fillStyle: dataset.backgroundColor,
+                                strokeStyle: dataset.borderColor,
+                                lineWidth: dataset.borderWidth,
+                                hidden: !chart.isDatasetVisible(i),
+                                datasetIndex: i
+                            }));
+                        }
                     }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
                 }
             },
             scales: {
@@ -686,7 +711,12 @@ function renderChart(data) {
                     beginAtZero: true,
                     ticks: {
                         stepSize: 1,
-                        color: 'var(--bs-body-color)'
+                        color: 'var(--bs-body-color)',
+                        callback: function(value) {
+                            if (Number.isInteger(value)) {
+                                return value;
+                            }
+                        }
                     },
                     grid: {
                         color: 'var(--bs-border-color)'
@@ -699,6 +729,11 @@ function renderChart(data) {
                     grid: {
                         color: 'var(--bs-border-color)'
                     }
+                }
+            },
+            elements: {
+                bar: {
+                    borderWidth: 2,
                 }
             }
         }
