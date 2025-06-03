@@ -751,6 +751,11 @@ function renderChart(data) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    titleColor: themeColors.textColor,
+                    bodyColor: themeColors.textColor,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    borderColor: themeColors.gridColor,
+                    borderWidth: 1
                 }
             },
             scales: {
