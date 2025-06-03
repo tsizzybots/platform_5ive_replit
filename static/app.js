@@ -393,7 +393,7 @@ function displayTickets(tickets, pagination) {
                 <td>${formatDate(ticket.received_date)}</td>
                 <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
                 <td>
-                    <span class="badge bg-secondary">${escapeHtml(ticket.inquiry_type || 'N/A')}</span>
+                    ${escapeHtml(ticket.inquiry_type || 'N/A')}
                 </td>
                 <td class="text-truncate" style="max-width: 200px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
@@ -465,7 +465,7 @@ async function viewTicketDetails(id) {
                 <div class="col-md-6">
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
                     <p><strong>Status:</strong> ${getStatusBadge(ticket.status)}</p>
-                    ${ticket.inquiry_type ? `<p><strong>Type:</strong> <span class="badge bg-info">${escapeHtml(ticket.inquiry_type)}</span></p>` : ''}
+                    ${ticket.inquiry_type ? `<p><strong>Type:</strong> ${escapeHtml(ticket.inquiry_type)}</p>` : ''}
                 </div>
             </div>
             <div class="mt-3">
