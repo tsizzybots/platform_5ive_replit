@@ -29,6 +29,13 @@
         }
         
         /* Dark mode improvements */
+        [data-bs-theme="dark"] {
+            --bs-dark-rgb: 8, 8, 16;
+            --bs-body-bg: #080810;
+        }
+        [data-bs-theme="dark"] body {
+            background-color: #080810 !important;
+        }
         [data-bs-theme="dark"] h1 {
             color: #ffffff !important;
         }
@@ -42,16 +49,19 @@
         }
         [data-bs-theme="dark"] .form-control,
         [data-bs-theme="dark"] .form-select {
-            background-color: #ffffff;
-            border-color: #ffffff;
-            color: #000000;
+            background-color: #1a1a2e;
+            border-color: #444;
+            color: #ffffff;
         }
         [data-bs-theme="dark"] .form-control:focus,
         [data-bs-theme="dark"] .form-select:focus {
-            background-color: #ffffff;
+            background-color: #1a1a2e;
             border-color: #60a5fa;
-            color: #000000;
+            color: #ffffff;
             box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25);
+        }
+        [data-bs-theme="dark"] .form-control::placeholder {
+            color: #aaa;
         }
         [data-bs-theme="dark"] .btn-outline-info {
             color: #ffffff;
@@ -68,6 +78,18 @@
         [data-bs-theme="dark"] .btn-primary:hover {
             background-color: #3b82f6;
             border-color: #3b82f6;
+        }
+        [data-bs-theme="dark"] .table {
+            color: #ffffff;
+        }
+        [data-bs-theme="dark"] .table td,
+        [data-bs-theme="dark"] .table th {
+            color: #ffffff;
+            border-color: #444;
+        }
+        [data-bs-theme="dark"] .card {
+            background-color: #1a1a2e;
+            border-color: #444;
         }
     </style>
 </head>
