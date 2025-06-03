@@ -754,10 +754,10 @@ function renderChart(data) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
-                    titleColor: themeColors.textColor,
-                    bodyColor: themeColors.textColor,
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    borderColor: themeColors.gridColor,
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
                     borderWidth: 1
                 }
             },
