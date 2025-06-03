@@ -1,7 +1,7 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import EmailInquiry
-from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema
+from models import EmailInquiry, Error
+from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, error_schema, error_query_schema
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
 from datetime import datetime
@@ -421,6 +421,167 @@ def delete_inquiry(inquiry_id):
         return jsonify({
             'status': 'error',
             'message': 'Failed to delete email inquiry',
+            'error': str(e)
+        }), 500
+
+# Error logging endpoints
+@app.route('/api/errors', methods=['POST'])
+@require_api_key
+def create_error():
+    """Log a new automation error"""
+    try:
+        data = error_schema.load(request.json)
+        
+        error = Error(
+            timestamp=data['timestamp'],
+            workflow=data['workflow'],
+            url=data.get('url'),
+            node=data.get('node'),
+            error_message=data['error_message']
+        )
+        
+        db.session.add(error)
+        db.session.commit()
+        
+        logger.info(f"New error logged: {error.workflow} - {error.error_message[:100]}...")
+        return jsonify({
+            'status': 'success',
+            'message': 'Error logged successfully',
+            'data': error_schema.dump(error)
+        }), 201
+        
+    except ValidationError as e:
+        logger.warning(f"Validation error in create_error: {e.messages}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Validation failed',
+            'errors': e.messages
+        }), 400
+    except Exception as e:
+        logger.error(f"Error creating error log: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to log error',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/errors', methods=['GET'])
+@login_required
+def list_errors():
+    """List errors with optional filtering and pagination"""
+    try:
+        # Parse and validate query parameters
+        query_data = error_query_schema.load(request.args)
+        
+        # Build base query
+        query = Error.query
+        
+        # Apply filters
+        if query_data.get('workflow'):
+            query = query.filter(Error.workflow.ilike(f"%{query_data['workflow']}%"))
+            
+        if query_data.get('date_from'):
+            query = query.filter(Error.timestamp >= query_data['date_from'])
+            
+        if query_data.get('date_to'):
+            query = query.filter(Error.timestamp <= query_data['date_to'])
+        
+        # Order by timestamp descending (newest first)
+        query = query.order_by(Error.timestamp.desc())
+        
+        # Pagination
+        page = query_data.get('page', 1)
+        per_page = query_data.get('per_page', 20)
+        
+        paginated_errors = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'errors': [error_schema.dump(error) for error in paginated_errors.items],
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': paginated_errors.total,
+                    'pages': paginated_errors.pages,
+                    'has_next': paginated_errors.has_next,
+                    'has_prev': paginated_errors.has_prev
+                }
+            }
+        })
+        
+    except ValidationError as e:
+        logger.warning(f"Validation error in list_errors: {e.messages}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Validation failed',
+            'errors': e.messages
+        }), 400
+    except Exception as e:
+        logger.error(f"Error listing errors: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve errors',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/errors/<int:error_id>', methods=['GET'])
+@login_required
+def get_error(error_id):
+    """Get a specific error by ID"""
+    try:
+        error = Error.query.get(error_id)
+        if not error:
+            return jsonify({
+                'status': 'error',
+                'message': 'Error not found'
+            }), 404
+            
+        return jsonify({
+            'status': 'success',
+            'data': error_schema.dump(error)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving error {error_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve error',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/errors/<int:error_id>', methods=['DELETE'])
+@login_required
+def delete_error(error_id):
+    """Delete an error"""
+    try:
+        error = Error.query.get(error_id)
+        if not error:
+            return jsonify({
+                'status': 'error',
+                'message': 'Error not found'
+            }), 404
+            
+        db.session.delete(error)
+        db.session.commit()
+        
+        logger.info(f"Deleted error: {error_id}")
+        return jsonify({
+            'status': 'success',
+            'message': 'Error deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting error {error_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to delete error',
             'error': str(e)
         }), 500
 

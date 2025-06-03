@@ -48,3 +48,36 @@ class EmailInquiry(db.Model):
     
     def __repr__(self):
         return f'<EmailInquiry {self.id}: {self.subject[:50]}...>'
+
+
+class Error(db.Model):
+    __tablename__ = 'errors'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    workflow = db.Column(db.String(255), nullable=False)
+    url = db.Column(db.String(500), nullable=True)
+    node = db.Column(db.String(255), nullable=True)
+    error_message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Indexes for better query performance
+    __table_args__ = (
+        Index('idx_error_timestamp', 'timestamp'),
+        Index('idx_error_workflow', 'workflow'),
+        Index('idx_error_created_at', 'created_at'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'workflow': self.workflow,
+            'url': self.url,
+            'node': self.node,
+            'error_message': self.error_message,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Error {self.id}: {self.workflow} - {self.error_message[:50]}...>'
