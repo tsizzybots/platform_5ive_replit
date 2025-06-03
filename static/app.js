@@ -737,13 +737,16 @@ function renderChart(data) {
                         usePointStyle: false,
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
+                            const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+                            const labelColor = isDarkMode ? '#ffffff' : '#212529';
                             return datasets.map((dataset, i) => ({
                                 text: dataset.label,
                                 fillStyle: dataset.backgroundColor,
                                 strokeStyle: dataset.borderColor,
                                 lineWidth: dataset.borderWidth,
                                 hidden: !chart.isDatasetVisible(i),
-                                datasetIndex: i
+                                datasetIndex: i,
+                                fontColor: labelColor
                             }));
                         }
                     }
