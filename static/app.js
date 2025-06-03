@@ -679,8 +679,8 @@ function renderChart(data) {
         {
             label: 'Total',
             data: data.map(item => item.total || 0),
-            backgroundColor: 'rgba(108, 117, 125, 0.6)',
-            borderColor: 'rgba(108, 117, 125, 1)',
+            backgroundColor: 'rgba(13, 110, 253, 0.6)',
+            borderColor: 'rgba(13, 110, 253, 1)',
             borderWidth: 2,
             fill: false
         },
@@ -703,8 +703,8 @@ function renderChart(data) {
         {
             label: 'Skipped',
             data: data.map(item => item.skipped || 0),
-            backgroundColor: 'rgba(220, 53, 69, 0.6)',
-            borderColor: 'rgba(220, 53, 69, 1)',
+            backgroundColor: 'rgba(108, 117, 125, 0.6)',
+            borderColor: 'rgba(108, 117, 125, 1)',
             borderWidth: 2,
             fill: false
         }
