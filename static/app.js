@@ -544,7 +544,7 @@ async function viewTicketDetails(id) {
             ${ticket.dev_feedback ? `
                 <div class="mt-3">
                     <h6>Developer Feedback:</h6>
-                    <div class="bg-info bg-opacity-10 p-3 rounded border border-info">
+                    <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
                         ${escapeHtml(ticket.dev_feedback)}
                         <br><small class="text-muted">By: ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
                     </div>
@@ -669,11 +669,10 @@ async function updateQAStatus() {
         if (result.ok) {
             showAlert('QA status updated successfully', 'success');
             
-            // Close modal and refresh the ticket list
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            modal.hide();
+            // Refresh the ticket details with updated data
+            await viewTicketDetails(ticketId);
             
-            // Refresh the tickets table
+            // Also refresh the tickets table
             loadTickets(currentPage);
         } else {
             showAlert('Failed to update QA status: ' + result.data.message, 'danger');
@@ -713,11 +712,10 @@ async function addDevFeedback() {
         if (result.ok) {
             showAlert('Developer feedback added successfully', 'success');
             
-            // Close modal and refresh the ticket list
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            modal.hide();
+            // Refresh the ticket details with updated data
+            await viewTicketDetails(ticketId);
             
-            // Refresh the tickets table
+            // Also refresh the tickets table
             loadTickets(currentPage);
         } else {
             showAlert('Failed to add developer feedback: ' + result.data.message, 'danger');
