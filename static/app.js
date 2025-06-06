@@ -9,12 +9,17 @@ let currentUser = null;
 async function loadCurrentUser() {
     try {
         const result = await apiRequest('/api/current-user');
-        if (result.ok) {
-            currentUser = result.data;
+        if (result.ok && result.data.status === 'success') {
+            currentUser = result.data.data;
             // Update the UI with current user
             const usernameElement = document.getElementById('currentUsername');
             if (usernameElement) {
                 usernameElement.textContent = currentUser.username;
+            }
+        } else {
+            const usernameElement = document.getElementById('currentUsername');
+            if (usernameElement) {
+                usernameElement.textContent = 'Unknown';
             }
         }
     } catch (error) {
