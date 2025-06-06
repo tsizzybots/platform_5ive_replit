@@ -796,11 +796,11 @@ function getQAStatusBadge(qaStatus) {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     
-    // Parse the date and add 11 hours to convert from UTC to Sydney time
+    // Parse the date and add 10 hours to convert from UTC to Sydney time
     const date = new Date(dateString);
     
-    // Add 11 hours (Sydney is UTC+11 in standard time)
-    const sydneyTime = new Date(date.getTime() + (11 * 60 * 60 * 1000));
+    // Add 10 hours (Sydney is UTC+10 in standard time during winter)
+    const sydneyTime = new Date(date.getTime() + (10 * 60 * 60 * 1000));
     
     const day = sydneyTime.getDate().toString().padStart(2, '0');
     const month = (sydneyTime.getMonth() + 1).toString().padStart(2, '0');
