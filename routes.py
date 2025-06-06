@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import EmailInquiry, Error
+from models import EmailInquiry, Error, User
 from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, error_schema, error_query_schema
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
@@ -32,11 +32,13 @@ def send_qa_issue_webhook(inquiry):
         logger.error(f"Failed to send QA issue webhook for ticket {inquiry.ticket_id}: {str(e)}")
         return False
 
-# Hardcoded login credentials
-VALID_USERS = {
-    "sweatsADMIN": "ctp4kbk8HGW5emb!yze",
-    "IzzyAgents": "dqt!nbr-ztw*BRZ2jcr"
-}
+# Helper function to get current user
+def get_current_user():
+    """Get the current logged-in user from session"""
+    user_id = session.get('user_id')
+    if user_id:
+        return User.query.get(user_id)
+    return None
 
 # Login required decorator
 def login_required(f):
@@ -74,9 +76,12 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username in VALID_USERS and VALID_USERS[username] == password:
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
             session['logged_in'] = True
-            session['username'] = username
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['user_role'] = user.role
             flash('Successfully logged in!', 'success')
             return redirect(url_for('index'))
         else:
@@ -88,7 +93,7 @@ def login():
 @login_required
 def logout():
     """Handle logout"""
-    session.pop('logged_in', None)
+    session.clear()
     flash('Successfully logged out!', 'info')
     return redirect(url_for('login'))
 
@@ -100,15 +105,26 @@ def index():
 
 @app.route('/api/current-user', methods=['GET'])
 @login_required
-def get_current_user():
+def get_current_user_api():
     """Get the current logged-in user information"""
-    return jsonify({
-        'status': 'success',
-        'data': {
-            'username': session.get('username', 'Unknown'),
-            'logged_in': session.get('logged_in', False)
-        }
-    })
+    current_user = get_current_user()
+    if current_user:
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'username': current_user.username,
+                'role': current_user.role,
+                'logged_in': True
+            }
+        })
+    else:
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'username': 'Unknown',
+                'logged_in': False
+            }
+        })
 
 @app.route('/api/inquiries', methods=['POST'])
 @require_api_key
@@ -503,7 +519,8 @@ def update_qa_status(inquiry_id):
             inquiry.qa_status_updated_by = data['qa_status_updated_by']
         elif 'qa_status' in data:
             # Auto-assign the logged-in user as QA reviewer when status changes
-            inquiry.qa_status_updated_by = session.get('username', 'Unknown')
+            current_user = get_current_user()
+            inquiry.qa_status_updated_by = current_user.username if current_user else 'Unknown'
             
         # Update QA notes
         if 'qa_notes' in data:
