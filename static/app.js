@@ -681,23 +681,23 @@ async function updateQAStatus() {
 
 // Add Developer Feedback (separate function for workflow)
 async function addDevFeedback() {
+    // Check permission
+    if (!currentUser || currentUser.username !== 'IzzyAgents') {
+        showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
+        return;
+    }
+    
     const ticketId = document.getElementById('qa_ticket_id').value;
     const devFeedback = document.getElementById('dev_feedback_text').value;
-    const devFeedbackBy = document.getElementById('dev_feedback_by').value;
     
     if (!devFeedback.trim()) {
         showAlert('Please enter developer feedback', 'warning');
         return;
     }
     
-    if (!devFeedbackBy.trim()) {
-        showAlert('Please enter developer name', 'warning');
-        return;
-    }
-    
     const updateData = {
         dev_feedback: devFeedback,
-        dev_feedback_by: devFeedbackBy
+        dev_feedback_by: currentUser.username
     };
     
     try {
