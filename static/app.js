@@ -664,9 +664,6 @@ async function updateQAStatus() {
     try {
         const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(updateData)
         });
         
@@ -711,9 +708,6 @@ async function addDevFeedback() {
     try {
         const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(updateData)
         });
         
