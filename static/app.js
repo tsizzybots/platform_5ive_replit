@@ -5,8 +5,21 @@ let dailyChart = null;
 let currentChartType = 'bar';
 let currentUser = null;
 
+// Load current user information
+async function loadCurrentUser() {
+    try {
+        const result = await apiRequest('/api/current-user');
+        if (result.ok) {
+            currentUser = result.data;
+        }
+    } catch (error) {
+        console.log('Could not load current user:', error.message);
+    }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentUser();
     setDateRange('thisMonth'); // Set default date range to "This Month"
     loadStats();
     loadTickets();
@@ -539,7 +552,7 @@ async function viewTicketDetails(id) {
                             <div class="mb-3">
                                 <label for="qa_reviewer" class="form-label">QA Reviewer</label>
                                 <input type="text" class="form-control" id="qa_reviewer" 
-                                       value="${escapeHtml(ticket.qa_status_updated_by || '')}" 
+                                       value="${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : ''))}" 
                                        placeholder="Enter reviewer name">
                             </div>
                         </div>
