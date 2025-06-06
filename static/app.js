@@ -584,7 +584,7 @@ async function viewTicketDetails(id) {
                                   placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
                     </div>
                     
-                    ${ticket.qa_notes && currentUser && currentUser.username === 'IzzyAgents' ? `
+                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
                         <div class="mb-3">
                             <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
                             <textarea class="form-control" id="dev_feedback_text" rows="3" 
@@ -602,7 +602,7 @@ async function viewTicketDetails(id) {
                         <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
                             <i class="fas fa-save me-1"></i>Update QA Status
                         </button>
-                        ${ticket.qa_notes && !ticket.dev_feedback && currentUser && currentUser.username === 'IzzyAgents' ? `
+                        ${!ticket.dev_feedback && currentUser && currentUser.username === 'IzzyAgents' ? `
                             <button type="button" class="btn btn-info" onclick="addDevFeedback()">
                                 <i class="fas fa-code me-1"></i>Add Developer Feedback
                             </button>
