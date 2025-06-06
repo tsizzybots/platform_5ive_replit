@@ -11,9 +11,18 @@ async function loadCurrentUser() {
         const result = await apiRequest('/api/current-user');
         if (result.ok) {
             currentUser = result.data;
+            // Update the UI with current user
+            const usernameElement = document.getElementById('currentUsername');
+            if (usernameElement) {
+                usernameElement.textContent = currentUser.username;
+            }
         }
     } catch (error) {
         console.log('Could not load current user:', error.message);
+        const usernameElement = document.getElementById('currentUsername');
+        if (usernameElement) {
+            usernameElement.textContent = 'Unknown';
+        }
     }
 }
 
@@ -550,10 +559,12 @@ async function viewTicketDetails(id) {
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="qa_reviewer" class="form-label">QA Reviewer</label>
-                                <input type="text" class="form-control" id="qa_reviewer" 
-                                       value="${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : ''))}" 
-                                       placeholder="Enter reviewer name">
+                                <label class="form-label">QA Reviewer</label>
+                                <div class="form-control-plaintext bg-light rounded px-3 py-2">
+                                    <i class="fas fa-user me-2 text-primary"></i>
+                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Automatic assignment'))}
+                                    <small class="text-muted d-block">Automatically assigned</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -564,17 +575,19 @@ async function viewTicketDetails(id) {
                                   placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
                     </div>
                     
-                    ${ticket.qa_notes ? `
+                    ${ticket.qa_notes && currentUser && currentUser.username === 'IzzyAgents' ? `
                         <div class="mb-3">
                             <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
                             <textarea class="form-control" id="dev_feedback_text" rows="3" 
                                       placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="dev_feedback_by" class="form-label">Developer Name</label>
-                            <input type="text" class="form-control" id="dev_feedback_by" 
-                                   value="${escapeHtml(ticket.dev_feedback_by || '')}" 
-                                   placeholder="Enter developer name">
+                            <label class="form-label">Developer Name</label>
+                            <div class="form-control-plaintext bg-light rounded px-3 py-2">
+                                <i class="fas fa-code me-2 text-info"></i>
+                                ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Automatic assignment'))}
+                                <small class="text-muted d-block">Automatically assigned</small>
+                            </div>
                         </div>
                     ` : ''}
                     
@@ -582,7 +595,7 @@ async function viewTicketDetails(id) {
                         <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
                             <i class="fas fa-save me-1"></i>Update QA Status
                         </button>
-                        ${ticket.qa_notes && !ticket.dev_feedback ? `
+                        ${ticket.qa_notes && !ticket.dev_feedback && currentUser && currentUser.username === 'IzzyAgents' ? `
                             <button type="button" class="btn btn-info" onclick="addDevFeedback()">
                                 <i class="fas fa-code me-1"></i>Add Developer Feedback
                             </button>
@@ -618,26 +631,25 @@ async function viewTicketDetails(id) {
 async function updateQAStatus() {
     const ticketId = document.getElementById('qa_ticket_id').value;
     const qaStatus = document.getElementById('qa_status_select').value;
-    const qaReviewer = document.getElementById('qa_reviewer').value;
     const qaNotes = document.getElementById('qa_notes_text').value;
     
     const updateData = {
         qa_status: qaStatus,
-        qa_status_updated_by: qaReviewer,
+        qa_status_updated_by: currentUser ? currentUser.username : 'Unknown',
         qa_notes: qaNotes
     };
     
-    // Add developer feedback if it exists
-    const devFeedbackElement = document.getElementById('dev_feedback_text');
-    const devFeedbackByElement = document.getElementById('dev_feedback_by');
-    
-    if (devFeedbackElement && devFeedbackByElement) {
-        const devFeedback = devFeedbackElement.value;
-        const devFeedbackBy = devFeedbackByElement.value;
+    // Add developer feedback if it exists and user has permission
+    if (currentUser && currentUser.username === 'IzzyAgents') {
+        const devFeedbackElement = document.getElementById('dev_feedback_text');
         
-        if (devFeedback.trim()) {
-            updateData.dev_feedback = devFeedback;
-            updateData.dev_feedback_by = devFeedbackBy;
+        if (devFeedbackElement) {
+            const devFeedback = devFeedbackElement.value;
+            
+            if (devFeedback.trim()) {
+                updateData.dev_feedback = devFeedback;
+                updateData.dev_feedback_by = currentUser.username;
+            }
         }
     }
     

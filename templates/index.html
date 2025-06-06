@@ -14,6 +14,26 @@
             right: 20px;
             z-index: 1000;
         }
+        .user-info {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-badge {
+            background-color: var(--bs-primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        [data-bs-theme="dark"] .user-badge {
+            background-color: var(--bs-info);
+        }
         .stats-card {
             transition: transform 0.2s;
         }
@@ -106,6 +126,10 @@
                         </h1>
                     </div>
                     <div class="d-flex align-items-center">
+                        <div class="user-badge me-3" id="userDisplay">
+                            <i class="fas fa-user me-1"></i>
+                            <span id="currentUsername">Loading...</span>
+                        </div>
                         <button class="btn btn-outline-secondary me-2" onclick="toggleTheme()">
                             <i class="fas fa-moon" id="themeIcon"></i>
                         </button>
