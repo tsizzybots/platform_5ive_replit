@@ -563,7 +563,6 @@ async function viewTicketDetails(id) {
                                 <label for="qa_status_select" class="form-label">QA Status</label>
                                 <select class="form-select" id="qa_status_select">
                                     <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
-                                    <option value="checked" ${ticket.qa_status === 'checked' ? 'selected' : ''}>Checked</option>
                                     <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
                                     <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
                                 </select>
