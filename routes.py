@@ -510,7 +510,7 @@ def update_qa_status(inquiry_id):
             
         # Store original QA status to detect changes
         original_qa_status = inquiry.qa_status
-        current_time = datetime.utcnow()
+        current_time = get_sydney_time()
         
         # Update QA status
         if 'qa_status' in data:
