@@ -500,7 +500,7 @@ async function viewTicketDetails(id) {
                     <p><strong>Ticket ID:</strong> ${escapeHtml(ticket.ticket_id || 'N/A')}</p>
                     <p><strong>Subject:</strong> ${escapeHtml(ticket.subject)}</p>
                     <p><strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')}</p>
-                    <p><strong>Email:</strong> ${escapeHtml(ticket.sender_email)}</p>
+                    <p><strong>Email:</strong><br><span style="word-break: break-all; font-family: monospace; font-size: 0.9em;">${escapeHtml(ticket.sender_email)}</span></p>
                     ${ticket.ticket_url ? `<p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>` : ''}
                 </div>
                 <div class="col-md-6">
