@@ -200,7 +200,9 @@ def update_inquiry(inquiry_id):
             }), 404
             
         # Validate update data
+        logger.info(f"Received request data: {request.json}")
         data = email_inquiry_update_schema.load(request.json)
+        logger.info(f"Validated data: {data}")
         
         # Store original QA status to detect changes
         original_qa_status = inquiry.qa_status

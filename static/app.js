@@ -704,7 +704,7 @@ async function addDevFeedback() {
     };
     
     try {
-        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
         });
