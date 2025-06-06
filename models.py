@@ -88,12 +88,12 @@ class EmailInquiry(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'qa_status': self.qa_status,
             'qa_status_updated_by': self.qa_status_updated_by,
-            'qa_status_updated_at': self.qa_status_updated_at.isoformat() if self.qa_status_updated_at else None,
+            'qa_status_updated_at': self.qa_status_updated_at.isoformat() + '+11:00' if self.qa_status_updated_at else None,
             'qa_notes': self.qa_notes,
-            'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() if self.qa_notes_updated_at else None,
+            'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() + '+11:00' if self.qa_notes_updated_at else None,
             'dev_feedback': self.dev_feedback,
             'dev_feedback_by': self.dev_feedback_by,
-            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None
+            'dev_feedback_at': self.dev_feedback_at.isoformat() + '+11:00' if self.dev_feedback_at else None
         }
     
     def __repr__(self):

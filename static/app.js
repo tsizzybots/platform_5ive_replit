@@ -795,29 +795,19 @@ function getQAStatusBadge(qaStatus) {
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
+    
+    // Parse the date - if it already includes timezone offset, use it directly
     const date = new Date(dateString);
     
-    // Format directly in Sydney timezone
-    const options = {
-        timeZone: 'Australia/Sydney',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    };
+    // Since the backend now sends timestamps with +11:00 offset, 
+    // we can format them directly without timezone conversion
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
     
-    const formatter = new Intl.DateTimeFormat('en-AU', options);
-    const parts = formatter.formatToParts(date);
-    
-    const day = parts.find(part => part.type === 'day').value;
-    const month = parts.find(part => part.type === 'month').value;
-    const year = parts.find(part => part.type === 'year').value;
-    const hour = parts.find(part => part.type === 'hour').value;
-    const minute = parts.find(part => part.type === 'minute').value;
-    
-    return `${day}/${month}/${year} ${hour}:${minute}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
 function escapeHtml(text) {
