@@ -7,9 +7,30 @@ from sqlalchemy import and_, or_
 from datetime import datetime
 import logging
 import os
+import requests
 from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+# Webhook URL for QA issues
+QA_ISSUE_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue"
+
+def send_qa_issue_webhook(inquiry):
+    """Send webhook notification when QA status is set to 'issue'"""
+    try:
+        payload = inquiry.to_dict()
+        response = requests.post(
+            QA_ISSUE_WEBHOOK_URL,
+            json=payload,
+            timeout=10,
+            headers={'Content-Type': 'application/json'}
+        )
+        response.raise_for_status()
+        logger.info(f"QA issue webhook sent successfully for ticket {inquiry.ticket_id}")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to send QA issue webhook for ticket {inquiry.ticket_id}: {str(e)}")
+        return False
 
 # Hardcoded login credentials
 ADMIN_USERNAME = "sweatsADMIN"
@@ -150,12 +171,40 @@ def update_inquiry(inquiry_id):
         # Validate update data
         data = email_inquiry_update_schema.load(request.json)
         
-        # Update fields
-        for key, value in data.items():
-            setattr(inquiry, key, value)
+        # Store original QA status to detect changes
+        original_qa_status = inquiry.qa_status
+        current_time = datetime.utcnow()
         
-        inquiry.updated_at = datetime.utcnow()
+        # Update basic fields
+        for key, value in data.items():
+            if key not in ['qa_status', 'qa_status_updated_by', 'qa_notes', 'dev_feedback', 'dev_feedback_by']:
+                setattr(inquiry, key, value)
+        
+        # Handle QA status updates with metadata
+        if 'qa_status' in data:
+            inquiry.qa_status = data['qa_status']
+            inquiry.qa_status_updated_at = current_time
+            if 'qa_status_updated_by' in data:
+                inquiry.qa_status_updated_by = data['qa_status_updated_by']
+        
+        # Handle QA notes updates
+        if 'qa_notes' in data:
+            inquiry.qa_notes = data['qa_notes']
+            inquiry.qa_notes_updated_at = current_time
+        
+        # Handle developer feedback updates
+        if 'dev_feedback' in data:
+            inquiry.dev_feedback = data['dev_feedback']
+            inquiry.dev_feedback_at = current_time
+            if 'dev_feedback_by' in data:
+                inquiry.dev_feedback_by = data['dev_feedback_by']
+        
+        inquiry.updated_at = current_time
         db.session.commit()
+        
+        # Send webhook if QA status changed to 'issue'
+        if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
+            send_qa_issue_webhook(inquiry)
         
         logger.info(f"Updated inquiry: {inquiry.id}")
         return jsonify({
@@ -212,6 +261,9 @@ def list_inquiries():
             
         if 'date_to' in query_params:
             query = query.filter(EmailInquiry.received_date <= query_params['date_to'])
+            
+        if 'qa_status' in query_params:
+            query = query.filter(EmailInquiry.qa_status == query_params['qa_status'])
         
         # Apply pagination
         page = query_params.get('page', 1)

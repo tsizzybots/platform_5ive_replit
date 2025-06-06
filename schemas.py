@@ -51,6 +51,7 @@ class EmailInquiryQuerySchema(Schema):
     inquiry_type = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'checked', 'passed', 'issue']))
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 
