@@ -447,7 +447,76 @@ def get_daily_stats():
             'message': 'Failed to get daily statistics'
         }), 500
 
+@app.route('/api/inquiries/<int:inquiry_id>/qa', methods=['PUT'])
+@require_api_key
+def update_qa_status(inquiry_id):
+    """Update QA status, notes, and reviewer information for an inquiry"""
+    try:
+        inquiry = EmailInquiry.query.get(inquiry_id)
+        if not inquiry:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email inquiry not found'
+            }), 404
+            
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+            
+        # Store original QA status to detect changes
+        original_qa_status = inquiry.qa_status
+        current_time = datetime.utcnow()
+        
+        # Update QA status
+        if 'qa_status' in data:
+            valid_statuses = ['unchecked', 'checked', 'passed', 'issue']
+            if data['qa_status'] not in valid_statuses:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid QA status. Must be one of: {", ".join(valid_statuses)}'
+                }), 400
+            
+            inquiry.qa_status = data['qa_status']
+            inquiry.qa_status_updated_at = current_time
+            
+        # Update QA reviewer
+        if 'qa_status_updated_by' in data:
+            inquiry.qa_status_updated_by = data['qa_status_updated_by']
+            
+        # Update QA notes
+        if 'qa_notes' in data:
+            inquiry.qa_notes = data['qa_notes']
+            inquiry.qa_notes_updated_at = current_time
+            
+        inquiry.updated_at = current_time
+        db.session.commit()
+        
+        # Send webhook if QA status changed to 'issue'
+        if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
+            send_qa_issue_webhook(inquiry)
+        
+        logger.info(f"Updated QA status for inquiry {inquiry_id}: {data.get('qa_status', 'no status change')}")
+        return jsonify({
+            'status': 'success',
+            'message': 'QA status updated successfully',
+            'data': email_inquiry_schema.dump(inquiry)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating QA status for inquiry {inquiry_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to update QA status',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/inquiries/<int:inquiry_id>', methods=['DELETE'])
+@require_api_key
 def delete_inquiry(inquiry_id):
     """Delete an email inquiry"""
     try:
