@@ -796,16 +796,17 @@ function getQAStatusBadge(qaStatus) {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     
-    // Parse the date - if it already includes timezone offset, use it directly
+    // Parse the date and add 11 hours to convert from UTC to Sydney time
     const date = new Date(dateString);
     
-    // Since the backend now sends timestamps with +11:00 offset, 
-    // we can format them directly without timezone conversion
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+    // Add 11 hours (Sydney is UTC+11 in standard time)
+    const sydneyTime = new Date(date.getTime() + (11 * 60 * 60 * 1000));
+    
+    const day = sydneyTime.getDate().toString().padStart(2, '0');
+    const month = (sydneyTime.getMonth() + 1).toString().padStart(2, '0');
+    const year = sydneyTime.getFullYear();
+    const hours = sydneyTime.getHours().toString().padStart(2, '0');
+    const minutes = sydneyTime.getMinutes().toString().padStart(2, '0');
     
     return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
