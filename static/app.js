@@ -561,9 +561,7 @@ async function viewTicketDetails(id) {
                             <div class="mb-3">
                                 <label class="form-label">QA Reviewer</label>
                                 <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                    <i class="fas fa-user me-2 text-primary"></i>
-                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Automatic assignment'))}
-                                    <small class="text-muted d-block">Automatically assigned</small>
+                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}
                                 </div>
                             </div>
                         </div>
@@ -584,9 +582,7 @@ async function viewTicketDetails(id) {
                         <div class="mb-3">
                             <label class="form-label">Developer Name</label>
                             <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                <i class="fas fa-code me-2 text-info"></i>
-                                ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Automatic assignment'))}
-                                <small class="text-muted d-block">Automatically assigned</small>
+                                ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Unknown'))}
                             </div>
                         </div>
                     ` : ''}
