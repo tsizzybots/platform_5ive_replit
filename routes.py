@@ -33,8 +33,10 @@ def send_qa_issue_webhook(inquiry):
         return False
 
 # Hardcoded login credentials
-ADMIN_USERNAME = "sweatsADMIN"
-ADMIN_PASSWORD = "ctp4kbk8HGW5emb!yze"
+VALID_USERS = {
+    "sweatsADMIN": "ctp4kbk8HGW5emb!yze",
+    "IzzyAgents": "dqt!nbr-ztw*BRZ2jcr"
+}
 
 # Login required decorator
 def login_required(f):
@@ -72,8 +74,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        if username in VALID_USERS and VALID_USERS[username] == password:
             session['logged_in'] = True
+            session['username'] = username
             flash('Successfully logged in!', 'success')
             return redirect(url_for('index'))
         else:
@@ -94,6 +97,18 @@ def logout():
 def index():
     """Render the main interface for testing the API"""
     return render_template('index.html')
+
+@app.route('/api/current-user', methods=['GET'])
+@login_required
+def get_current_user():
+    """Get the current logged-in user information"""
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'username': session.get('username', 'Unknown'),
+            'logged_in': session.get('logged_in', False)
+        }
+    })
 
 @app.route('/api/inquiries', methods=['POST'])
 @require_api_key
@@ -483,9 +498,12 @@ def update_qa_status(inquiry_id):
             inquiry.qa_status = data['qa_status']
             inquiry.qa_status_updated_at = current_time
             
-        # Update QA reviewer
+        # Update QA reviewer (automatically use logged-in user if not provided)
         if 'qa_status_updated_by' in data:
             inquiry.qa_status_updated_by = data['qa_status_updated_by']
+        elif 'qa_status' in data:
+            # Auto-assign the logged-in user as QA reviewer when status changes
+            inquiry.qa_status_updated_by = session.get('username', 'Unknown')
             
         # Update QA notes
         if 'qa_notes' in data:

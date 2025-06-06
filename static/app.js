@@ -3,6 +3,7 @@ let currentPage = 1;
 let currentFilters = {};
 let dailyChart = null;
 let currentChartType = 'bar';
+let currentUser = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
