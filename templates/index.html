@@ -216,26 +216,26 @@
                     </div>
                     <div class="card-body">
                         <!-- Filters -->
-                        <div class="row mb-3">
-                            <div class="col-md-2">
+                        <div class="row mb-3 align-items-end">
+                            <div class="col-auto">
                                 <label class="form-label">Status</label>
-                                <select class="form-select" id="statusFilter">
+                                <select class="form-select" id="statusFilter" style="width: auto; min-width: 120px;">
                                     <option value="">All Statuses</option>
                                     <option value="Engaged">Engaged</option>
                                     <option value="Escalated">Escalated</option>
                                     <option value="Skipped">Skipped</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-auto">
                                 <label class="form-label">Inquiry Type</label>
-                                <select class="form-select" id="inquiryTypeFilter">
+                                <select class="form-select" id="inquiryTypeFilter" style="width: auto; min-width: 110px;">
                                     <option value="">All Types</option>
                                     <!-- Options will be populated dynamically -->
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-auto">
                                 <label class="form-label">QA Status</label>
-                                <select class="form-select" id="qaStatusFilter">
+                                <select class="form-select" id="qaStatusFilter" style="width: auto; min-width: 130px;">
                                     <option value="">All QA Status</option>
                                     <option value="unchecked">Unchecked</option>
                                     <option value="checked">Checked</option>
@@ -243,36 +243,38 @@
                                     <option value="issue">Issue</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-auto">
                                 <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="emailFilter" placeholder="Search by Email">
+                                <input type="email" class="form-control" id="emailFilter" placeholder="Search by Email" style="min-width: 180px;">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col">
                                 <label class="form-label">Date Range</label>
-                                <div class="input-group">
-                                    <button class="btn btn-outline-secondary dropdown-toggle px-2" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 50px;">
-                                        <i class="fas fa-calendar"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
-                                    </ul>
-                                    <input type="date" class="form-control" id="dateFrom" placeholder="From">
-                                    <input type="date" class="form-control" id="dateTo" placeholder="To">
-                                </div>
-                                <div class="d-flex gap-2 mt-2 justify-content-end">
-                                    <button class="btn btn-outline-primary" onclick="applyFilters()" id="applyFiltersBtn">
-                                        <i class="fas fa-filter me-1"></i>Apply
-                                    </button>
-                                    <button class="btn btn-outline-secondary" onclick="resetFilters()" id="resetFiltersBtn">
-                                        <i class="fas fa-times me-1"></i>Reset
-                                    </button>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <div class="input-group" style="max-width: 350px;">
+                                        <button class="btn btn-outline-secondary dropdown-toggle px-2" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 50px;">
+                                            <i class="fas fa-calendar"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
+                                        </ul>
+                                        <input type="date" class="form-control" id="dateFrom" placeholder="From">
+                                        <input type="date" class="form-control" id="dateTo" placeholder="To">
+                                    </div>
+                                    <div class="ms-auto">
+                                        <button class="btn btn-outline-primary me-2" onclick="applyFilters()" id="applyFiltersBtn">
+                                            <i class="fas fa-filter me-1"></i>Apply
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="resetFilters()" id="resetFiltersBtn">
+                                            <i class="fas fa-times me-1"></i>Reset
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
