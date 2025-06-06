@@ -96,11 +96,18 @@ function toggleTheme() {
 // API helper function
 async function apiRequest(url, options = {}) {
     try {
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        
+        // Add API key for endpoints that require it (excluding current-user)
+        if (!url.includes('/api/current-user')) {
+            headers['X-API-Key'] = 'YSYyNk4dTJ3Ghmidiw4Q6ggR3OsJS2NW';
+        }
+        
         const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
+            headers,
             ...options
         });
 
