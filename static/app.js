@@ -309,6 +309,9 @@ function applyFilters() {
     const email = document.getElementById('emailFilter').value;
     if (email) currentFilters.sender_email = email;
     
+    const qaStatus = document.getElementById('qaStatusFilter').value;
+    if (qaStatus) currentFilters.qa_status = qaStatus;
+    
     // Date range filters
     const dateFrom = document.getElementById('dateFrom').value;
     const dateTo = document.getElementById('dateTo').value;
@@ -373,13 +376,14 @@ function displayTickets(tickets, pagination) {
     html += `
         <thead>
             <tr>
-                <th style="width: 14%;">Received</th>
-                <th style="width: 10%;">Ticket ID</th>
-                <th style="width: 10%;">Inquiry Type</th>
-                <th style="width: 35%;">Subject</th>
-                <th style="width: 15%;">Sender</th>
+                <th style="width: 12%;">Received</th>
+                <th style="width: 9%;">Ticket ID</th>
+                <th style="width: 9%;">Inquiry Type</th>
+                <th style="width: 30%;">Subject</th>
+                <th style="width: 12%;">Sender</th>
                 <th style="width: 8%;">Status</th>
-                <th style="width: 8%;">Actions</th>
+                <th style="width: 8%;">QA Status</th>
+                <th style="width: 12%;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -387,20 +391,22 @@ function displayTickets(tickets, pagination) {
 
     tickets.forEach(ticket => {
         const statusBadge = getStatusBadge(ticket.status);
+        const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
         
         html += `
             <tr>
                 <td class="text-nowrap">${formatDate(ticket.received_date)}</td>
                 <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
                 <td class="text-nowrap">${escapeHtml(ticket.inquiry_type || 'N/A')}</td>
-                <td class="text-truncate" style="max-width: 300px;" title="${escapeHtml(ticket.subject)}">
+                <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
                 </td>
-                <td class="text-truncate" style="max-width: 120px;">
+                <td class="text-truncate" style="max-width: 100px;">
                     <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
                     <small class="text-muted text-truncate" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
                 </td>
                 <td>${statusBadge}</td>
+                <td>${qaStatusBadge}</td>
                 <td class="text-nowrap">
                     <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
@@ -466,6 +472,9 @@ async function viewTicketDetails(id) {
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
                     <p><strong>Status:</strong> ${getStatusBadge(ticket.status)}</p>
                     ${ticket.inquiry_type ? `<p><strong>Type:</strong> ${escapeHtml(ticket.inquiry_type)}</p>` : ''}
+                    <p><strong>QA Status:</strong> ${getQAStatusBadge(ticket.qa_status)}</p>
+                    ${ticket.qa_status_updated_by ? `<p><strong>QA Reviewer:</strong> ${escapeHtml(ticket.qa_status_updated_by)}</p>` : ''}
+                    ${ticket.qa_status_updated_at ? `<p><strong>QA Updated:</strong> ${formatDate(ticket.qa_status_updated_at)}</p>` : ''}
                 </div>
             </div>
             <div class="mt-3">
@@ -485,6 +494,24 @@ async function viewTicketDetails(id) {
                     <h6>AI Response:</h6>
                     <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
                         ${ticket.ai_response}
+                    </div>
+                </div>
+            ` : ''}
+            ${ticket.qa_notes ? `
+                <div class="mt-3">
+                    <h6>QA Notes:</h6>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded border border-warning">
+                        ${escapeHtml(ticket.qa_notes)}
+                        ${ticket.qa_notes_updated_at ? `<br><small class="text-muted">Updated: ${formatDate(ticket.qa_notes_updated_at)}</small>` : ''}
+                    </div>
+                </div>
+            ` : ''}
+            ${ticket.dev_feedback ? `
+                <div class="mt-3">
+                    <h6>Developer Feedback:</h6>
+                    <div class="bg-info bg-opacity-10 p-3 rounded border border-info">
+                        ${escapeHtml(ticket.dev_feedback)}
+                        <br><small class="text-muted">By: ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
                     </div>
                 </div>
             ` : ''}
@@ -567,6 +594,17 @@ function getStatusColor(status) {
         'skipped': 'secondary'
     };
     return colors[statusLower] || 'light';
+}
+
+function getQAStatusBadge(qaStatus) {
+    const statusLower = qaStatus ? qaStatus.toLowerCase() : 'unchecked';
+    const badges = {
+        'unchecked': '<span class="badge bg-secondary">Unchecked</span>',
+        'checked': '<span class="badge bg-info">Checked</span>',
+        'passed': '<span class="badge bg-success">Passed</span>',
+        'issue': '<span class="badge bg-danger">Issue</span>'
+    };
+    return badges[statusLower] || '<span class="badge bg-secondary">Unchecked</span>';
 }
 
 function formatDate(dateString) {
