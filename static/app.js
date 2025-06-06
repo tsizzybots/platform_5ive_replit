@@ -515,6 +515,67 @@ async function viewTicketDetails(id) {
                     </div>
                 </div>
             ` : ''}
+            
+            <!-- QA Management Section -->
+            <div class="mt-4 border-top pt-3">
+                <h6>Quality Assurance Management</h6>
+                <form id="qaUpdateForm">
+                    <input type="hidden" id="qa_ticket_id" value="${ticket.id}">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="qa_status_select" class="form-label">QA Status</label>
+                                <select class="form-select" id="qa_status_select">
+                                    <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
+                                    <option value="checked" ${ticket.qa_status === 'checked' ? 'selected' : ''}>Checked</option>
+                                    <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
+                                    <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="qa_reviewer" class="form-label">QA Reviewer</label>
+                                <input type="text" class="form-control" id="qa_reviewer" 
+                                       value="${escapeHtml(ticket.qa_status_updated_by || '')}" 
+                                       placeholder="Enter reviewer name">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="qa_notes_text" class="form-label">QA Notes</label>
+                        <textarea class="form-control" id="qa_notes_text" rows="3" 
+                                  placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
+                    </div>
+                    
+                    ${ticket.qa_notes ? `
+                        <div class="mb-3">
+                            <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
+                            <textarea class="form-control" id="dev_feedback_text" rows="3" 
+                                      placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dev_feedback_by" class="form-label">Developer Name</label>
+                            <input type="text" class="form-control" id="dev_feedback_by" 
+                                   value="${escapeHtml(ticket.dev_feedback_by || '')}" 
+                                   placeholder="Enter developer name">
+                        </div>
+                    ` : ''}
+                    
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
+                            <i class="fas fa-save me-1"></i>Update QA Status
+                        </button>
+                        ${ticket.qa_notes && !ticket.dev_feedback ? `
+                            <button type="button" class="btn btn-info" onclick="addDevFeedback()">
+                                <i class="fas fa-code me-1"></i>Add Developer Feedback
+                            </button>
+                        ` : ''}
+                    </div>
+                </form>
+            </div>
         `;
         
         document.getElementById('ticketDetailsContent').innerHTML = details;
@@ -536,6 +597,106 @@ async function viewTicketDetails(id) {
         modal.show();
     } else {
         showAlert('Failed to load ticket details: ' + result.data.message, 'danger');
+    }
+}
+
+// Update QA Status
+async function updateQAStatus() {
+    const ticketId = document.getElementById('qa_ticket_id').value;
+    const qaStatus = document.getElementById('qa_status_select').value;
+    const qaReviewer = document.getElementById('qa_reviewer').value;
+    const qaNotes = document.getElementById('qa_notes_text').value;
+    
+    const updateData = {
+        qa_status: qaStatus,
+        qa_status_updated_by: qaReviewer,
+        qa_notes: qaNotes
+    };
+    
+    // Add developer feedback if it exists
+    const devFeedbackElement = document.getElementById('dev_feedback_text');
+    const devFeedbackByElement = document.getElementById('dev_feedback_by');
+    
+    if (devFeedbackElement && devFeedbackByElement) {
+        const devFeedback = devFeedbackElement.value;
+        const devFeedbackBy = devFeedbackByElement.value;
+        
+        if (devFeedback.trim()) {
+            updateData.dev_feedback = devFeedback;
+            updateData.dev_feedback_by = devFeedbackBy;
+        }
+    }
+    
+    try {
+        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (result.ok) {
+            showAlert('QA status updated successfully', 'success');
+            
+            // Close modal and refresh the ticket list
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            modal.hide();
+            
+            // Refresh the tickets table
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to update QA status: ' + result.data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error updating QA status: ' + error.message, 'danger');
+    }
+}
+
+// Add Developer Feedback (separate function for workflow)
+async function addDevFeedback() {
+    const ticketId = document.getElementById('qa_ticket_id').value;
+    const devFeedback = document.getElementById('dev_feedback_text').value;
+    const devFeedbackBy = document.getElementById('dev_feedback_by').value;
+    
+    if (!devFeedback.trim()) {
+        showAlert('Please enter developer feedback', 'warning');
+        return;
+    }
+    
+    if (!devFeedbackBy.trim()) {
+        showAlert('Please enter developer name', 'warning');
+        return;
+    }
+    
+    const updateData = {
+        dev_feedback: devFeedback,
+        dev_feedback_by: devFeedbackBy
+    };
+    
+    try {
+        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (result.ok) {
+            showAlert('Developer feedback added successfully', 'success');
+            
+            // Close modal and refresh the ticket list
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            modal.hide();
+            
+            // Refresh the tickets table
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to add developer feedback: ' + result.data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error adding developer feedback: ' + error.message, 'danger');
     }
 }
 
