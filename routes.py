@@ -5,12 +5,20 @@ from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inq
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
 from datetime import datetime
+import pytz
 import logging
 import os
 import requests
 from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+# Sydney timezone
+SYDNEY_TZ = pytz.timezone('Australia/Sydney')
+
+def get_sydney_time():
+    """Get current time in Sydney timezone"""
+    return datetime.now(SYDNEY_TZ)
 
 # Webhook URL for QA issues
 QA_ISSUE_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue"
@@ -206,7 +214,7 @@ def update_inquiry(inquiry_id):
         
         # Store original QA status to detect changes
         original_qa_status = inquiry.qa_status
-        current_time = datetime.utcnow()
+        current_time = get_sydney_time()
         
         # Update basic fields
         for key, value in data.items():
