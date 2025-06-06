@@ -16,11 +16,32 @@ class EmailInquirySchema(Schema):
     ai_response = fields.String(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+    
+    # QA Fields
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'checked', 'passed', 'issue']), load_default='unchecked')
+    qa_status_updated_by = fields.String(allow_none=True)
+    qa_status_updated_at = fields.DateTime(dump_only=True)
+    qa_notes = fields.String(allow_none=True)
+    qa_notes_updated_at = fields.DateTime(dump_only=True)
+    
+    # Developer Feedback Fields
+    dev_feedback = fields.String(allow_none=True)
+    dev_feedback_by = fields.String(allow_none=True)
+    dev_feedback_at = fields.DateTime(dump_only=True)
 
 class EmailInquiryUpdateSchema(Schema):
     status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'Engaged', 'Skipped', 'Escalated']))
     engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
+    
+    # QA Fields
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'checked', 'passed', 'issue']))
+    qa_status_updated_by = fields.String(allow_none=True)
+    qa_notes = fields.String(allow_none=True)
+    
+    # Developer Feedback Fields
+    dev_feedback = fields.String(allow_none=True)
+    dev_feedback_by = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
     status = fields.String(validate=validate.OneOf(['Engaged', 'Escalated', 'Skipped']))

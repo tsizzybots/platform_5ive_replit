@@ -20,6 +20,18 @@ class EmailInquiry(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # QA Status System
+    qa_status = db.Column(db.String(50), nullable=False, default='unchecked')
+    qa_status_updated_by = db.Column(db.String(255), nullable=True)
+    qa_status_updated_at = db.Column(db.DateTime, nullable=True)
+    qa_notes = db.Column(db.Text, nullable=True)
+    qa_notes_updated_at = db.Column(db.DateTime, nullable=True)
+    
+    # Developer Feedback
+    dev_feedback = db.Column(db.Text, nullable=True)
+    dev_feedback_by = db.Column(db.String(255), nullable=True)
+    dev_feedback_at = db.Column(db.DateTime, nullable=True)
+    
     # Add indexes for frequently queried fields
     __table_args__ = (
         Index('idx_ticket_id', 'ticket_id'),
@@ -28,6 +40,7 @@ class EmailInquiry(db.Model):
         Index('idx_sender_email', 'sender_email'),
         Index('idx_engaged', 'engaged'),
         Index('idx_created_at', 'created_at'),
+        Index('idx_qa_status', 'qa_status'),
     )
     
     def to_dict(self):
@@ -39,11 +52,21 @@ class EmailInquiry(db.Model):
             'sender_email': self.sender_email,
             'sender_name': self.sender_name,
             'received_date': self.received_date.isoformat() if self.received_date else None,
+            'inquiry_type': self.inquiry_type,
+            'ticket_url': self.ticket_url,
             'status': self.status,
             'engaged': self.engaged,
             'ai_response': self.ai_response,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'qa_status': self.qa_status,
+            'qa_status_updated_by': self.qa_status_updated_by,
+            'qa_status_updated_at': self.qa_status_updated_at.isoformat() if self.qa_status_updated_at else None,
+            'qa_notes': self.qa_notes,
+            'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() if self.qa_notes_updated_at else None,
+            'dev_feedback': self.dev_feedback,
+            'dev_feedback_by': self.dev_feedback_by,
+            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None
         }
     
     def __repr__(self):

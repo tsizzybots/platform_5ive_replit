@@ -1,0 +1,104 @@
+I would like you to implement a QA (Quality Assurance) system for the Sweats Collective Email AI Dashboard. This system allows team members to review AI-handled tickets, mark QA outcomes, leave QA and developer feedback, and trigger a notification when an issue is flagged. The system uses a unified QA status system.
+
+-----------------------------------------------------
+BACKEND / DATABASE CHANGES
+-----------------------------------------------------
+
+Modify the existing ticket table by adding or updating the following fields:
+
+-- QA Status System
+qa_status VARCHAR(50) NOT NULL DEFAULT 'unchecked'
+-- Acceptable values: 'unchecked', 'checked', 'passed', 'issue'
+
+-- QA Metadata
+qa_status_updated_by VARCHAR(255)
+qa_status_updated_at TIMESTAMP
+qa_notes TEXT
+qa_notes_updated_at TIMESTAMP
+
+-- Developer Feedback Metadata
+dev_feedback TEXT
+dev_feedback_by VARCHAR(255)
+dev_feedback_at TIMESTAMP
+
+Update the relevant APIs to:
+- Allow GET and POST/PATCH for the above fields
+- Support filtering tickets by qa_status
+- Return all QA and developer feedback metadata
+
+When qa_status is set to "issue", trigger a POST request to the following webhook:
+
+https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue
+
+The POST body must include all relevant ticket fields from the database. Example payload:
+
+{
+  "ticket_id": "135348106",
+  "subject": "Order cancellation",
+  "body": "Customer email content...",
+  "sender_email": "tim@izzyagents.ai",
+  "sender_name": "Tim",
+  "received_date": "2025-06-06T07:29:00Z",
+  "status": "Engaged",
+  "engaged": true,
+  "ai_response": "...",
+  "created_at": "2025-06-06T07:29:00Z",
+  "updated_at": "2025-06-06T07:31:00Z",
+  "inquiry_type": "Cancellation",
+  "ticket_url": "https://gorgias.com/ticket/135348106",
+  "qa_status": "issue",
+  "qa_status_updated_by": "Jane QA",
+  "qa_status_updated_at": "2025-06-06T08:00:00Z",
+  "qa_notes": "Spacing issues in the AI response.",
+  "qa_notes_updated_at": "2025-06-06T08:01:00Z"
+}
+
+Trigger this webhook only when:
+- qa_status changes to "issue" from any other status
+- Include error handling for webhook delivery
+
+-----------------------------------------------------
+FRONTEND CHANGES – MAIN DASHBOARD
+-----------------------------------------------------
+
+Add a new filter dropdown:
+- QA Status: [All, Unchecked, Checked, Passed, Issue]
+
+Add a new column:
+- “QA Status” showing the current value with visual styling
+
+Ensure selecting a QA status of "Issue" from the dashboard or ticket view triggers the backend webhook immediately.
+
+-----------------------------------------------------
+FRONTEND CHANGES – TICKET DETAIL VIEW
+-----------------------------------------------------
+
+Add a QA Section with the following fields:
+
+- Dropdown: “QA Status” with options [Unchecked, Checked, Passed, Issue]
+  - On change, update qa_status, qa_status_updated_by, qa_status_updated_at
+  - If status is set to "issue", trigger webhook
+
+- Textarea: “QA Notes”
+  - Editable, updates qa_notes and qa_notes_updated_at
+
+- Textarea: “Developer Comments”
+  - Editable, updates dev_feedback, dev_feedback_by, dev_feedback_at
+
+Display the following metadata:
+- Last QA status update (user and timestamp)
+- Last QA note update (timestamp)
+- Last developer feedback (user and timestamp)
+
+Ensure all updates are saved via API and reflected in the frontend immediately.
+
+-----------------------------------------------------
+VALIDATION & TESTING
+-----------------------------------------------------
+
+- All qa_status transitions should update the database and UI correctly
+- QA notes and dev feedback should be saved and timestamped correctly
+- Webhook must fire only when qa_status is set to "issue"
+- Confirm webhook payload contains full ticket data
+- Ensure filtering by qa_status on dashboard works as expected
+- QA and developer fields must remain editable and reflect live changes
