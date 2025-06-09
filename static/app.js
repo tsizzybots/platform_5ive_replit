@@ -372,7 +372,21 @@ function applyFilters() {
 
 // Change per page and reload tickets
 function changePerPage() {
-    loadTickets(1); // Reset to first page when changing per page count
+    const perPageSelect = document.getElementById('perPageSelect');
+    
+    // Show loading state
+    const container = document.getElementById('ticketsContainer');
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading tickets...</span>
+            </div>
+        </div>
+    `;
+    
+    // Reset to first page when changing per page count
+    currentPage = 1;
+    loadTickets(1);
 }
 
 // Load tickets (renamed from loadInquiries)
