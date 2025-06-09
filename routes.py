@@ -514,7 +514,7 @@ def update_qa_status(inquiry_id):
         
         # Update QA status
         if 'qa_status' in data:
-            valid_statuses = ['unchecked', 'checked', 'passed', 'issue']
+            valid_statuses = ['unchecked', 'checked', 'passed', 'issue', 'fixed']
             if data['qa_status'] not in valid_statuses:
                 return jsonify({
                     'status': 'error',

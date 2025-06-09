@@ -565,7 +565,13 @@ async function viewTicketDetails(id) {
                                     <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
                                     <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
                                     <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
+                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
+                                        <option value="fixed" ${ticket.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
+                                    ` : ''}
                                 </select>
+                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
+                                    <small class="text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
+                                ` : ''}
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -788,7 +794,8 @@ function getQAStatusBadge(qaStatus) {
         'unchecked': '<span class="badge bg-secondary">Unchecked</span>',
         'checked': '<span class="badge bg-info">Checked</span>',
         'passed': '<span class="badge bg-success">Passed</span>',
-        'issue': '<span class="badge bg-danger">Issue</span>'
+        'issue': '<span class="badge bg-danger">Issue</span>',
+        'fixed': '<span class="badge bg-primary">Fixed</span>'
     };
     return badges[statusLower] || '<span class="badge bg-secondary">Unchecked</span>';
 }
