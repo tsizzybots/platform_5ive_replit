@@ -638,13 +638,18 @@ async function viewTicketDetails(id) {
                                 </div>
                                 
                                 ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-info" onclick="addDevFeedback()">
-                                            <i class="fas fa-code me-1"></i>Add Dev Feedback
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
+                                            <i class="fas fa-save me-1"></i>Save Feedback
                                         </button>
-                                        <button type="button" class="btn btn-warning" onclick="addDevFeedbackAndMarkFixed()">
-                                            <i class="fas fa-check-circle me-1"></i>Add Dev Feedback & Fixed
+                                        <button type="button" class="btn btn-warning" onclick="saveDevFeedbackAndMarkFixed()">
+                                            <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
                                         </button>
+                                        ${ticket.dev_feedback ? `
+                                            <button type="button" class="btn btn-outline-danger" onclick="clearDevFeedback()">
+                                                <i class="fas fa-trash me-1"></i>Clear Feedback
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 ` : ''}
                             </div>
@@ -727,8 +732,8 @@ async function updateQAStatus() {
     }
 }
 
-// Add Developer Feedback (separate function for workflow)
-async function addDevFeedback() {
+// Save Developer Feedback
+async function saveDevFeedback() {
     // Check permission
     if (!currentUser || currentUser.username !== 'IzzyAgents') {
         showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
@@ -755,7 +760,7 @@ async function addDevFeedback() {
         });
         
         if (result.ok) {
-            showAlert('Developer feedback added successfully', 'success');
+            showAlert('Developer feedback saved successfully', 'success');
             
             // Close the modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
@@ -766,15 +771,15 @@ async function addDevFeedback() {
             // Refresh the tickets table
             loadTickets(currentPage);
         } else {
-            showAlert('Failed to add developer feedback: ' + result.data.message, 'danger');
+            showAlert('Failed to save developer feedback: ' + result.data.message, 'danger');
         }
     } catch (error) {
-        showAlert('Error adding developer feedback: ' + error.message, 'danger');
+        showAlert('Error saving developer feedback: ' + error.message, 'danger');
     }
 }
 
-// Add Developer Feedback and Mark as Fixed
-async function addDevFeedbackAndMarkFixed() {
+// Save Developer Feedback and Mark as Fixed
+async function saveDevFeedbackAndMarkFixed() {
     // Check permission
     if (!currentUser || currentUser.username !== 'IzzyAgents') {
         showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
@@ -790,20 +795,19 @@ async function addDevFeedbackAndMarkFixed() {
     }
     
     const updateData = {
-        qa_status: 'fixed',
-        qa_status_updated_by: currentUser.username,
         dev_feedback: devFeedback,
-        dev_feedback_by: currentUser.username
+        dev_feedback_by: currentUser.username,
+        qa_status: 'fixed'
     };
     
     try {
-        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
         });
         
         if (result.ok) {
-            showAlert('Developer feedback added and QA status marked as fixed', 'success');
+            showAlert('Developer feedback saved and QA status marked as fixed', 'success');
             
             // Close the modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
@@ -814,12 +818,58 @@ async function addDevFeedbackAndMarkFixed() {
             // Refresh the tickets table
             loadTickets(currentPage);
         } else {
-            showAlert('Failed to add developer feedback and mark as fixed: ' + result.data.message, 'danger');
+            showAlert('Failed to save developer feedback and mark as fixed: ' + result.data.message, 'danger');
         }
     } catch (error) {
-        showAlert('Error adding developer feedback and marking as fixed: ' + error.message, 'danger');
+        showAlert('Error saving developer feedback and marking as fixed: ' + error.message, 'danger');
     }
 }
+
+// Clear Developer Feedback
+async function clearDevFeedback() {
+    // Check permission
+    if (!currentUser || currentUser.username !== 'IzzyAgents') {
+        showAlert('Access denied: Only IzzyAgents can clear developer feedback', 'danger');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to clear the developer feedback? This action cannot be undone.')) {
+        return;
+    }
+    
+    const ticketId = document.getElementById('qa_ticket_id').value;
+    
+    const updateData = {
+        dev_feedback: null,
+        dev_feedback_by: null
+    };
+    
+    try {
+        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+        
+        if (result.ok) {
+            showAlert('Developer feedback cleared successfully', 'success');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Refresh the tickets table
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to clear developer feedback: ' + result.data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error clearing developer feedback: ' + error.message, 'danger');
+    }
+}
+
+
 
 // Delete ticket with modal confirmation
 let ticketToDelete = null;
