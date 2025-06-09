@@ -523,8 +523,8 @@ function displayTickets(tickets, pagination) {
                 </td>
                 <td>${statusBadge}</td>
                 <td>${qaStatusBadge}</td>
-                <td style="padding-right: 8px;">
-                    <div class="d-flex gap-1 justify-content-end">
+                <td>
+                    <div class="d-flex gap-1">
                         <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
