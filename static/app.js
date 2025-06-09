@@ -636,15 +636,66 @@ function updateSelectAllCheckbox() {
 
 // Update bulk status controls
 function updateBulkStatusControls() {
-    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
-    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+    const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
     
-    if (selectedTickets.size > 0) {
-        bulkApplyBtn.disabled = false;
-        bulkStatusSelect.disabled = false;
-    } else {
-        bulkApplyBtn.disabled = true;
-        bulkStatusSelect.disabled = false; // Keep dropdown enabled for selection
+    if (archiveSelectedBtn) {
+        archiveSelectedBtn.disabled = selectedTickets.size === 0;
+    }
+}
+
+// Archive selected tickets
+async function archiveSelected() {
+    if (selectedTickets.size === 0) {
+        showAlert('Please select tickets to archive.', 'warning');
+        return;
+    }
+    
+    const ticketCount = selectedTickets.size;
+    if (!confirm(`Are you sure you want to archive ${ticketCount} selected ticket${ticketCount > 1 ? 's' : ''}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
+    archiveSelectedBtn.disabled = true;
+    archiveSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Archiving...';
+    
+    try {
+        let successCount = 0;
+        let failureCount = 0;
+        
+        // Archive each selected ticket
+        for (const ticketId of selectedTickets) {
+            const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+                method: 'DELETE'
+            });
+            
+            if (result.ok) {
+                successCount++;
+            } else {
+                failureCount++;
+            }
+        }
+        
+        // Clear selections
+        selectedTickets.clear();
+        
+        // Show results
+        if (successCount > 0 && failureCount === 0) {
+            showAlert(`Successfully archived ${successCount} ticket${successCount > 1 ? 's' : ''}.`, 'success');
+        } else if (successCount > 0 && failureCount > 0) {
+            showAlert(`Archived ${successCount} ticket${successCount > 1 ? 's' : ''}, failed to archive ${failureCount}.`, 'warning');
+        } else {
+            showAlert('Failed to archive selected tickets.', 'danger');
+        }
+        
+        // Refresh the tickets list
+        loadTickets(currentPage);
+        
+    } catch (error) {
+        showAlert('Error archiving tickets: ' + error.message, 'danger');
+    } finally {
+        archiveSelectedBtn.disabled = false;
+        archiveSelectedBtn.innerHTML = '<i class="fas fa-archive me-1"></i>Archive Selected';
     }
 }
 

@@ -56,6 +56,18 @@
             background-color: rgba(13, 202, 240, 0.2) !important;
         }
         
+        /* Checkbox styling for better visibility */
+        .ticket-checkbox {
+            transform: scale(1.2);
+            margin: 0 auto;
+            display: block;
+        }
+        .checkbox-column {
+            text-align: center;
+            vertical-align: middle;
+            width: 50px;
+        }
+        
         /* Dark mode improvements */
         [data-bs-theme="dark"] {
             --bs-dark-rgb: 18, 18, 32;
@@ -236,36 +248,35 @@
                     <div class="card-body">
                         <!-- Filters -->
                         <div class="row mb-3 align-items-end g-2">
-                            <div class="col">
+                            <div class="col-auto">
                                 <label class="form-label">Status</label>
-                                <select class="form-select form-select-sm" id="statusFilter" style="min-width: 130px;">
+                                <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
                                     <option value="">All Statuses</option>
                                     <option value="Engaged">Engaged</option>
                                     <option value="Escalated">Escalated</option>
                                     <option value="Skipped">Skipped</option>
                                 </select>
                             </div>
-                            <div class="col">
+                            <div class="col-auto">
                                 <label class="form-label">Inquiry Type</label>
-                                <select class="form-select form-select-sm" id="inquiryTypeFilter" style="min-width: 120px;">
+                                <select class="form-select form-select-sm" id="inquiryTypeFilter" style="width: auto;">
                                     <option value="">All Types</option>
                                     <!-- Options will be populated dynamically -->
                                 </select>
                             </div>
-                            <div class="col">
+                            <div class="col-auto">
                                 <label class="form-label">QA Status</label>
-                                <select class="form-select form-select-sm" id="qaStatusFilter" style="min-width: 140px;">
+                                <select class="form-select form-select-sm" id="qaStatusFilter" style="width: auto;">
                                     <option value="">All QA Status</option>
                                     <option value="unchecked">Unchecked</option>
-                                    <option value="checked">Checked</option>
                                     <option value="passed">Passed</option>
                                     <option value="issue">Issue</option>
                                     <option value="fixed">Fixed</option>
                                 </select>
                             </div>
-                            <div class="col">
+                            <div class="col-auto">
                                 <label class="form-label">Email Address</label>
-                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="min-width: 180px;" oninput="handleEmailSearch()">
+                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="width: 150px;" oninput="handleEmailSearch()">
                             </div>
                             <div class="col">
                                 <label class="form-label">
@@ -290,21 +301,10 @@
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <label class="form-label">Set Status</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <select class="form-select form-select-sm" id="bulkStatusSelect" style="min-width: 120px;">
-                                        <option value="">Select Status</option>
-                                        <option value="Engaged">Engaged</option>
-                                        <option value="Escalated">Escalated</option>
-                                        <option value="Skipped">Skipped</option>
-                                    </select>
-                                    <button class="btn btn-outline-warning btn-sm" onclick="applyBulkStatus()" id="bulkApplyBtn" disabled>
-                                        <i class="fas fa-check me-1"></i>Apply
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-auto">
                                 <div class="d-flex gap-2">
+                                    <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
+                                        <i class="fas fa-archive me-1"></i>Archive Selected
+                                    </button>
                                     <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn">
                                         <i class="fas fa-filter me-1"></i>Apply
                                     </button>
