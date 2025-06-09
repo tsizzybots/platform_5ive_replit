@@ -589,7 +589,7 @@ function toggleTicketSelection(ticketId) {
 // Toggle select all tickets
 function toggleSelectAll() {
     const selectAllCheckbox = document.getElementById('selectAllTickets');
-    const ticketCheckboxes = document.querySelectorAll('.ticket-checkbox');
+    const ticketCheckboxes = document.querySelectorAll('.ticket-checkbox:not(#selectAllTickets)');
     
     ticketCheckboxes.forEach(checkbox => {
         const ticketId = checkbox.value;
@@ -598,11 +598,11 @@ function toggleSelectAll() {
         if (selectAllCheckbox.checked) {
             checkbox.checked = true;
             selectedTickets.add(ticketId);
-            row.classList.add('table-info');
+            if (row) row.classList.add('table-info');
         } else {
             checkbox.checked = false;
             selectedTickets.delete(ticketId);
-            row.classList.remove('table-info');
+            if (row) row.classList.remove('table-info');
         }
     });
     
@@ -650,10 +650,19 @@ async function archiveSelected() {
         return;
     }
     
+    // Show custom confirmation modal
     const ticketCount = selectedTickets.size;
-    if (!confirm(`Are you sure you want to archive ${ticketCount} selected ticket${ticketCount > 1 ? 's' : ''}? This action cannot be undone.`)) {
-        return;
-    }
+    const message = `Are you sure you would like to archive ${ticketCount} ${ticketCount === 1 ? 'item' : 'items'}?`;
+    document.getElementById('bulkArchiveMessage').textContent = message;
+    
+    const modal = new bootstrap.Modal(document.getElementById('bulkArchiveConfirmModal'));
+    modal.show();
+}
+
+// Perform bulk archive after confirmation
+async function performBulkArchive() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkArchiveConfirmModal'));
+    modal.hide();
     
     const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
     archiveSelectedBtn.disabled = true;
@@ -761,10 +770,6 @@ async function applyBulkStatus() {
 
 // Archive ticket function
 async function archiveTicket(ticketId) {
-    if (!confirm('Are you sure you want to archive this ticket? This action cannot be undone.')) {
-        return;
-    }
-    
     try {
         const result = await apiRequest(`/api/inquiries/${ticketId}`, {
             method: 'DELETE'
@@ -1297,6 +1302,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateButton = document.getElementById('dateRangeDropdown');
     if (dateButton) {
         dateButton.innerHTML = '<i class="fas fa-calendar"></i>';
+    }
+    
+    // Add event listener for bulk archive confirmation
+    const confirmBulkArchiveBtn = document.getElementById('confirmBulkArchiveBtn');
+    if (confirmBulkArchiveBtn) {
+        confirmBulkArchiveBtn.addEventListener('click', performBulkArchive);
     }
     
     // Load inquiry types for dropdown
