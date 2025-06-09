@@ -489,14 +489,14 @@ function displayTickets(tickets, pagination) {
                 <th class="checkbox-column">
                     <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
                 </th>
-                <th style="width: 13%;">Received</th>
+                <th style="width: 12%;">Received</th>
                 <th style="width: 8%;">Ticket ID</th>
                 <th style="width: 12%;">Inquiry Type</th>
                 <th style="width: 22%;">Subject</th>
-                <th style="width: 13%;">Sender</th>
+                <th style="width: 16%;">Sender</th>
                 <th style="width: 8%;">Status</th>
                 <th style="width: 8%;">QA Status</th>
-                <th style="width: 12%;">Actions</th>
+                <th style="width: 10%;">Actions</th>
             </tr>
         </thead>
         <tbody>

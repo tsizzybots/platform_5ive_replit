@@ -77,7 +77,25 @@
         
         /* Sender column styling */
         .sender-column {
-            max-width: 120px;
+            max-width: 150px;
+            min-width: 150px;
+            width: 150px;
+        }
+        
+        .sender-column .text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Force single-line layout for filters */
+        .row.flex-nowrap {
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .row.flex-nowrap .col-auto {
+            flex-shrink: 0;
         }
         
         /* Dark mode improvements */
@@ -259,7 +277,7 @@
                     </div>
                     <div class="card-body">
                         <!-- Filters -->
-                        <div class="row mb-3 align-items-end g-2">
+                        <div class="row mb-3 align-items-end g-2 flex-nowrap">
                             <div class="col-auto">
                                 <label class="form-label">Status</label>
                                 <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
@@ -288,7 +306,7 @@
                             </div>
                             <div class="col-auto">
                                 <label class="form-label">Email Address</label>
-                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="width: 250px;" oninput="handleEmailSearch()">
+                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="width: 180px;" oninput="handleEmailSearch()">
                             </div>
                             <div class="col">
                                 <label class="form-label">
@@ -308,8 +326,8 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
                                     </ul>
-                                    <input type="date" class="form-control form-control-sm" id="dateFrom" placeholder="From" style="width: 140px;">
-                                    <input type="date" class="form-control form-control-sm" id="dateTo" placeholder="To" style="width: 140px;">
+                                    <input type="date" class="form-control form-control-sm" id="dateFrom" placeholder="From" style="width: 120px;">
+                                    <input type="date" class="form-control form-control-sm" id="dateTo" placeholder="To" style="width: 120px;">
                                 </div>
                             </div>
                             <div class="col-auto">
