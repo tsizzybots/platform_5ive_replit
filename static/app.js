@@ -1419,8 +1419,8 @@ function renderChart(data) {
         {
             label: 'Archived',
             data: data.map(item => item.archived || 0),
-            backgroundColor: 'rgba(23, 162, 184, 0.6)',
-            borderColor: 'rgba(23, 162, 184, 1)',
+            backgroundColor: 'rgba(13, 202, 240, 0.6)',
+            borderColor: 'rgba(13, 202, 240, 1)',
             borderWidth: 2,
             fill: false
         }
@@ -1439,6 +1439,14 @@ function renderChart(data) {
             interaction: {
                 mode: 'index',
                 intersect: false,
+            },
+            layout: {
+                padding: {
+                    top: 20,
+                    bottom: 20,
+                    left: 10,
+                    right: 10
+                }
             },
             plugins: {
                 title: {
