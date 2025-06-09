@@ -463,17 +463,17 @@ def get_daily_stats():
                 'message': 'Invalid date format. Use YYYY-MM-DD'
             }), 400
         
-        # Query daily statistics
+        # Query daily statistics (including archived items)
         daily_stats = db.session.query(
             func.date(EmailInquiry.received_date).label('date'),
             func.count(EmailInquiry.id).label('total'),
             func.sum(case((EmailInquiry.status == 'Engaged', 1), else_=0)).label('engaged'),
             func.sum(case((EmailInquiry.status == 'Escalated', 1), else_=0)).label('escalated'),
-            func.sum(case((EmailInquiry.status == 'Skipped', 1), else_=0)).label('skipped')
+            func.sum(case((EmailInquiry.status == 'Skipped', 1), else_=0)).label('skipped'),
+            func.sum(case((EmailInquiry.status == 'Archived', 1), else_=0)).label('archived')
         ).filter(
             func.date(EmailInquiry.received_date) >= date_from_obj.date(),
-            func.date(EmailInquiry.received_date) <= date_to_obj.date(),
-            EmailInquiry.archived == False
+            func.date(EmailInquiry.received_date) <= date_to_obj.date()
         ).group_by(
             func.date(EmailInquiry.received_date)
         ).order_by(
@@ -488,7 +488,8 @@ def get_daily_stats():
                 'total': stat.total or 0,
                 'engaged': stat.engaged or 0,
                 'escalated': stat.escalated or 0,
-                'skipped': stat.skipped or 0
+                'skipped': stat.skipped or 0,
+                'archived': stat.archived or 0
             })
         
         return jsonify({

@@ -1415,6 +1415,14 @@ function renderChart(data) {
             borderColor: 'rgba(108, 117, 125, 1)',
             borderWidth: 2,
             fill: false
+        },
+        {
+            label: 'Archived',
+            data: data.map(item => item.archived || 0),
+            backgroundColor: 'rgba(23, 162, 184, 0.6)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+            borderWidth: 2,
+            fill: false
         }
     ];
     
