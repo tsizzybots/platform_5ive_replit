@@ -492,7 +492,7 @@ async function viewTicketDetails(id) {
     const result = await apiRequest(`/api/inquiries/${id}`);
     
     if (result.ok) {
-        const ticket = result.data.data;
+        const ticket = result.data;
         
         const details = `
             <div class="row">
