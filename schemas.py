@@ -14,6 +14,8 @@ class EmailInquirySchema(Schema):
     status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'Engaged', 'Skipped', 'Escalated']), load_default='skipped')
     engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
+    archived = fields.Boolean(dump_only=True)
+    archived_at = fields.DateTime(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     
@@ -44,7 +46,7 @@ class EmailInquiryUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class EmailInquiryQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['Engaged', 'Escalated', 'Skipped']))
+    status = fields.String(validate=validate.OneOf(['Engaged', 'Escalated', 'Skipped', 'Archived']))
     engaged = fields.Boolean()
     sender_email = fields.Email()
     ticket_id = fields.String()

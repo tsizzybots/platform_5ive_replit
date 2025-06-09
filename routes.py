@@ -281,9 +281,17 @@ def list_inquiries():
         # Build query
         query = EmailInquiry.query
         
-        # Apply filters
-        if 'status' in query_params:
+        # Handle archived filter - special case for "Archived" status
+        if 'status' in query_params and query_params['status'] == 'Archived':
+            # Show only archived items
+            query = query.filter(EmailInquiry.archived == True)
+        elif 'status' in query_params:
+            # Filter by actual status and exclude archived items
             query = query.filter(EmailInquiry.status == query_params['status'])
+            query = query.filter(EmailInquiry.archived == False)
+        else:
+            # Default: exclude archived items unless specifically requested
+            query = query.filter(EmailInquiry.archived == False)
         
         if 'engaged' in query_params:
             query = query.filter(EmailInquiry.engaged == query_params['engaged'])
@@ -380,8 +388,8 @@ def get_stats():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Build base query
-        query = EmailInquiry.query
+        # Build base query - exclude archived items
+        query = EmailInquiry.query.filter(EmailInquiry.archived == False)
         
         # Apply date filters if provided
         if date_from:
@@ -458,7 +466,8 @@ def get_daily_stats():
             func.sum(case((EmailInquiry.status == 'Skipped', 1), else_=0)).label('skipped')
         ).filter(
             func.date(EmailInquiry.received_date) >= date_from_obj.date(),
-            func.date(EmailInquiry.received_date) <= date_to_obj.date()
+            func.date(EmailInquiry.received_date) <= date_to_obj.date(),
+            EmailInquiry.archived == False
         ).group_by(
             func.date(EmailInquiry.received_date)
         ).order_by(
