@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Helper functions
 function getStatusBadge(status, isArchived = false) {
     // If the item is archived, always show "Archived" status
-    if (isArchived) {
+    if (isArchived || (status && status.toLowerCase() === 'archived')) {
         return '<span class="badge bg-info">Archived</span>';
     }
     
