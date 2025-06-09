@@ -551,70 +551,99 @@ async function viewTicketDetails(id) {
                 </div>
             ` : ''}
             
-            <!-- QA Management Section -->
+            <!-- Management Sections with Accordion -->
             <div class="mt-4 border-top pt-3">
-                <h6>Quality Assurance Management</h6>
-                <form id="qaUpdateForm">
-                    <input type="hidden" id="qa_ticket_id" value="${ticket.id}">
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="qa_status_select" class="form-label">QA Status</label>
-                                <select class="form-select" id="qa_status_select">
-                                    <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
-                                    <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
-                                    <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
-                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                        <option value="fixed" ${ticket.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
-                                    ` : ''}
-                                </select>
-                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                    <small class="text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
-                                ` : ''}
+                <div class="accordion" id="managementAccordion">
+                    <!-- QA Section (Open by default) -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="qaHeading">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#qaCollapse" aria-expanded="true" aria-controls="qaCollapse">
+                                <i class="fas fa-clipboard-check me-2"></i>Quality Assurance Management
+                            </button>
+                        </h2>
+                        <div id="qaCollapse" class="accordion-collapse collapse show" aria-labelledby="qaHeading" data-bs-parent="#managementAccordion">
+                            <div class="accordion-body">
+                                <form id="qaUpdateForm">
+                                    <input type="hidden" id="qa_ticket_id" value="${ticket.id}">
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="qa_status_select" class="form-label">QA Status</label>
+                                                <select class="form-select" id="qa_status_select">
+                                                    <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
+                                                    <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
+                                                    <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
+                                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
+                                                        <option value="fixed" ${ticket.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
+                                                    ` : ''}
+                                                </select>
+                                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
+                                                    <small class="text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">QA Reviewer</label>
+                                                <div class="form-control-plaintext bg-light rounded px-3 py-2">
+                                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="qa_notes_text" class="form-label">QA Notes</label>
+                                        <textarea class="form-control" id="qa_notes_text" rows="3" 
+                                                  placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
+                                            <i class="fas fa-save me-1"></i>Update QA Status
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">QA Reviewer</label>
-                                <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}
+                    </div>
+                    
+                    <!-- Developer Feedback Section (Collapsed by default, only for developers) -->
+                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="devHeading">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devCollapse" aria-expanded="false" aria-controls="devCollapse">
+                                    <i class="fas fa-code me-2"></i>Developer Feedback
+                                </button>
+                            </h2>
+                            <div id="devCollapse" class="accordion-collapse collapse" aria-labelledby="devHeading" data-bs-parent="#managementAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
+                                        <textarea class="form-control" id="dev_feedback_text" rows="3" 
+                                                  placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Developer Name</label>
+                                        <div class="form-control-plaintext bg-light rounded px-3 py-2">
+                                            ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Unknown'))}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-info" onclick="addDevFeedback()">
+                                            <i class="fas fa-code me-1"></i>Add Dev Feedback
+                                        </button>
+                                        <button type="button" class="btn btn-warning" onclick="addDevFeedbackAndMarkFixed()">
+                                            <i class="fas fa-check-circle me-1"></i>Add Dev Feedback & Fixed
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="qa_notes_text" class="form-label">QA Notes</label>
-                        <textarea class="form-control" id="qa_notes_text" rows="3" 
-                                  placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
-                    </div>
-                    
-                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                        <div class="mb-3">
-                            <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
-                            <textarea class="form-control" id="dev_feedback_text" rows="3" 
-                                      placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Developer Name</label>
-                            <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Unknown'))}
-                            </div>
-                        </div>
                     ` : ''}
-                    
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
-                            <i class="fas fa-save me-1"></i>Update QA Status
-                        </button>
-                        ${!ticket.dev_feedback && currentUser && currentUser.username === 'IzzyAgents' ? `
-                            <button type="button" class="btn btn-info" onclick="addDevFeedback()">
-                                <i class="fas fa-code me-1"></i>Add Developer Feedback
-                            </button>
-                        ` : ''}
-                    </div>
-                </form>
+                </div>
             </div>
         `;
         
@@ -675,10 +704,13 @@ async function updateQAStatus() {
         if (result.ok) {
             showAlert('QA status updated successfully', 'success');
             
-            // Refresh the ticket details with updated data
-            await viewTicketDetails(ticketId);
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
             
-            // Also refresh the tickets table
+            // Refresh the tickets table
             loadTickets(currentPage);
         } else {
             showAlert('Failed to update QA status: ' + result.data.message, 'danger');
@@ -718,16 +750,67 @@ async function addDevFeedback() {
         if (result.ok) {
             showAlert('Developer feedback added successfully', 'success');
             
-            // Refresh the ticket details with updated data
-            await viewTicketDetails(ticketId);
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
             
-            // Also refresh the tickets table
+            // Refresh the tickets table
             loadTickets(currentPage);
         } else {
             showAlert('Failed to add developer feedback: ' + result.data.message, 'danger');
         }
     } catch (error) {
         showAlert('Error adding developer feedback: ' + error.message, 'danger');
+    }
+}
+
+// Add Developer Feedback and Mark as Fixed
+async function addDevFeedbackAndMarkFixed() {
+    // Check permission
+    if (!currentUser || currentUser.username !== 'IzzyAgents') {
+        showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
+        return;
+    }
+    
+    const ticketId = document.getElementById('qa_ticket_id').value;
+    const devFeedback = document.getElementById('dev_feedback_text').value;
+    
+    if (!devFeedback.trim()) {
+        showAlert('Please enter developer feedback', 'warning');
+        return;
+    }
+    
+    const updateData = {
+        qa_status: 'fixed',
+        qa_status_updated_by: currentUser.username,
+        dev_feedback: devFeedback,
+        dev_feedback_by: currentUser.username
+    };
+    
+    try {
+        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+        
+        if (result.ok) {
+            showAlert('Developer feedback added and QA status marked as fixed', 'success');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Refresh the tickets table
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to add developer feedback and mark as fixed: ' + result.data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error adding developer feedback and marking as fixed: ' + error.message, 'danger');
     }
 }
 
