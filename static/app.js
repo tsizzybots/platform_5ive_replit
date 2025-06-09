@@ -493,10 +493,6 @@ async function viewTicketDetails(id) {
     
     if (result.ok) {
         const ticket = result.data.data || result.data;
-        console.log('Ticket data:', ticket);
-        console.log('Body content:', ticket.body);
-        console.log('Body type:', typeof ticket.body);
-        console.log('Body length:', ticket.body ? ticket.body.length : 'undefined');
         
         const details = `
             <div class="row">
@@ -601,6 +597,9 @@ async function viewTicketDetails(id) {
                                         <label for="qa_notes_text" class="form-label">QA Notes</label>
                                         <textarea class="form-control" id="qa_notes_text" rows="3" 
                                                   placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
+                                        ${ticket.qa_notes && ticket.qa_notes_updated_at ? `
+                                            <small class="text-muted">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>
+                                        ` : ''}
                                     </div>
                                     
                                     <div class="d-flex gap-2">
@@ -613,28 +612,32 @@ async function viewTicketDetails(id) {
                         </div>
                     </div>
                     
-                    <!-- Developer Feedback Section (Collapsed by default, only for developers) -->
-                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="devHeading">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devCollapse" aria-expanded="false" aria-controls="devCollapse">
-                                    <i class="fas fa-code me-2"></i>Developer Feedback
-                                </button>
-                            </h2>
-                            <div id="devCollapse" class="accordion-collapse collapse" aria-labelledby="devHeading" data-bs-parent="#managementAccordion">
-                                <div class="accordion-body">
-                                    <div class="mb-3">
-                                        <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
+                    <!-- Developer Feedback Section (Visible to all users, editing only for developers) -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="devHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devCollapse" aria-expanded="false" aria-controls="devCollapse">
+                                <i class="fas fa-code me-2"></i>Developer Feedback
+                                ${ticket.dev_feedback ? '<span class="badge bg-info ms-2">Has Feedback</span>' : ''}
+                            </button>
+                        </h2>
+                        <div id="devCollapse" class="accordion-collapse collapse" aria-labelledby="devHeading" data-bs-parent="#managementAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
+                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
                                         <textarea class="form-control" id="dev_feedback_text" rows="3" 
                                                   placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Developer Name</label>
-                                        <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                            ${escapeHtml(ticket.dev_feedback_by || (currentUser ? currentUser.username : 'Unknown'))}
+                                    ` : `
+                                        <div class="form-control-plaintext bg-light rounded px-3 py-2" style="min-height: 76px;">
+                                            ${ticket.dev_feedback ? escapeHtml(ticket.dev_feedback) : '<span class="text-muted">No developer feedback yet</span>'}
                                         </div>
-                                    </div>
-                                    
+                                    `}
+                                    ${ticket.dev_feedback && ticket.dev_feedback_at ? `
+                                        <small class="text-muted">Updated by ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
+                                    ` : ''}
+                                </div>
+                                
+                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-info" onclick="addDevFeedback()">
                                             <i class="fas fa-code me-1"></i>Add Dev Feedback
@@ -643,10 +646,10 @@ async function viewTicketDetails(id) {
                                             <i class="fas fa-check-circle me-1"></i>Add Dev Feedback & Fixed
                                         </button>
                                     </div>
-                                </div>
+                                ` : ''}
                             </div>
                         </div>
-                    ` : ''}
+                    </div>
                 </div>
             </div>
         `;
