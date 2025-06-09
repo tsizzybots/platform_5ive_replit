@@ -446,8 +446,21 @@ function changePerPage() {
         </div>
     `;
     
-    // Reset to first page when changing per page count
+    // Reset to first page when changing per page count but preserve current filters
     currentPage = 1;
+    
+    // Ensure current filters are preserved by re-applying them
+    // This maintains date range and other active filters
+    if (Object.keys(currentFilters).length === 0) {
+        // If no filters are set, check if date inputs have values and apply them
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        if (dateFrom || dateTo) {
+            applyFilters();
+            return; // applyFilters() will call loadTickets()
+        }
+    }
+    
     loadTickets(1);
 }
 
