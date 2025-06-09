@@ -40,6 +40,21 @@
         .stats-card:hover {
             transform: translateY(-5px);
         }
+        /* Custom 5-column layout for stats cards */
+        .col-lg-2-4 {
+            flex: 0 0 auto;
+            width: 20%;
+        }
+        @media (max-width: 991.98px) {
+            .col-lg-2-4 {
+                width: 50%;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .col-lg-2-4 {
+                width: 100%;
+            }
+        }
         .ticket-table th {
             background-color: var(--bs-primary);
             color: white;

@@ -179,10 +179,11 @@ async function loadStats(dateFilters = {}) {
 function displayStats(stats) {
     const container = document.getElementById('statsContainer');
     const escalatedCount = stats.escalated_inquiries || 0;
+    const archivedCount = stats.archived_inquiries || 0;
     const skippedCount = stats.total_inquiries - stats.engaged_inquiries - escalatedCount;
     
     container.innerHTML = `
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-primary text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.total_inquiries}</h3>
@@ -190,7 +191,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-success text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.engaged_inquiries}</h3>
@@ -198,7 +199,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-warning text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${escalatedCount}</h3>
@@ -206,11 +207,19 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-secondary text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${skippedCount}</h3>
                     <p class="card-text mb-0">Skipped</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2-4 col-md-6 mb-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="card-title">${archivedCount}</h3>
+                    <p class="card-text mb-0">Archived</p>
                 </div>
             </div>
         </div>

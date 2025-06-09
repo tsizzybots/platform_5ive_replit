@@ -384,15 +384,19 @@ def get_stats():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Build base query - exclude archived items
-        query = EmailInquiry.query.filter(EmailInquiry.archived == False)
+        # Build base query for active items (exclude archived)
+        active_query = EmailInquiry.query.filter(EmailInquiry.status != 'Archived')
+        
+        # Build base query for archived items
+        archived_query = EmailInquiry.query.filter(EmailInquiry.status == 'Archived')
         
         # Apply date filters if provided
         if date_from:
             try:
                 from datetime import datetime
                 date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-                query = query.filter(EmailInquiry.received_date >= date_from_obj)
+                active_query = active_query.filter(EmailInquiry.received_date >= date_from_obj)
+                archived_query = archived_query.filter(EmailInquiry.received_date >= date_from_obj)
             except ValueError:
                 pass  # Ignore invalid date format
                 
@@ -400,13 +404,18 @@ def get_stats():
             try:
                 from datetime import datetime
                 date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-                query = query.filter(EmailInquiry.received_date <= date_to_obj)
+                active_query = active_query.filter(EmailInquiry.received_date <= date_to_obj)
+                archived_query = archived_query.filter(EmailInquiry.received_date <= date_to_obj)
             except ValueError:
                 pass  # Ignore invalid date format
         
-        total_inquiries = query.count()
-        engaged_inquiries = query.filter(EmailInquiry.status == 'Engaged').count()
-        escalated_inquiries = query.filter(EmailInquiry.status == 'Escalated').count()
+        # Get counts for active items
+        total_inquiries = active_query.count()
+        engaged_inquiries = active_query.filter(EmailInquiry.status == 'Engaged').count()
+        escalated_inquiries = active_query.filter(EmailInquiry.status == 'Escalated').count()
+        
+        # Get counts for archived items
+        archived_inquiries = archived_query.count()
         
         return jsonify({
             'status': 'success',
@@ -414,6 +423,7 @@ def get_stats():
                 'total_inquiries': total_inquiries,
                 'engaged_inquiries': engaged_inquiries,
                 'escalated_inquiries': escalated_inquiries,
+                'archived_inquiries': archived_inquiries,
                 'engagement_rate': round((engaged_inquiries / total_inquiries * 100), 2) if total_inquiries > 0 else 0
             }
         })
