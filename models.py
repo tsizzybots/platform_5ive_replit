@@ -44,6 +44,8 @@ class EmailInquiry(db.Model):
     status = db.Column(db.String(50), nullable=False, default='skipped')  # engaged, skipped
     engaged = db.Column(db.Boolean, nullable=False, default=False)
     ai_response = db.Column(db.Text, nullable=True)
+    archived = db.Column(db.Boolean, nullable=False, default=False)
+    archived_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -68,6 +70,7 @@ class EmailInquiry(db.Model):
         Index('idx_engaged', 'engaged'),
         Index('idx_created_at', 'created_at'),
         Index('idx_qa_status', 'qa_status'),
+        Index('idx_archived', 'archived'),
     )
     
     def to_dict(self):
@@ -93,7 +96,9 @@ class EmailInquiry(db.Model):
             'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() if self.qa_notes_updated_at else None,
             'dev_feedback': self.dev_feedback,
             'dev_feedback_by': self.dev_feedback_by,
-            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None
+            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None,
+            'archived': self.archived,
+            'archived_at': self.archived_at.isoformat() if self.archived_at else None
         }
     
     def __repr__(self):

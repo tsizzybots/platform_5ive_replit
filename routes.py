@@ -563,7 +563,7 @@ def update_qa_status(inquiry_id):
 @app.route('/api/inquiries/<int:inquiry_id>', methods=['DELETE'])
 @require_api_key
 def delete_inquiry(inquiry_id):
-    """Delete an email inquiry"""
+    """Archive an email inquiry (soft delete)"""
     try:
         inquiry = EmailInquiry.query.get(inquiry_id)
         if not inquiry:
@@ -572,21 +572,23 @@ def delete_inquiry(inquiry_id):
                 'message': 'Email inquiry not found'
             }), 404
             
-        db.session.delete(inquiry)
+        # Mark as archived instead of deleting
+        inquiry.archived = True
+        inquiry.archived_at = get_sydney_time()
         db.session.commit()
         
-        logger.info(f"Deleted inquiry: {inquiry_id}")
+        logger.info(f"Archived inquiry: {inquiry_id}")
         return jsonify({
             'status': 'success',
-            'message': 'Email inquiry deleted successfully'
+            'message': 'Email inquiry archived successfully'
         })
         
     except Exception as e:
-        logger.error(f"Error deleting inquiry {inquiry_id}: {str(e)}")
+        logger.error(f"Error archiving inquiry {inquiry_id}: {str(e)}")
         db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to delete email inquiry',
+            'message': 'Failed to archive email inquiry',
             'error': str(e)
         }), 500
 
