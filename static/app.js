@@ -491,12 +491,12 @@ function displayTickets(tickets, pagination) {
                 </th>
                 <th style="width: 12%;">Received</th>
                 <th style="width: 8%;">Ticket ID</th>
-                <th style="width: 8%;">Inquiry Type</th>
-                <th style="width: 24%;">Subject</th>
+                <th style="width: 10%;">Inquiry Type</th>
+                <th style="width: 22%;">Subject</th>
                 <th style="width: 20%;">Sender</th>
-                <th style="width: 8%; text-align: right;">Status</th>
-                <th style="width: 8%; text-align: right;">QA Status</th>
-                <th style="width: 10%; text-align: right;">Actions</th>
+                <th style="width: 8%;">Status</th>
+                <th style="width: 8%;">QA Status</th>
+                <th style="width: 10%; padding-right: 8px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -521,9 +521,9 @@ function displayTickets(tickets, pagination) {
                     <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
                     <small class="text-muted text-truncate" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
                 </td>
-                <td class="text-end">${statusBadge}</td>
-                <td class="text-end">${qaStatusBadge}</td>
-                <td class="text-end">
+                <td>${statusBadge}</td>
+                <td>${qaStatusBadge}</td>
+                <td style="padding-right: 8px;">
                     <div class="d-flex gap-1 justify-content-end">
                         <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
                             <i class="fas fa-eye"></i>
