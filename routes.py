@@ -293,7 +293,8 @@ def list_inquiries():
             # Default: exclude archived items unless specifically requested
             query = query.filter(EmailInquiry.archived == False)
         
-        if 'engaged' in query_params:
+        # Only apply engaged filter if not looking at archived items
+        if 'engaged' in query_params and not ('status' in query_params and query_params['status'] == 'Archived'):
             query = query.filter(EmailInquiry.engaged == query_params['engaged'])
             
         if 'sender_email' in query_params:
