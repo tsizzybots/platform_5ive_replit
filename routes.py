@@ -585,6 +585,8 @@ def delete_inquiry(inquiry_id):
         # Mark as archived instead of deleting
         inquiry.archived = True
         inquiry.archived_at = get_sydney_time()
+        inquiry.status = 'Archived'
+        inquiry.updated_at = get_sydney_time()
         db.session.commit()
         
         logger.info(f"Archived inquiry: {inquiry_id}")

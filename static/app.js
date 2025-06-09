@@ -812,7 +812,7 @@ async function viewTicketDetails(id) {
                 </div>
                 <div class="col-md-6">
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
-                    <p><strong>Status:</strong> ${getStatusBadge(ticket.status)}</p>
+                    <p><strong>Status:</strong> ${getStatusBadge(ticket.status, ticket.archived)}</p>
                     ${ticket.inquiry_type ? `<p><strong>Type:</strong> ${escapeHtml(ticket.inquiry_type)}</p>` : ''}
                     <p><strong>QA Status:</strong> ${getQAStatusBadge(ticket.qa_status)}</p>
                     ${ticket.qa_status_updated_by ? `<p><strong>QA Reviewer:</strong> ${escapeHtml(ticket.qa_status_updated_by)}</p>` : ''}

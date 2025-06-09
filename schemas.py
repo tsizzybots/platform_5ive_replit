@@ -11,7 +11,7 @@ class EmailInquirySchema(Schema):
     received_date = fields.DateTime(required=True)
     inquiry_type = fields.String(allow_none=True, validate=validate.Length(max=100))
     ticket_url = fields.String(allow_none=True, validate=validate.Length(max=500))
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'Engaged', 'Skipped', 'Escalated']), load_default='skipped')
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'archived', 'Engaged', 'Skipped', 'Escalated', 'Archived']), load_default='skipped')
     engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
     archived = fields.Boolean(dump_only=True)
