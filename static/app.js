@@ -493,7 +493,7 @@ function displayTickets(tickets, pagination) {
                 <th style="width: 8%;">Ticket ID</th>
                 <th style="width: 10%;">Inquiry Type</th>
                 <th style="width: 22%;">Subject</th>
-                <th style="width: 20%;">Sender</th>
+                <th style="width: 15%;">Sender</th>
                 <th style="width: 8%;">Status</th>
                 <th style="width: 8%;">QA Status</th>
                 <th style="width: 10%; padding-right: 8px;">Actions</th>
@@ -503,7 +503,7 @@ function displayTickets(tickets, pagination) {
     `;
 
     tickets.forEach(ticket => {
-        const statusBadge = getStatusBadge(ticket.status);
+        const statusBadge = getStatusBadge(ticket.status, ticket.archived);
         const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
         
         html += `
@@ -517,9 +517,9 @@ function displayTickets(tickets, pagination) {
                 <td class="text-truncate" style="max-width: 230px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
                 </td>
-                <td class="sender-column">
+                <td class="sender-column" style="max-width: 150px;">
                     <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
-                    <small class="text-muted text-truncate" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
+                    <small class="text-muted text-truncate d-block" style="max-width: 150px;" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
                 </td>
                 <td>${statusBadge}</td>
                 <td>${qaStatusBadge}</td>
@@ -1218,7 +1218,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Helper functions
-function getStatusBadge(status) {
+function getStatusBadge(status, isArchived = false) {
+    // If the item is archived, always show "Archived" status
+    if (isArchived) {
+        return '<span class="badge bg-info">Archived</span>';
+    }
+    
     const statusLower = status ? status.toLowerCase() : '';
     const badges = {
         'engaged': '<span class="badge bg-success">Engaged</span>',
