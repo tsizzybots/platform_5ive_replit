@@ -48,7 +48,7 @@ class EmailInquiryUpdateSchema(Schema):
 class EmailInquiryQuerySchema(Schema):
     status = fields.String(validate=validate.OneOf(['Engaged', 'Escalated', 'Skipped', 'Archived']))
     engaged = fields.Boolean()
-    sender_email = fields.Email()
+    sender_email = fields.String()
     ticket_id = fields.String()
     inquiry_type = fields.String()
     date_from = fields.DateTime()
