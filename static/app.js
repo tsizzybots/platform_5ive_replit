@@ -491,8 +491,8 @@ function displayTickets(tickets, pagination) {
                 </th>
                 <th style="width: 11%;">Received</th>
                 <th style="width: 8%;">Ticket ID</th>
-                <th style="width: 8%;">Inquiry Type</th>
-                <th style="width: 28%;">Subject</th>
+                <th style="width: 12%;">Inquiry Type</th>
+                <th style="width: 24%;">Subject</th>
                 <th style="width: 11%;">Sender</th>
                 <th style="width: 8%;">Status</th>
                 <th style="width: 8%;">QA Status</th>
