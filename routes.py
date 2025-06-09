@@ -410,12 +410,15 @@ def get_stats():
                 pass  # Ignore invalid date format
         
         # Get counts for active items
-        total_inquiries = active_query.count()
+        active_inquiries = active_query.count()
         engaged_inquiries = active_query.filter(EmailInquiry.status == 'Engaged').count()
         escalated_inquiries = active_query.filter(EmailInquiry.status == 'Escalated').count()
         
         # Get counts for archived items
         archived_inquiries = archived_query.count()
+        
+        # Total includes both active and archived items
+        total_inquiries = active_inquiries + archived_inquiries
         
         return jsonify({
             'status': 'success',
@@ -424,7 +427,7 @@ def get_stats():
                 'engaged_inquiries': engaged_inquiries,
                 'escalated_inquiries': escalated_inquiries,
                 'archived_inquiries': archived_inquiries,
-                'engagement_rate': round((engaged_inquiries / total_inquiries * 100), 2) if total_inquiries > 0 else 0
+                'engagement_rate': round((engaged_inquiries / active_inquiries * 100), 2) if active_inquiries > 0 else 0
             }
         })
         
