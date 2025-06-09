@@ -18,7 +18,7 @@ class EmailInquirySchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
     
     # QA Fields
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue']), load_default='unchecked')
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']), load_default='unchecked')
     qa_status_updated_by = fields.String(allow_none=True)
     qa_status_updated_at = fields.DateTime(dump_only=True)
     qa_notes = fields.String(allow_none=True)
@@ -35,7 +35,7 @@ class EmailInquiryUpdateSchema(Schema):
     ai_response = fields.String(allow_none=True)
     
     # QA Fields
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))
     qa_status_updated_by = fields.String(allow_none=True)
     qa_notes = fields.String(allow_none=True)
     
@@ -51,7 +51,7 @@ class EmailInquiryQuerySchema(Schema):
     inquiry_type = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 
