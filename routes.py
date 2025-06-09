@@ -281,17 +281,12 @@ def list_inquiries():
         # Build query
         query = EmailInquiry.query
         
-        # Handle archived filter - special case for "Archived" status
-        if 'status' in query_params and query_params['status'] == 'Archived':
-            # Show only archived items
-            query = query.filter(EmailInquiry.archived == True)
-        elif 'status' in query_params:
-            # Filter by actual status and exclude archived items
+        # Handle status filtering
+        if 'status' in query_params:
             query = query.filter(EmailInquiry.status == query_params['status'])
-            query = query.filter(EmailInquiry.archived == False)
         else:
             # Default: exclude archived items unless specifically requested
-            query = query.filter(EmailInquiry.archived == False)
+            query = query.filter(EmailInquiry.status != 'Archived')
         
         # Only apply engaged filter if not looking at archived items
         if 'engaged' in query_params and not ('status' in query_params and query_params['status'] == 'Archived'):

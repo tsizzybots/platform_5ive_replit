@@ -32,7 +32,7 @@ class EmailInquirySchema(Schema):
     dev_feedback_at = fields.DateTime(dump_only=True)
 
 class EmailInquiryUpdateSchema(Schema):
-    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'Engaged', 'Skipped', 'Escalated']))
+    status = fields.String(validate=validate.OneOf(['engaged', 'skipped', 'escalated', 'archived', 'Engaged', 'Skipped', 'Escalated', 'Archived']))
     engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
     
