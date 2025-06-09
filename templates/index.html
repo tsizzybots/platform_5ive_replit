@@ -228,25 +228,25 @@
                     <div class="card-body">
                         <!-- Filters -->
                         <div class="row mb-3 align-items-end g-2">
-                            <div class="col-auto">
+                            <div class="col">
                                 <label class="form-label">Status</label>
-                                <select class="form-select form-select-sm" id="statusFilter" style="width: auto; min-width: 110px;">
+                                <select class="form-select form-select-sm" id="statusFilter" style="min-width: 130px;">
                                     <option value="">All Statuses</option>
                                     <option value="Engaged">Engaged</option>
                                     <option value="Escalated">Escalated</option>
                                     <option value="Skipped">Skipped</option>
                                 </select>
                             </div>
-                            <div class="col-auto">
+                            <div class="col">
                                 <label class="form-label">Inquiry Type</label>
-                                <select class="form-select form-select-sm" id="inquiryTypeFilter" style="width: auto; min-width: 100px;">
+                                <select class="form-select form-select-sm" id="inquiryTypeFilter" style="min-width: 120px;">
                                     <option value="">All Types</option>
                                     <!-- Options will be populated dynamically -->
                                 </select>
                             </div>
-                            <div class="col-auto">
+                            <div class="col">
                                 <label class="form-label">QA Status</label>
-                                <select class="form-select form-select-sm" id="qaStatusFilter" style="width: auto; min-width: 120px;">
+                                <select class="form-select form-select-sm" id="qaStatusFilter" style="min-width: 140px;">
                                     <option value="">All QA Status</option>
                                     <option value="unchecked">Unchecked</option>
                                     <option value="checked">Checked</option>
@@ -255,13 +255,13 @@
                                     <option value="fixed">Fixed</option>
                                 </select>
                             </div>
-                            <div class="col-auto">
+                            <div class="col">
                                 <label class="form-label">Email Address</label>
-                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="min-width: 160px;" oninput="handleEmailSearch()">
+                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="min-width: 180px;" oninput="handleEmailSearch()">
                             </div>
-                            <div class="col-auto">
+                            <div class="col">
                                 <label class="form-label">
-                                    Date Range: <small class="text-muted" id="dateRangeDisplay">No range selected</small>
+                                    Date Range: <span class="fw-bold text-success" id="dateRangeDisplay">No range selected</span>
                                 </label>
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
@@ -281,13 +281,29 @@
                                     <input type="date" class="form-control form-control-sm" id="dateTo" placeholder="To" style="width: 140px;">
                                 </div>
                             </div>
-                            <div class="col-auto ms-auto">
-                                <button class="btn btn-outline-primary btn-sm me-2" onclick="applyFilters()" id="applyFiltersBtn">
-                                    <i class="fas fa-filter me-1"></i>Apply
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn">
-                                    <i class="fas fa-times me-1"></i>Reset
-                                </button>
+                            <div class="col-auto">
+                                <label class="form-label">Set Status</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm" id="bulkStatusSelect" style="min-width: 120px;">
+                                        <option value="">Select Status</option>
+                                        <option value="Engaged">Engaged</option>
+                                        <option value="Escalated">Escalated</option>
+                                        <option value="Skipped">Skipped</option>
+                                    </select>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="applyBulkStatus()" id="bulkApplyBtn" disabled>
+                                        <i class="fas fa-check me-1"></i>Apply
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn">
+                                        <i class="fas fa-filter me-1"></i>Apply
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn">
+                                        <i class="fas fa-times me-1"></i>Reset
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

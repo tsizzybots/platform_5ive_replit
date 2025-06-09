@@ -6,6 +6,7 @@ let currentChartType = 'bar';
 let currentUser = null;
 let emailSearchTimeout = null;
 let currentDateRangeLabel = sessionStorage.getItem('dateRangeLabel') || null;
+let selectedTickets = new Set();
 
 // Load current user information
 async function loadCurrentUser() {
@@ -485,14 +486,17 @@ function displayTickets(tickets, pagination) {
     html += `
         <thead>
             <tr>
-                <th style="width: 12%;">Received</th>
-                <th style="width: 9%;">Ticket ID</th>
-                <th style="width: 9%;">Inquiry Type</th>
-                <th style="width: 30%;">Subject</th>
-                <th style="width: 12%;">Sender</th>
+                <th style="width: 4%;">
+                    <input type="checkbox" class="form-check-input" id="selectAllTickets" onchange="toggleSelectAll()">
+                </th>
+                <th style="width: 11%;">Received</th>
+                <th style="width: 8%;">Ticket ID</th>
+                <th style="width: 8%;">Inquiry Type</th>
+                <th style="width: 28%;">Subject</th>
+                <th style="width: 11%;">Sender</th>
                 <th style="width: 8%;">Status</th>
                 <th style="width: 8%;">QA Status</th>
-                <th style="width: 12%;">Actions</th>
+                <th style="width: 14%;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -503,11 +507,14 @@ function displayTickets(tickets, pagination) {
         const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
         
         html += `
-            <tr>
+            <tr id="ticket-row-${ticket.id}" class="ticket-row">
+                <td>
+                    <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
+                </td>
                 <td class="text-nowrap">${formatDate(ticket.received_date)}</td>
                 <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
                 <td class="text-nowrap">${escapeHtml(ticket.inquiry_type || 'N/A')}</td>
-                <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.subject)}">
+                <td class="text-truncate" style="max-width: 230px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
                 </td>
                 <td class="text-truncate" style="max-width: 100px;">
@@ -557,6 +564,148 @@ function displayTickets(tickets, pagination) {
     }
 
     container.innerHTML = html;
+    
+    // Enable bulk status controls if tickets are selected
+    updateBulkStatusControls();
+}
+
+// Toggle ticket selection
+function toggleTicketSelection(ticketId) {
+    const checkbox = document.querySelector(`input[value="${ticketId}"]`);
+    const row = document.getElementById(`ticket-row-${ticketId}`);
+    
+    if (checkbox.checked) {
+        selectedTickets.add(ticketId.toString());
+        row.classList.add('table-info'); // Light blue highlighting
+    } else {
+        selectedTickets.delete(ticketId.toString());
+        row.classList.remove('table-info');
+    }
+    
+    updateBulkStatusControls();
+    updateSelectAllCheckbox();
+}
+
+// Toggle select all tickets
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllTickets');
+    const ticketCheckboxes = document.querySelectorAll('.ticket-checkbox');
+    
+    ticketCheckboxes.forEach(checkbox => {
+        const ticketId = checkbox.value;
+        const row = document.getElementById(`ticket-row-${ticketId}`);
+        
+        if (selectAllCheckbox.checked) {
+            checkbox.checked = true;
+            selectedTickets.add(ticketId);
+            row.classList.add('table-info');
+        } else {
+            checkbox.checked = false;
+            selectedTickets.delete(ticketId);
+            row.classList.remove('table-info');
+        }
+    });
+    
+    updateBulkStatusControls();
+}
+
+// Update select all checkbox state
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAllTickets');
+    const ticketCheckboxes = document.querySelectorAll('.ticket-checkbox');
+    
+    if (ticketCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        return;
+    }
+    
+    const checkedCount = document.querySelectorAll('.ticket-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === ticketCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// Update bulk status controls
+function updateBulkStatusControls() {
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+    
+    if (selectedTickets.size > 0) {
+        bulkApplyBtn.disabled = false;
+        bulkStatusSelect.disabled = false;
+    } else {
+        bulkApplyBtn.disabled = true;
+        bulkStatusSelect.disabled = false; // Keep dropdown enabled for selection
+    }
+}
+
+// Apply bulk status to selected tickets
+async function applyBulkStatus() {
+    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+    const selectedStatus = bulkStatusSelect.value;
+    
+    if (!selectedStatus) {
+        showAlert('Please select a status to apply.', 'warning');
+        return;
+    }
+    
+    if (selectedTickets.size === 0) {
+        showAlert('Please select tickets to update.', 'warning');
+        return;
+    }
+    
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    bulkApplyBtn.disabled = true;
+    bulkApplyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Applying...';
+    
+    try {
+        let successCount = 0;
+        let failureCount = 0;
+        
+        // Update each selected ticket
+        for (const ticketId of selectedTickets) {
+            const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: selectedStatus,
+                    engaged: selectedStatus === 'Engaged'
+                })
+            });
+            
+            if (result.ok) {
+                successCount++;
+            } else {
+                failureCount++;
+            }
+        }
+        
+        // Show results
+        if (failureCount === 0) {
+            showAlert(`Successfully updated ${successCount} ticket(s) to ${selectedStatus}.`, 'success');
+        } else {
+            showAlert(`Updated ${successCount} ticket(s), ${failureCount} failed.`, 'warning');
+        }
+        
+        // Clear selections and refresh
+        selectedTickets.clear();
+        bulkStatusSelect.value = '';
+        loadTickets(currentPage);
+        
+    } catch (error) {
+        showAlert('Error applying bulk status: ' + error.message, 'danger');
+    } finally {
+        bulkApplyBtn.disabled = false;
+        bulkApplyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Apply';
+    }
 }
 
 // Removed edit functionality as requested
