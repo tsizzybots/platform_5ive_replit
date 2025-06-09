@@ -36,7 +36,16 @@ async function loadCurrentUser() {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
-    setDateRange('thisMonth'); // Set default date range to "This Month"
+    
+    // Initialize date range display from session storage
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+    if (currentDateRangeLabel) {
+        dateRangeDisplay.textContent = `Date Range: ${currentDateRangeLabel}`;
+    } else {
+        dateRangeDisplay.textContent = 'No range selected';
+        setDateRange('thisMonth'); // Set default date range to "This Month"
+    }
+    
     loadStats();
     loadTickets();
     loadInquiryTypes();
@@ -213,15 +222,18 @@ function displayStats(stats) {
 function setDateRange(preset) {
     const dateFrom = document.getElementById('dateFrom');
     const dateTo = document.getElementById('dateTo');
-    const dropdown = document.getElementById('dateRangeDropdown');
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
     
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
+    
+    let displayLabel = '';
     
     switch (preset) {
         case 'today':
             dateFrom.value = todayStr;
             dateTo.value = todayStr;
+            displayLabel = 'Today';
             break;
         case 'yesterday':
             const yesterday = new Date(today);
@@ -229,6 +241,7 @@ function setDateRange(preset) {
             const yesterdayStr = yesterday.toISOString().split('T')[0];
             dateFrom.value = yesterdayStr;
             dateTo.value = yesterdayStr;
+            displayLabel = 'Yesterday';
             break;
         case 'thisWeek':
             const startOfThisWeek = new Date(today);
@@ -238,6 +251,7 @@ function setDateRange(preset) {
             startOfThisWeek.setDate(today.getDate() - daysFromMonday);
             dateFrom.value = startOfThisWeek.toISOString().split('T')[0];
             dateTo.value = todayStr;
+            displayLabel = 'This Week';
             break;
         case 'lastWeek':
             const startOfLastWeek = new Date(today);
@@ -249,25 +263,41 @@ function setDateRange(preset) {
             endOfLastWeek.setDate(startOfLastWeek.getDate() + 6); // Sunday
             dateFrom.value = startOfLastWeek.toISOString().split('T')[0];
             dateTo.value = endOfLastWeek.toISOString().split('T')[0];
+            displayLabel = 'Last Week';
             break;
         case 'thisMonth':
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             dateFrom.value = startOfMonth.toISOString().split('T')[0];
             dateTo.value = todayStr;
+            displayLabel = 'This Month';
             break;
         case 'lastMonth':
             const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
             dateFrom.value = lastMonthStart.toISOString().split('T')[0];
             dateTo.value = lastMonthEnd.toISOString().split('T')[0];
+            displayLabel = 'Last Month';
             break;
     }
+    
+    // Store the label in session storage and update display
+    currentDateRangeLabel = displayLabel;
+    sessionStorage.setItem('dateRangeLabel', displayLabel);
+    dateRangeDisplay.textContent = `Date Range: ${displayLabel}`;
+    
     applyFilters();
 }
 
 function clearDateRange() {
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
+    
+    // Clear session storage and update display
+    currentDateRangeLabel = null;
+    sessionStorage.removeItem('dateRangeLabel');
+    dateRangeDisplay.textContent = 'No range selected';
+    
     applyFilters();
 }
 
@@ -304,13 +334,20 @@ function refreshData() {
 
 // Reset all filters and refresh data
 function resetFilters() {
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+    
     // Clear all filter inputs
     document.getElementById('statusFilter').value = '';
     document.getElementById('inquiryTypeFilter').value = '';
     document.getElementById('emailFilter').value = '';
+    document.getElementById('qaStatusFilter').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
-    document.getElementById('dateRangeDropdown').innerHTML = '<i class="fas fa-calendar"></i>';
+    
+    // Clear date range session storage and display
+    currentDateRangeLabel = null;
+    sessionStorage.removeItem('dateRangeLabel');
+    dateRangeDisplay.textContent = 'No range selected';
     
     // Clear current filters
     currentFilters = {};
