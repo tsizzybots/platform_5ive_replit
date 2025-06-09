@@ -289,7 +289,7 @@ def list_inquiries():
             query = query.filter(EmailInquiry.engaged == query_params['engaged'])
             
         if 'sender_email' in query_params:
-            query = query.filter(EmailInquiry.sender_email == query_params['sender_email'])
+            query = query.filter(EmailInquiry.sender_email.ilike(f"%{query_params['sender_email']}%"))
             
         if 'ticket_id' in query_params:
             query = query.filter(EmailInquiry.ticket_id == query_params['ticket_id'])

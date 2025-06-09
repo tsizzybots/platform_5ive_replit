@@ -257,11 +257,12 @@
                             </div>
                             <div class="col-auto">
                                 <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="emailFilter" placeholder="Search by Email" style="min-width: 180px;">
+                                <input type="text" class="form-control" id="emailFilter" placeholder="Search by Email" style="min-width: 180px;" oninput="handleEmailSearch()">
                             </div>
                             <div class="col">
                                 <label class="form-label">Date Range</label>
                                 <div class="d-flex gap-2 align-items-center">
+                                    <small class="text-muted me-2" id="dateRangeDisplay">No range selected</small>
                                     <div class="input-group" style="max-width: 350px;">
                                         <button class="btn btn-outline-secondary dropdown-toggle px-2" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 50px;">
                                             <i class="fas fa-calendar"></i>

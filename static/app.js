@@ -4,6 +4,8 @@ let currentFilters = {};
 let dailyChart = null;
 let currentChartType = 'bar';
 let currentUser = null;
+let emailSearchTimeout = null;
+let currentDateRangeLabel = sessionStorage.getItem('dateRangeLabel') || null;
 
 // Load current user information
 async function loadCurrentUser() {
@@ -368,6 +370,19 @@ function applyFilters() {
     if (chartCollapse && chartCollapse.classList.contains('show')) {
         loadDailyStats();
     }
+}
+
+// Real-time email search handler
+function handleEmailSearch() {
+    // Clear previous timeout
+    if (emailSearchTimeout) {
+        clearTimeout(emailSearchTimeout);
+    }
+    
+    // Set new timeout for 300ms delay (debouncing)
+    emailSearchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 300);
 }
 
 // Change per page and reload tickets
