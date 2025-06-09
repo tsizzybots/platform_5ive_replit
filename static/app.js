@@ -598,7 +598,7 @@ async function viewTicketDetails(id) {
                                         <textarea class="form-control" id="qa_notes_text" rows="3" 
                                                   placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
                                         ${ticket.qa_notes && ticket.qa_notes_updated_at ? `
-                                            <small class="text-muted">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>
+                                            <small class="text-muted d-block mt-1">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>
                                         ` : ''}
                                     </div>
                                     
@@ -633,7 +633,7 @@ async function viewTicketDetails(id) {
                                         </div>
                                     `}
                                     ${ticket.dev_feedback && ticket.dev_feedback_at ? `
-                                        <small class="text-muted">Updated by ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
+                                        <small class="text-muted d-block mt-1">Updated by ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
                                     ` : ''}
                                 </div>
                                 
