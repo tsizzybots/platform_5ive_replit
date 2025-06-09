@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize date range display from session storage
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');
     if (currentDateRangeLabel) {
-        dateRangeDisplay.textContent = `Date Range: ${currentDateRangeLabel}`;
+        dateRangeDisplay.textContent = currentDateRangeLabel;
     } else {
         dateRangeDisplay.textContent = 'No range selected';
         setDateRange('thisMonth'); // Set default date range to "This Month"
@@ -283,7 +283,7 @@ function setDateRange(preset) {
     // Store the label in session storage and update display
     currentDateRangeLabel = displayLabel;
     sessionStorage.setItem('dateRangeLabel', displayLabel);
-    dateRangeDisplay.textContent = `Date Range: ${displayLabel}`;
+    dateRangeDisplay.textContent = displayLabel;
     
     applyFilters();
 }

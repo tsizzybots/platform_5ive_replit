@@ -260,7 +260,10 @@
                                 <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="min-width: 160px;" oninput="handleEmailSearch()">
                             </div>
                             <div class="col-auto">
-                                <label class="form-label">Date Range</label>
+                                <label class="form-label">
+                                    Date Range
+                                    <small class="text-muted d-block" id="dateRangeDisplay">No range selected</small>
+                                </label>
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
                                         <i class="fas fa-calendar me-1"></i>
@@ -278,9 +281,6 @@
                                     <input type="date" class="form-control form-control-sm" id="dateFrom" placeholder="From" style="width: 140px;">
                                     <input type="date" class="form-control form-control-sm" id="dateTo" placeholder="To" style="width: 140px;">
                                 </div>
-                            </div>
-                            <div class="col-auto">
-                                <small class="text-muted text-nowrap" id="dateRangeDisplay">No range selected</small>
                             </div>
                             <div class="col-auto ms-auto">
                                 <button class="btn btn-outline-primary btn-sm me-2" onclick="applyFilters()" id="applyFiltersBtn">
