@@ -492,7 +492,7 @@ async function viewTicketDetails(id) {
     const result = await apiRequest(`/api/inquiries/${id}`);
     
     if (result.ok) {
-        const ticket = result.data;
+        const ticket = result.data.data || result.data;
         console.log('Ticket data:', ticket);
         console.log('Body content:', ticket.body);
         console.log('Body type:', typeof ticket.body);
@@ -519,7 +519,7 @@ async function viewTicketDetails(id) {
             <div class="mt-3">
                 <h6>Message Content:</h6>
                 <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
-                    ${ticket.body || 'No content found'}
+                    ${ticket.body ? escapeHtml(ticket.body).replace(/\n/g, '<br>') : '<span class="text-muted">No message content available</span>'}
                 </div>
                 ${ticket.status === 'Skipped' ? `
                     <div class="alert alert-info mt-3" role="alert">
