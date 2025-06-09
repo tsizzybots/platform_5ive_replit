@@ -513,7 +513,7 @@ async function viewTicketDetails(id) {
                 </div>
             </div>
             <div class="mt-3">
-                <h6>Message Content:</h6>
+                <h6><strong>Message Content:</strong></h6>
                 <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
                     ${ticket.body ? escapeHtml(ticket.body).replace(/\n/g, '<br>') : '<span class="text-muted">No message content available</span>'}
                 </div>
@@ -537,7 +537,7 @@ async function viewTicketDetails(id) {
                     <h6>QA Notes:</h6>
                     <div class="bg-warning bg-opacity-10 p-3 rounded border border-warning">
                         ${escapeHtml(ticket.qa_notes)}
-                        ${ticket.qa_notes_updated_at ? `<br><small class="text-muted">Updated: ${formatDate(ticket.qa_notes_updated_at)}</small>` : ''}
+                        ${ticket.qa_notes_updated_at ? `<br><small class="text-muted">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>` : ''}
                     </div>
                 </div>
             ` : ''}
