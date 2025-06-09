@@ -489,14 +489,14 @@ function displayTickets(tickets, pagination) {
                 <th class="checkbox-column">
                     <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
                 </th>
-                <th style="width: 11%;">Received</th>
+                <th style="width: 13%;">Received</th>
                 <th style="width: 8%;">Ticket ID</th>
                 <th style="width: 12%;">Inquiry Type</th>
-                <th style="width: 24%;">Subject</th>
-                <th style="width: 11%;">Sender</th>
+                <th style="width: 22%;">Subject</th>
+                <th style="width: 13%;">Sender</th>
                 <th style="width: 8%;">Status</th>
                 <th style="width: 8%;">QA Status</th>
-                <th style="width: 14%;">Actions</th>
+                <th style="width: 12%;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -517,7 +517,7 @@ function displayTickets(tickets, pagination) {
                 <td class="text-truncate" style="max-width: 230px;" title="${escapeHtml(ticket.subject)}">
                     ${escapeHtml(ticket.subject)}
                 </td>
-                <td class="text-truncate" style="max-width: 100px;">
+                <td class="sender-column">
                     <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
                     <small class="text-muted text-truncate" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
                 </td>
