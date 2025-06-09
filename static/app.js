@@ -493,6 +493,10 @@ async function viewTicketDetails(id) {
     
     if (result.ok) {
         const ticket = result.data;
+        console.log('Ticket data:', ticket);
+        console.log('Body content:', ticket.body);
+        console.log('Body type:', typeof ticket.body);
+        console.log('Body length:', ticket.body ? ticket.body.length : 'undefined');
         
         const details = `
             <div class="row">
@@ -515,7 +519,7 @@ async function viewTicketDetails(id) {
             <div class="mt-3">
                 <h6>Message Content:</h6>
                 <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
-                    ${ticket.body ? escapeHtml(ticket.body).replace(/\n/g, '<br>') : '<span class="text-muted">No message content available</span>'}
+                    ${ticket.body || 'No content found'}
                 </div>
                 ${ticket.status === 'Skipped' ? `
                     <div class="alert alert-info mt-3" role="alert">
