@@ -370,11 +370,19 @@ function applyFilters() {
     }
 }
 
+// Change per page and reload tickets
+function changePerPage() {
+    loadTickets(1); // Reset to first page when changing per page count
+}
+
 // Load tickets (renamed from loadInquiries)
 async function loadTickets(page = 1) {
+    const perPageSelect = document.getElementById('perPageSelect');
+    const perPage = perPageSelect ? perPageSelect.value : '20';
+    
     const params = new URLSearchParams({
         page: page.toString(),
-        per_page: '10',
+        per_page: perPage,
         ...currentFilters
     });
 
