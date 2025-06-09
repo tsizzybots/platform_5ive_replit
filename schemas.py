@@ -4,7 +4,7 @@ from datetime import datetime
 class EmailInquirySchema(Schema):
     id = fields.Integer(dump_only=True)
     ticket_id = fields.String(required=True, validate=validate.Length(min=1, max=100))
-    subject = fields.String(required=True, validate=validate.Length(min=1, max=1000))
+    subject = fields.String(required=True, validate=validate.Length(min=0, max=1000))
     body = fields.String(required=True, validate=validate.Length(min=1))
     sender_email = fields.Email(required=True)
     sender_name = fields.String(allow_none=True, validate=validate.Length(max=255))
