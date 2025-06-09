@@ -486,8 +486,8 @@ function displayTickets(tickets, pagination) {
     html += `
         <thead>
             <tr>
-                <th style="width: 4%;">
-                    <input type="checkbox" class="form-check-input" id="selectAllTickets" onchange="toggleSelectAll()">
+                <th class="checkbox-column">
+                    <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
                 </th>
                 <th style="width: 11%;">Received</th>
                 <th style="width: 8%;">Ticket ID</th>
@@ -508,7 +508,7 @@ function displayTickets(tickets, pagination) {
         
         html += `
             <tr id="ticket-row-${ticket.id}" class="ticket-row">
-                <td>
+                <td class="checkbox-column">
                     <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
                 </td>
                 <td class="text-nowrap">${formatDate(ticket.received_date)}</td>
@@ -908,7 +908,7 @@ async function viewTicketDetails(id) {
                                         <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
                                             <i class="fas fa-save me-1"></i>Update QA Status
                                         </button>
-                                        <button type="button" class="btn btn-outline-warning" onclick="archiveTicket(${ticket.id})">
+                                        <button type="button" class="btn btn-dark" onclick="archiveTicket(${ticket.id})">
                                             <i class="fas fa-archive me-1"></i>Archive Ticket
                                         </button>
                                     </div>
