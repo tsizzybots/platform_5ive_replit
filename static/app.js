@@ -708,6 +708,34 @@ async function applyBulkStatus() {
     }
 }
 
+// Archive ticket function
+async function archiveTicket(ticketId) {
+    if (!confirm('Are you sure you want to archive this ticket? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+            method: 'DELETE'
+        });
+        
+        if (result.ok) {
+            showAlert('Ticket archived successfully.', 'success');
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            // Refresh the tickets list
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to archive ticket: ' + (result.data.message || 'Unknown error'), 'danger');
+        }
+    } catch (error) {
+        showAlert('Error archiving ticket: ' + error.message, 'danger');
+    }
+}
+
 // Removed edit functionality as requested
 
 // View ticket details
@@ -825,9 +853,12 @@ async function viewTicketDetails(id) {
                                         ` : ''}
                                     </div>
                                     
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 flex-wrap">
                                         <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
                                             <i class="fas fa-save me-1"></i>Update QA Status
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning" onclick="archiveTicket(${ticket.id})">
+                                            <i class="fas fa-archive me-1"></i>Archive Ticket
                                         </button>
                                     </div>
                                 </form>
