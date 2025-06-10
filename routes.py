@@ -413,6 +413,7 @@ def get_stats():
         active_inquiries = active_query.count()
         engaged_inquiries = active_query.filter(EmailInquiry.status == 'Engaged').count()
         escalated_inquiries = active_query.filter(EmailInquiry.status == 'Escalated').count()
+        skipped_inquiries = active_query.filter(EmailInquiry.status == 'Skipped').count()
         
         # Get counts for archived items
         archived_inquiries = archived_query.count()
@@ -426,6 +427,7 @@ def get_stats():
                 'total_inquiries': total_inquiries,
                 'engaged_inquiries': engaged_inquiries,
                 'escalated_inquiries': escalated_inquiries,
+                'skipped_inquiries': skipped_inquiries,
                 'archived_inquiries': archived_inquiries,
                 'engagement_rate': round((engaged_inquiries / active_inquiries * 100), 2) if active_inquiries > 0 else 0
             }

@@ -180,7 +180,7 @@ function displayStats(stats) {
     const container = document.getElementById('statsContainer');
     const escalatedCount = stats.escalated_inquiries || 0;
     const archivedCount = stats.archived_inquiries || 0;
-    const skippedCount = stats.total_inquiries - stats.engaged_inquiries - escalatedCount;
+    const skippedCount = stats.skipped_inquiries || 0;
     
     container.innerHTML = `
         <div class="col-lg-2-4 col-md-6 mb-3">
