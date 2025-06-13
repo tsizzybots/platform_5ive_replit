@@ -277,6 +277,8 @@ def list_inquiries():
     try:
         # Validate query parameters
         query_params = email_inquiry_query_schema.load(request.args)
+        logger.info(f"Query params received: {dict(request.args)}")
+        logger.info(f"Parsed query params: {query_params}")
         
         # Build query
         query = EmailInquiry.query
@@ -310,9 +312,11 @@ def list_inquiries():
             query = query.filter(EmailInquiry.inquiry_type == query_params['inquiry_type'])
             
         if 'date_from' in query_params:
+            logger.info(f"Applying date_from filter: {query_params['date_from']}")
             query = query.filter(EmailInquiry.received_date >= query_params['date_from'])
             
         if 'date_to' in query_params:
+            logger.info(f"Applying date_to filter: {query_params['date_to']}")
             query = query.filter(EmailInquiry.received_date <= query_params['date_to'])
             
         if 'qa_status' in query_params:
@@ -324,6 +328,9 @@ def list_inquiries():
         
         # Order by most recent first
         query = query.order_by(EmailInquiry.created_at.desc())
+        
+        # Log final query info before execution
+        logger.info(f"Final query filters applied - page: {page}, per_page: {per_page}")
         
         # Execute paginated query
         paginated = query.paginate(
