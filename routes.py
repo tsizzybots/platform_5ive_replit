@@ -312,13 +312,11 @@ def list_inquiries():
         if 'date_from' in query_params:
             # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
             adjusted_date_from = query_params['date_from'] - timedelta(hours=10)
-            logger.info(f"Applying date_from filter: {query_params['date_from']} -> adjusted to UTC: {adjusted_date_from}")
             query = query.filter(EmailInquiry.received_date >= adjusted_date_from)
             
         if 'date_to' in query_params:
             # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
             adjusted_date_to = query_params['date_to'] - timedelta(hours=10)
-            logger.info(f"Applying date_to filter: {query_params['date_to']} -> adjusted to UTC: {adjusted_date_to}")
             query = query.filter(EmailInquiry.received_date <= adjusted_date_to)
             
         if 'qa_status' in query_params:
@@ -331,23 +329,12 @@ def list_inquiries():
         # Order by most recent first
         query = query.order_by(EmailInquiry.created_at.desc())
         
-        # Log final query info before execution
-        logger.info(f"Final query filters applied - page: {page}, per_page: {per_page}")
-        
         # Execute paginated query
         paginated = query.paginate(
             page=page, 
             per_page=per_page, 
             error_out=False
         )
-        
-        # Log sample results for debugging
-        if paginated.items:
-            logger.info(f"Query returned {len(paginated.items)} items")
-            for item in paginated.items[:3]:  # Log first 3 items
-                logger.info(f"Item {item.id}: received_date={item.received_date}, status={item.status}")
-        else:
-            logger.info("Query returned no items")
         
         return jsonify({
             'status': 'success',
