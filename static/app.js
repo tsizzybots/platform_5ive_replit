@@ -42,14 +42,72 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');
     if (currentDateRangeLabel) {
         dateRangeDisplay.textContent = currentDateRangeLabel;
+        // Restore the actual date values if they exist in session storage
+        const savedDateFrom = sessionStorage.getItem('dateFrom');
+        const savedDateTo = sessionStorage.getItem('dateTo');
+        if (savedDateFrom) document.getElementById('dateFrom').value = savedDateFrom;
+        if (savedDateTo) document.getElementById('dateTo').value = savedDateTo;
     } else {
-        dateRangeDisplay.textContent = 'No range selected';
-        setDateRange('thisMonth'); // Set default date range to "This Month"
+        dateRangeDisplay.textContent = '';
+        // Keep date inputs empty by default
     }
     
     loadStats();
     loadTickets();
     loadInquiryTypes();
+    
+    // Add event listeners for manual date input changes
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    
+    function updateDateRangeDisplay() {
+        const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+        const dateFromValue = dateFromInput.value;
+        const dateToValue = dateToInput.value;
+        
+        if (dateFromValue && dateToValue) {
+            // Both dates are selected - show the actual date range
+            const fromDate = new Date(dateFromValue);
+            const toDate = new Date(dateToValue);
+            
+            const fromFormatted = fromDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const toFormatted = toDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            
+            if (dateFromValue === dateToValue) {
+                dateRangeDisplay.textContent = fromFormatted;
+            } else {
+                dateRangeDisplay.textContent = `${fromFormatted} - ${toFormatted}`;
+            }
+            
+            // Save to session storage
+            currentDateRangeLabel = dateRangeDisplay.textContent;
+            sessionStorage.setItem('dateRangeLabel', currentDateRangeLabel);
+            sessionStorage.setItem('dateFrom', dateFromValue);
+            sessionStorage.setItem('dateTo', dateToValue);
+        } else {
+            // No dates or incomplete date range - clear display
+            dateRangeDisplay.textContent = '';
+            currentDateRangeLabel = null;
+            sessionStorage.removeItem('dateRangeLabel');
+            sessionStorage.removeItem('dateFrom');
+            sessionStorage.removeItem('dateTo');
+        }
+        
+        applyFilters();
+    }
+    
+    if (dateFromInput && dateToInput) {
+        dateFromInput.addEventListener('change', updateDateRangeDisplay);
+        dateToInput.addEventListener('change', updateDateRangeDisplay);
+    }
     
     // Auto-dismiss success alerts after 2 seconds
     const successAlerts = document.querySelectorAll('.alert-success');
@@ -290,9 +348,11 @@ function setDateRange(preset) {
             break;
     }
     
-    // Store the label in session storage and update display
+    // Store the label and date values in session storage and update display
     currentDateRangeLabel = displayLabel;
     sessionStorage.setItem('dateRangeLabel', displayLabel);
+    sessionStorage.setItem('dateFrom', dateFrom.value);
+    sessionStorage.setItem('dateTo', dateTo.value);
     dateRangeDisplay.textContent = displayLabel;
     
     applyFilters();
@@ -306,7 +366,9 @@ function clearDateRange() {
     // Clear session storage and update display
     currentDateRangeLabel = null;
     sessionStorage.removeItem('dateRangeLabel');
-    dateRangeDisplay.textContent = 'No range selected';
+    sessionStorage.removeItem('dateFrom');
+    sessionStorage.removeItem('dateTo');
+    dateRangeDisplay.textContent = '';
     
     applyFilters();
 }
