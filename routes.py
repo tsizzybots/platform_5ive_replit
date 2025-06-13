@@ -4,7 +4,7 @@ from models import EmailInquiry, Error, User
 from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, error_schema, error_query_schema
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import logging
 import os
@@ -277,8 +277,6 @@ def list_inquiries():
     try:
         # Validate query parameters
         query_params = email_inquiry_query_schema.load(request.args)
-        logger.info(f"Query params received: {dict(request.args)}")
-        logger.info(f"Parsed query params: {query_params}")
         
         # Build query
         query = EmailInquiry.query
@@ -312,12 +310,16 @@ def list_inquiries():
             query = query.filter(EmailInquiry.inquiry_type == query_params['inquiry_type'])
             
         if 'date_from' in query_params:
-            logger.info(f"Applying date_from filter: {query_params['date_from']}")
-            query = query.filter(EmailInquiry.received_date >= query_params['date_from'])
+            # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
+            adjusted_date_from = query_params['date_from'] - timedelta(hours=10)
+            logger.info(f"Applying date_from filter: {query_params['date_from']} -> adjusted to UTC: {adjusted_date_from}")
+            query = query.filter(EmailInquiry.received_date >= adjusted_date_from)
             
         if 'date_to' in query_params:
-            logger.info(f"Applying date_to filter: {query_params['date_to']}")
-            query = query.filter(EmailInquiry.received_date <= query_params['date_to'])
+            # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
+            adjusted_date_to = query_params['date_to'] - timedelta(hours=10)
+            logger.info(f"Applying date_to filter: {query_params['date_to']} -> adjusted to UTC: {adjusted_date_to}")
+            query = query.filter(EmailInquiry.received_date <= adjusted_date_to)
             
         if 'qa_status' in query_params:
             query = query.filter(EmailInquiry.qa_status == query_params['qa_status'])
@@ -338,6 +340,14 @@ def list_inquiries():
             per_page=per_page, 
             error_out=False
         )
+        
+        # Log sample results for debugging
+        if paginated.items:
+            logger.info(f"Query returned {len(paginated.items)} items")
+            for item in paginated.items[:3]:  # Log first 3 items
+                logger.info(f"Item {item.id}: received_date={item.received_date}, status={item.status}")
+        else:
+            logger.info("Query returned no items")
         
         return jsonify({
             'status': 'success',
