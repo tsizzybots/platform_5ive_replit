@@ -285,8 +285,16 @@ def list_inquiries():
         if 'status' in query_params:
             query = query.filter(EmailInquiry.status == query_params['status'])
         else:
-            # Default: exclude archived items unless specifically requested
-            query = query.filter(EmailInquiry.status != 'Archived')
+            # Default: exclude archived items EXCEPT those with QA status 'issue' or 'fixed'
+            query = query.filter(
+                db.or_(
+                    EmailInquiry.status != 'Archived',
+                    db.and_(
+                        EmailInquiry.status == 'Archived',
+                        EmailInquiry.qa_status.in_(['issue', 'fixed'])
+                    )
+                )
+            )
         
         # Only apply engaged filter if not looking at archived items
         if 'engaged' in query_params and not ('status' in query_params and query_params['status'] == 'Archived'):
