@@ -38,28 +38,27 @@ async function loadCurrentUser() {
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
     
-    // Initialize date range display from session storage
+    // Initialize date range display - start fresh each time
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');
-    if (currentDateRangeLabel) {
-        dateRangeDisplay.textContent = currentDateRangeLabel;
-        // Restore the actual date values if they exist in session storage
-        const savedDateFrom = sessionStorage.getItem('dateFrom');
-        const savedDateTo = sessionStorage.getItem('dateTo');
-        if (savedDateFrom) document.getElementById('dateFrom').value = savedDateFrom;
-        if (savedDateTo) document.getElementById('dateTo').value = savedDateTo;
-    } else {
-        dateRangeDisplay.textContent = '';
-        // Keep date inputs empty by default
-    }
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    
+    // Always start with blank state - clear everything
+    sessionStorage.removeItem('dateRangeLabel');
+    sessionStorage.removeItem('dateFrom');
+    sessionStorage.removeItem('dateTo');
+    currentDateRangeLabel = null;
+    
+    // Set initial blank state
+    dateRangeDisplay.textContent = '';
+    if (dateFromInput) dateFromInput.value = '';
+    if (dateToInput) dateToInput.value = '';
     
     loadStats();
     loadTickets();
     loadInquiryTypes();
     
     // Add event listeners for manual date input changes
-    const dateFromInput = document.getElementById('dateFrom');
-    const dateToInput = document.getElementById('dateTo');
-    
     function updateDateRangeDisplay() {
         const dateRangeDisplay = document.getElementById('dateRangeDisplay');
         const dateFromValue = dateFromInput.value;
