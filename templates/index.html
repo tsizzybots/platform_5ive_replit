@@ -354,12 +354,14 @@
                                     <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
                                         <i class="fas fa-archive me-1"></i>Archive Selected
                                     </button>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn">
-                                        <i class="fas fa-filter me-1"></i>Apply
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn">
-                                        <i class="fas fa-times me-1"></i>Reset
-                                    </button>
+                                    <div class="d-flex flex-column gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-times me-1"></i>Reset
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-filter me-1"></i>Apply
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
