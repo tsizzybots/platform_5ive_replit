@@ -720,9 +720,72 @@ function updateSelectAllCheckbox() {
 // Update bulk status controls
 function updateBulkStatusControls() {
     const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
+    const markPassedBtn = document.getElementById('markPassedBtn');
     
     if (archiveSelectedBtn) {
         archiveSelectedBtn.disabled = selectedTickets.size === 0;
+    }
+    
+    if (markPassedBtn) {
+        markPassedBtn.disabled = selectedTickets.size === 0;
+    }
+}
+
+// Mark selected tickets as passed
+async function markSelectedAsPassed() {
+    if (selectedTickets.size === 0) {
+        showAlert('Please select tickets to mark as passed.', 'warning');
+        return;
+    }
+    
+    const markPassedBtn = document.getElementById('markPassedBtn');
+    markPassedBtn.disabled = true;
+    markPassedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Marking as Passed...';
+    
+    try {
+        let successCount = 0;
+        let failureCount = 0;
+        
+        // Update QA status for each selected ticket
+        for (const ticketId of selectedTickets) {
+            const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    qa_status: 'passed',
+                    qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
+                })
+            });
+            
+            if (result.ok) {
+                successCount++;
+            } else {
+                failureCount++;
+            }
+        }
+        
+        // Clear selections
+        selectedTickets.clear();
+        
+        // Show results
+        if (successCount > 0 && failureCount === 0) {
+            showAlert(`Successfully marked ${successCount} ticket${successCount > 1 ? 's' : ''} as passed.`, 'success');
+        } else if (successCount > 0 && failureCount > 0) {
+            showAlert(`Marked ${successCount} ticket${successCount > 1 ? 's' : ''} as passed, failed to update ${failureCount}.`, 'warning');
+        } else {
+            showAlert('Failed to update selected tickets.', 'danger');
+        }
+        
+        // Refresh the tickets list
+        loadTickets(currentPage);
+        
+    } catch (error) {
+        showAlert('Error updating tickets: ' + error.message, 'danger');
+    } finally {
+        markPassedBtn.disabled = false;
+        markPassedBtn.innerHTML = '<i class="fas fa-check me-1"></i>Mark as Passed';
     }
 }
 
