@@ -108,13 +108,25 @@ document.addEventListener('DOMContentLoaded', function() {
         dateToInput.addEventListener('change', updateDateRangeDisplay);
     }
     
-    // Auto-dismiss success alerts after 2 seconds
-    const successAlerts = document.querySelectorAll('.alert-success');
-    successAlerts.forEach(alert => {
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 2000);
+    // Remove duplicate alerts and auto-dismiss success alerts after 2 seconds
+    const allAlerts = document.querySelectorAll('.alert');
+    const alertTexts = new Set();
+    
+    allAlerts.forEach(alert => {
+        const alertText = alert.textContent.trim().replace(/×/g, '').trim(); // Remove close button text
+        if (alertTexts.has(alertText)) {
+            // This is a duplicate, remove it
+            alert.remove();
+        } else {
+            alertTexts.add(alertText);
+            // Auto-dismiss success alerts after 2 seconds
+            if (alert.classList.contains('alert-success')) {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 2000);
+            }
+        }
     });
     
     // Setup chart collapse event listeners
