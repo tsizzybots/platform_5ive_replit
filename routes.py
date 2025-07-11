@@ -20,25 +20,7 @@ def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
 
-# Webhook URL for QA issues
-QA_ISSUE_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue"
 
-def send_qa_issue_webhook(inquiry):
-    """Send webhook notification when QA status is set to 'issue'"""
-    try:
-        payload = inquiry.to_dict()
-        response = requests.post(
-            QA_ISSUE_WEBHOOK_URL,
-            json=payload,
-            timeout=10,
-            headers={'Content-Type': 'application/json'}
-        )
-        response.raise_for_status()
-        logger.info(f"QA issue webhook sent successfully for ticket {inquiry.ticket_id}")
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send QA issue webhook for ticket {inquiry.ticket_id}: {str(e)}")
-        return False
 
 def send_qa_issue_email(inquiry):
     """Send email notification when QA status is set to 'issue' using Resend API"""
@@ -277,9 +259,8 @@ def update_inquiry(inquiry_id):
         inquiry.updated_at = current_time
         db.session.commit()
         
-        # Send webhook and email if QA status changed to 'issue'
+        # Send email if QA status changed to 'issue'
         if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
-            send_qa_issue_webhook(inquiry)
             send_qa_issue_email(inquiry)
         
         logger.info(f"Updated inquiry: {inquiry.id}")
@@ -608,9 +589,8 @@ def update_qa_status(inquiry_id):
         inquiry.updated_at = current_time
         db.session.commit()
         
-        # Send webhook and email if QA status changed to 'issue'
+        # Send email if QA status changed to 'issue'
         if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
-            send_qa_issue_webhook(inquiry)
             send_qa_issue_email(inquiry)
         
         logger.info(f"Updated QA status for inquiry {inquiry_id}: {data.get('qa_status', 'no status change')}")
