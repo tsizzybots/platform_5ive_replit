@@ -347,18 +347,22 @@
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled style="height: 31px;">
-                                        <i class="fas fa-check me-1"></i>Mark as Passed
-                                    </button>
-                                    <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled style="height: 31px;">
-                                        <i class="fas fa-archive me-1"></i>Archive Selected
-                                    </button>
+                                <div class="d-flex gap-2 align-items-end">
+                                    <!-- Left column: Mark as Passed and Archive Selected stacked -->
                                     <div class="d-flex flex-column gap-1">
-                                        <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                        <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled style="height: 31px;">
+                                            <i class="fas fa-check me-1"></i>Mark as Passed
+                                        </button>
+                                        <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled style="height: 31px;">
+                                            <i class="fas fa-archive me-1"></i>Archive Selected
+                                        </button>
+                                    </div>
+                                    <!-- Right column: Reset and Apply stacked -->
+                                    <div class="d-flex flex-column gap-1">
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()" id="resetFiltersBtn" style="height: 31px;">
                                             <i class="fas fa-times me-1"></i>Reset
                                         </button>
-                                        <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()" id="applyFiltersBtn" style="height: 31px;">
                                             <i class="fas fa-filter me-1"></i>Apply
                                         </button>
                                     </div>
