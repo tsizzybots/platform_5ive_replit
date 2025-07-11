@@ -40,6 +40,40 @@ def send_qa_issue_webhook(inquiry):
         logger.error(f"Failed to send QA issue webhook for ticket {inquiry.ticket_id}: {str(e)}")
         return False
 
+def send_qa_issue_email(inquiry):
+    """Send email notification when QA status is set to 'issue' using Resend API"""
+    try:
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.error("RESEND_API_KEY not found in environment variables")
+            return False
+        
+        # Prepare email data with placeholders filled
+        email_data = {
+            "from": "noreply@izzyagents.ai",
+            "to": "team@izzyagents.ai",
+            "subject": "Sweats QA Issue Opened",
+            "html": f"<p>New Sweats QA Issue Opened</p><p>Ticket ID: {inquiry.ticket_id}</p>QA Reviewer {inquiry.qa_status_updated_by or 'Unknown'}<p>Sender: {inquiry.sender_email}</p><p>Subject: {inquiry.subject}</p><p></p><p>QA Notes: {inquiry.qa_notes or 'No notes provided'}</p>"
+        }
+        
+        headers = {
+            'Authorization': f'Bearer {resend_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(
+            'https://api.resend.com/emails',
+            json=email_data,
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        logger.info(f"QA issue email sent successfully for ticket {inquiry.ticket_id}")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to send QA issue email for ticket {inquiry.ticket_id}: {str(e)}")
+        return False
+
 # Helper function to get current user
 def get_current_user():
     """Get the current logged-in user from session"""
@@ -243,9 +277,10 @@ def update_inquiry(inquiry_id):
         inquiry.updated_at = current_time
         db.session.commit()
         
-        # Send webhook if QA status changed to 'issue'
+        # Send webhook and email if QA status changed to 'issue'
         if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
             send_qa_issue_webhook(inquiry)
+            send_qa_issue_email(inquiry)
         
         logger.info(f"Updated inquiry: {inquiry.id}")
         return jsonify({
@@ -573,9 +608,10 @@ def update_qa_status(inquiry_id):
         inquiry.updated_at = current_time
         db.session.commit()
         
-        # Send webhook if QA status changed to 'issue'
+        # Send webhook and email if QA status changed to 'issue'
         if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
             send_qa_issue_webhook(inquiry)
+            send_qa_issue_email(inquiry)
         
         logger.info(f"Updated QA status for inquiry {inquiry_id}: {data.get('qa_status', 'no status change')}")
         return jsonify({
