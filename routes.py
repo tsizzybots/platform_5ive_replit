@@ -424,6 +424,7 @@ def get_stats():
         # Get counts for active items
         active_inquiries = active_query.count()
         engaged_inquiries = active_query.filter(EmailInquiry.status == 'Engaged').count()
+        marketing_inquiries = active_query.filter(EmailInquiry.status == 'Marketing').count()
         skipped_inquiries = active_query.filter(EmailInquiry.status == 'Skipped').count()
         
         # Get counts for archived items
@@ -437,6 +438,7 @@ def get_stats():
             'data': {
                 'total_inquiries': total_inquiries,
                 'engaged_inquiries': engaged_inquiries,
+                'marketing_inquiries': marketing_inquiries,
                 'skipped_inquiries': skipped_inquiries,
                 'archived_inquiries': archived_inquiries,
                 'engagement_rate': round((engaged_inquiries / active_inquiries * 100), 2) if active_inquiries > 0 else 0

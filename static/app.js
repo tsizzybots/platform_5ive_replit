@@ -235,11 +235,12 @@ async function loadStats(dateFilters = {}) {
 // Display statistics as cards
 function displayStats(stats) {
     const container = document.getElementById('statsContainer');
+    const marketingCount = stats.marketing_inquiries || 0;
     const archivedCount = stats.archived_inquiries || 0;
     const skippedCount = stats.skipped_inquiries || 0;
     
     container.innerHTML = `
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-primary text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.total_inquiries}</h3>
@@ -247,7 +248,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-success text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.engaged_inquiries}</h3>
@@ -255,7 +256,15 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3 class="card-title">${marketingCount}</h3>
+                    <p class="card-text mb-0">Marketing</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-secondary text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${skippedCount}</h3>
@@ -263,7 +272,7 @@ function displayStats(stats) {
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2-4 col-md-6 mb-3">
             <div class="card stats-card bg-info text-white">
                 <div class="card-body text-center">
                     <h3 class="card-title">${archivedCount}</h3>
@@ -1366,6 +1375,7 @@ function getStatusBadge(status, isArchived = false) {
     const statusLower = status ? status.toLowerCase() : '';
     const badges = {
         'engaged': '<span class="badge bg-success">Engaged</span>',
+        'marketing': '<span class="badge bg-warning">Marketing</span>',
         'skipped': '<span class="badge bg-secondary">Skipped</span>'
     };
     return badges[statusLower] || '<span class="badge bg-light text-dark">Unknown</span>';
@@ -1375,6 +1385,7 @@ function getStatusColor(status) {
     const statusLower = status ? status.toLowerCase() : '';
     const colors = {
         'engaged': 'success',
+        'marketing': 'warning',
         'skipped': 'secondary'
     };
     return colors[statusLower] || 'light';
