@@ -522,7 +522,7 @@ def get_daily_stats():
         }), 500
 
 @app.route('/api/inquiries/<int:inquiry_id>/qa', methods=['PUT'])
-@require_api_key
+@login_required
 def update_qa_status(inquiry_id):
     """Update QA status, notes, and reviewer information for an inquiry"""
     try:

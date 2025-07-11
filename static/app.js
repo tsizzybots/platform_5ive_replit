@@ -748,7 +748,7 @@ async function markSelectedAsPassed() {
         
         // Update QA status for each selected ticket
         for (const ticketId of selectedTickets) {
-            const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+            const response = await fetch(`/api/inquiries/${ticketId}/qa`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -756,13 +756,15 @@ async function markSelectedAsPassed() {
                 body: JSON.stringify({
                     qa_status: 'passed',
                     qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
-                })
+                }),
+                credentials: 'same-origin'
             });
             
-            if (result.ok) {
+            if (response.ok) {
                 successCount++;
             } else {
                 failureCount++;
+                console.error(`Failed to update ticket ${ticketId}:`, await response.text());
             }
         }
         
