@@ -709,7 +709,7 @@ def reopen_ticket_in_gorgias(inquiry_id):
         # Check if the request was successful (200 or 202 are acceptable)
         if response.status_code in [200, 202]:
             # Update our local ticket status to reflect the change
-            inquiry.status = 'Engaged'  # Set back to engaged status
+            inquiry.status = 'skipped'  # Set status to skipped when reopened
             inquiry.archived = False
             inquiry.archived_at = None
             inquiry.updated_at = get_sydney_time()

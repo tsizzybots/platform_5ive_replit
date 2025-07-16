@@ -477,19 +477,49 @@ function applyFilters() {
     
     currentPage = 1; // Reset to first page
     
+    // Show loading state for apply button
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    if (applyBtn) {
+        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        applyBtn.disabled = true;
+    }
+    
+    // Clear current tickets and show loading animation
+    const ticketsContainer = document.getElementById('ticketsContainer');
+    if (ticketsContainer) {
+        ticketsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading filtered results...</span>
+                </div>
+                <div class="mt-3">
+                    <h5>Applying filters...</h5>
+                    <p class="text-muted">Please wait while we load the filtered results.</p>
+                </div>
+            </div>
+        `;
+    }
+    
     // Update stats with the same date filters
     const dateFilters = {};
     if (currentFilters.date_from) dateFilters.date_from = currentFilters.date_from;
     if (currentFilters.date_to) dateFilters.date_to = currentFilters.date_to;
     
-    loadStats(dateFilters);
-    loadTickets();
+    const promises = [loadStats(dateFilters), loadTickets()];
     
     // Update chart if it's visible
     const chartCollapse = document.getElementById('dailyStatsChart');
     if (chartCollapse && chartCollapse.classList.contains('show')) {
-        loadDailyStats();
+        promises.push(loadDailyStats());
     }
+    
+    // Reset apply button when all operations complete
+    Promise.all(promises).finally(() => {
+        if (applyBtn) {
+            applyBtn.innerHTML = '<i class="fas fa-filter me-1"></i>Apply';
+            applyBtn.disabled = false;
+        }
+    });
 }
 
 // Real-time email search handler
