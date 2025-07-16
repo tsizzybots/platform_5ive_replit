@@ -686,18 +686,9 @@ def reopen_ticket_in_gorgias(inquiry_id):
         # Make API call to Gorgias to reopen the ticket
         gorgias_url = f"https://sweatscollective.gorgias.com/api/tickets/{gorgias_ticket_number}"
         
-        # Encode the API key properly for Basic auth (assuming format is username:password or token:)
-        import base64
-        if ':' not in gorgias_api_key:
-            # If it's just a token, add a colon to make it token:
-            auth_string = f"{gorgias_api_key}:"
-        else:
-            auth_string = gorgias_api_key
-        
-        encoded_auth = base64.b64encode(auth_string.encode()).decode()
-        
+        # Use the API key directly (it's already properly encoded)
         headers = {
-            'Authorization': f'Basic {encoded_auth}',
+            'Authorization': f'Basic {gorgias_api_key}',
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
