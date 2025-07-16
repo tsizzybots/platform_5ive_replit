@@ -957,12 +957,26 @@ function reopenTicketInGorgias(ticketId) {
     // Store ticket ID for the modal
     window.currentReopenTicketId = ticketId;
     
+    // Add dimming effect to the ticket details modal
+    const ticketDetailsModal = document.getElementById('ticketDetailsModal');
+    if (ticketDetailsModal) {
+        ticketDetailsModal.querySelector('.modal-content').classList.add('modal-dimmed');
+    }
+    
     // Show the confirmation modal with enhanced backdrop
     const modal = new bootstrap.Modal(document.getElementById('reopenConfirmModal'), {
         backdrop: 'static',
         keyboard: false
     });
     modal.show();
+    
+    // Remove dimming when the reopen modal is hidden
+    const reopenModal = document.getElementById('reopenConfirmModal');
+    reopenModal.addEventListener('hidden.bs.modal', function() {
+        if (ticketDetailsModal) {
+            ticketDetailsModal.querySelector('.modal-content').classList.remove('modal-dimmed');
+        }
+    }, { once: true });
 }
 
 // Function to actually perform the reopen action
@@ -978,10 +992,16 @@ async function performReopenTicket() {
             button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reopening...';
         }
         
-        // Hide the confirmation modal
+        // Hide the confirmation modal and remove dimming
         const confirmModal = bootstrap.Modal.getInstance(document.getElementById('reopenConfirmModal'));
         if (confirmModal) {
             confirmModal.hide();
+        }
+        
+        // Remove dimming effect from ticket details modal
+        const ticketDetailsModal = document.getElementById('ticketDetailsModal');
+        if (ticketDetailsModal) {
+            ticketDetailsModal.querySelector('.modal-content').classList.remove('modal-dimmed');
         }
         
         const result = await apiRequest(`/api/inquiries/${ticketId}/reopen-gorgias`, {
