@@ -655,8 +655,8 @@ def reopen_ticket_in_gorgias(inquiry_id):
                 'message': 'Email inquiry not found'
             }), 404
             
-        # Check if ticket is archived
-        if not inquiry.archived:
+        # Check if ticket is archived (either archived field is True or status is 'Archived')
+        if not inquiry.archived and inquiry.status != 'Archived':
             return jsonify({
                 'status': 'error',
                 'message': 'Ticket is not archived. Only archived tickets can be reopened in Gorgias.'

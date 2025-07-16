@@ -1017,7 +1017,7 @@ async function viewTicketDetails(id) {
                     <p><strong>Email:</strong><br><span style="word-break: break-all; font-family: monospace; font-size: 0.9em;">${escapeHtml(ticket.sender_email)}</span></p>
                     ${ticket.ticket_url ? `
                         <p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>
-                        ${ticket.archived ? `
+                        ${(ticket.archived || ticket.status === 'Archived') ? `
                             <p><strong>Reopen in Gorgias:</strong> <button type="button" class="btn btn-sm btn-success" onclick="reopenTicketInGorgias(${ticket.id})" title="Reopen this archived ticket in Gorgias">
                                 <i class="fas fa-undo me-1"></i>Reopen Ticket
                             </button></p>
