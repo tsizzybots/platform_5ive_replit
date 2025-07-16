@@ -685,8 +685,19 @@ def reopen_ticket_in_gorgias(inquiry_id):
             
         # Make API call to Gorgias to reopen the ticket
         gorgias_url = f"https://sweatscollective.gorgias.com/api/tickets/{gorgias_ticket_number}"
+        
+        # Encode the API key properly for Basic auth (assuming format is username:password or token:)
+        import base64
+        if ':' not in gorgias_api_key:
+            # If it's just a token, add a colon to make it token:
+            auth_string = f"{gorgias_api_key}:"
+        else:
+            auth_string = gorgias_api_key
+        
+        encoded_auth = base64.b64encode(auth_string.encode()).decode()
+        
         headers = {
-            'Authorization': f'Basic {gorgias_api_key}',
+            'Authorization': f'Basic {encoded_auth}',
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
@@ -704,8 +715,8 @@ def reopen_ticket_in_gorgias(inquiry_id):
             timeout=30
         )
         
-        # Check if the request was successful
-        if response.status_code == 200:
+        # Check if the request was successful (200 or 202 are acceptable)
+        if response.status_code in [200, 202]:
             # Update our local ticket status to reflect the change
             inquiry.status = 'Engaged'  # Set back to engaged status
             inquiry.archived = False

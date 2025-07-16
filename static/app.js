@@ -953,18 +953,32 @@ async function archiveTicket(ticketId) {
 }
 
 // Reopen ticket in Gorgias function
-async function reopenTicketInGorgias(ticketId) {
+function reopenTicketInGorgias(ticketId) {
+    // Store ticket ID for the modal
+    window.currentReopenTicketId = ticketId;
+    
+    // Show the confirmation modal
+    const modal = new bootstrap.Modal(document.getElementById('reopenConfirmModal'));
+    modal.show();
+}
+
+// Function to actually perform the reopen action
+async function performReopenTicket() {
+    const ticketId = window.currentReopenTicketId;
+    if (!ticketId) return;
+    
     try {
-        // Show confirmation dialog
-        if (!confirm('Are you sure you want to reopen this ticket in Gorgias? This will make the ticket active again in Gorgias and update its status in our system.')) {
-            return;
-        }
-        
         // Find the button and disable it during the request
         const button = document.querySelector(`button[onclick="reopenTicketInGorgias(${ticketId})"]`);
         if (button) {
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reopening...';
+        }
+        
+        // Hide the confirmation modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('reopenConfirmModal'));
+        if (confirmModal) {
+            confirmModal.hide();
         }
         
         const result = await apiRequest(`/api/inquiries/${ticketId}/reopen-gorgias`, {
@@ -973,10 +987,10 @@ async function reopenTicketInGorgias(ticketId) {
         
         if (result.ok) {
             showAlert('Ticket successfully reopened in Gorgias!', 'success');
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            if (modal) {
-                modal.hide();
+            // Close the ticket details modal
+            const detailsModal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (detailsModal) {
+                detailsModal.hide();
             }
             // Refresh the tickets list to show updated status
             loadTickets(currentPage);
@@ -1766,3 +1780,12 @@ function updateChartDateRange(dateFrom, dateTo) {
         chartDateRangeElement.textContent = 'Current Month';
     }
 }
+
+// Initialize modal event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for reopen confirmation button
+    const confirmReopenBtn = document.getElementById('confirmReopenBtn');
+    if (confirmReopenBtn) {
+        confirmReopenBtn.addEventListener('click', performReopenTicket);
+    }
+});
