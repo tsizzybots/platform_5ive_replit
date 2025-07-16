@@ -643,6 +643,110 @@ def delete_inquiry(inquiry_id):
             'error': str(e)
         }), 500
 
+@app.route('/api/inquiries/<int:inquiry_id>/reopen-gorgias', methods=['POST'])
+@login_required
+def reopen_ticket_in_gorgias(inquiry_id):
+    """Reopen a ticket in Gorgias for archived tickets"""
+    try:
+        inquiry = EmailInquiry.query.get(inquiry_id)
+        if not inquiry:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email inquiry not found'
+            }), 404
+            
+        # Check if ticket is archived
+        if not inquiry.archived:
+            return jsonify({
+                'status': 'error',
+                'message': 'Ticket is not archived. Only archived tickets can be reopened in Gorgias.'
+            }), 400
+            
+        # Check if we have a ticket_id that looks like it's from Gorgias
+        if not inquiry.ticket_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'No ticket ID found. Cannot reopen in Gorgias without ticket ID.'
+            }), 400
+            
+        # Extract the Gorgias ticket number from ticket_id
+        # Assuming format is "GORGIAS-12345" or just "12345"
+        gorgias_ticket_number = inquiry.ticket_id
+        if gorgias_ticket_number.startswith('GORGIAS-'):
+            gorgias_ticket_number = gorgias_ticket_number.replace('GORGIAS-', '')
+        
+        # Get Gorgias API key from environment
+        gorgias_api_key = os.environ.get('GORGIAS_API_KEY')
+        if not gorgias_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Gorgias API key not configured. Please contact administrator.'
+            }), 500
+            
+        # Make API call to Gorgias to reopen the ticket
+        gorgias_url = f"https://sweatscollective.gorgias.com/api/tickets/{gorgias_ticket_number}"
+        headers = {
+            'Authorization': f'Basic {gorgias_api_key}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
+        payload = {
+            'status': 'open'
+        }
+        
+        logger.info(f"Attempting to reopen Gorgias ticket {gorgias_ticket_number} for inquiry {inquiry_id}")
+        
+        response = requests.put(
+            gorgias_url,
+            json=payload,
+            headers=headers,
+            timeout=30
+        )
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Update our local ticket status to reflect the change
+            inquiry.status = 'Engaged'  # Set back to engaged status
+            inquiry.archived = False
+            inquiry.archived_at = None
+            inquiry.updated_at = get_sydney_time()
+            db.session.commit()
+            
+            logger.info(f"Successfully reopened Gorgias ticket {gorgias_ticket_number} for inquiry {inquiry_id}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Ticket successfully reopened in Gorgias',
+                'data': {
+                    'gorgias_ticket_number': gorgias_ticket_number,
+                    'updated_status': inquiry.status
+                }
+            })
+        else:
+            # Log the error response from Gorgias
+            logger.error(f"Failed to reopen Gorgias ticket {gorgias_ticket_number}. Status: {response.status_code}, Response: {response.text}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Failed to reopen ticket in Gorgias. Status: {response.status_code}',
+                'details': response.text if response.text else 'No additional details from Gorgias API'
+            }), 500
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error when reopening Gorgias ticket for inquiry {inquiry_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Network error occurred while contacting Gorgias',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"Error reopening Gorgias ticket for inquiry {inquiry_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to reopen ticket in Gorgias',
+            'error': str(e)
+        }), 500
+
 # Error logging endpoints
 @app.route('/api/errors', methods=['POST'])
 @require_api_key

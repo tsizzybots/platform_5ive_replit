@@ -952,6 +952,53 @@ async function archiveTicket(ticketId) {
     }
 }
 
+// Reopen ticket in Gorgias function
+async function reopenTicketInGorgias(ticketId) {
+    try {
+        // Show confirmation dialog
+        if (!confirm('Are you sure you want to reopen this ticket in Gorgias? This will make the ticket active again in Gorgias and update its status in our system.')) {
+            return;
+        }
+        
+        // Find the button and disable it during the request
+        const button = document.querySelector(`button[onclick="reopenTicketInGorgias(${ticketId})"]`);
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Reopening...';
+        }
+        
+        const result = await apiRequest(`/api/inquiries/${ticketId}/reopen-gorgias`, {
+            method: 'POST'
+        });
+        
+        if (result.ok) {
+            showAlert('Ticket successfully reopened in Gorgias!', 'success');
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            // Refresh the tickets list to show updated status
+            loadTickets(currentPage);
+        } else {
+            showAlert('Failed to reopen ticket in Gorgias: ' + (result.data.message || 'Unknown error'), 'danger');
+            // Re-enable the button if the request failed
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-undo me-1"></i>Reopen Ticket';
+            }
+        }
+    } catch (error) {
+        showAlert('Error reopening ticket in Gorgias: ' + error.message, 'danger');
+        // Re-enable the button if there was an error
+        const button = document.querySelector(`button[onclick="reopenTicketInGorgias(${ticketId})"]`);
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-undo me-1"></i>Reopen Ticket';
+        }
+    }
+}
+
 // Removed edit functionality as requested
 
 // View ticket details
@@ -968,7 +1015,14 @@ async function viewTicketDetails(id) {
                     <p><strong>Subject:</strong> ${escapeHtml(ticket.subject)}</p>
                     <p><strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')}</p>
                     <p><strong>Email:</strong><br><span style="word-break: break-all; font-family: monospace; font-size: 0.9em;">${escapeHtml(ticket.sender_email)}</span></p>
-                    ${ticket.ticket_url ? `<p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>` : ''}
+                    ${ticket.ticket_url ? `
+                        <p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>
+                        ${ticket.archived ? `
+                            <p><strong>Reopen in Gorgias:</strong> <button type="button" class="btn btn-sm btn-success" onclick="reopenTicketInGorgias(${ticket.id})" title="Reopen this archived ticket in Gorgias">
+                                <i class="fas fa-undo me-1"></i>Reopen Ticket
+                            </button></p>
+                        ` : ''}
+                    ` : ''}
                 </div>
                 <div class="col-md-6">
                     <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>

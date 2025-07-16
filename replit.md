@@ -100,6 +100,11 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 16, 2025: Added "Reopen Ticket in Gorgias" functionality for archived tickets
+  - New API endpoint `/api/inquiries/{id}/reopen-gorgias` to reopen tickets in Gorgias
+  - Frontend button appears only for archived tickets with ticket URLs
+  - Integrates with Gorgias API to change ticket status from closed to open
+  - Updates local ticket status from archived back to engaged
 - June 25, 2025. Initial setup
 
 ## User Preferences
