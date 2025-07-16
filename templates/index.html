@@ -176,6 +176,26 @@
             background-color: #1a1a2e;
             border-color: #444;
         }
+        
+        /* Custom darker backdrop for reopen confirmation modal */
+        #reopenConfirmModal .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        /* Enhanced modal backdrop for better focus */
+        .modal-backdrop.show {
+            opacity: 0.8 !important;
+        }
+        
+        /* Additional styling for the reopen modal */
+        #reopenConfirmModal .modal-content {
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.4);
+            border: none;
+        }
+        
+        #reopenConfirmModal .modal-header {
+            border-bottom: 2px solid var(--bs-success);
+        }
     </style>
 </head>
 <body>
@@ -502,8 +522,8 @@
     </div>
 
     <!-- Reopen Ticket Confirmation Modal -->
-    <div class="modal fade" id="reopenConfirmModal" tabindex="-1" aria-labelledby="reopenConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="reopenConfirmModal" tabindex="-1" aria-labelledby="reopenConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog" style="margin-top: 120px;">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="reopenConfirmModalLabel">

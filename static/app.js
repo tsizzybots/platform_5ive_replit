@@ -957,8 +957,11 @@ function reopenTicketInGorgias(ticketId) {
     // Store ticket ID for the modal
     window.currentReopenTicketId = ticketId;
     
-    // Show the confirmation modal
-    const modal = new bootstrap.Modal(document.getElementById('reopenConfirmModal'));
+    // Show the confirmation modal with enhanced backdrop
+    const modal = new bootstrap.Modal(document.getElementById('reopenConfirmModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
     modal.show();
 }
 
