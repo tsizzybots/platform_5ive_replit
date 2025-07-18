@@ -1156,10 +1156,10 @@ async function viewTicketDetails(id) {
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">QA Reviewer</label>
-                                                <div class="form-control-plaintext bg-light rounded px-3 py-2">
-                                                    ${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}
-                                                </div>
+                                                <label for="qa_reviewer" class="form-label">QA Reviewer</label>
+                                                <input type="text" class="form-control" id="qa_reviewer" name="qa_reviewer" 
+                                                       value="${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}"
+                                                       style="background-color: #1a1a1a !important; border-color: #444 !important; color: #ffffff !important;">
                                             </div>
                                         </div>
                                     </div>

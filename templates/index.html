@@ -213,18 +213,28 @@
             cursor: help;
         }
         
-        /* QA Reviewer input styling for dark mode - stronger selectors */
-        input#qa_reviewer,
-        [data-bs-theme="dark"] input#qa_reviewer,
-        .modal input#qa_reviewer {
+        /* QA Reviewer input styling for dark mode - strongest selectors */
+        input[id="qa_reviewer"],
+        input[name="qa_reviewer"],
+        .modal input[id="qa_reviewer"],
+        .modal input[name="qa_reviewer"],
+        .modal-body input[id="qa_reviewer"],
+        .modal-content input[id="qa_reviewer"],
+        [data-bs-theme="dark"] input[id="qa_reviewer"],
+        [data-bs-theme="dark"] input[name="qa_reviewer"] {
             background-color: #1a1a1a !important;
-            border-color: #444 !important;
+            border: 1px solid #444 !important;
             color: #ffffff !important;
         }
         
-        input#qa_reviewer:focus,
-        [data-bs-theme="dark"] input#qa_reviewer:focus,
-        .modal input#qa_reviewer:focus {
+        input[id="qa_reviewer"]:focus,
+        input[name="qa_reviewer"]:focus,
+        .modal input[id="qa_reviewer"]:focus,
+        .modal input[name="qa_reviewer"]:focus,
+        .modal-body input[id="qa_reviewer"]:focus,
+        .modal-content input[id="qa_reviewer"]:focus,
+        [data-bs-theme="dark"] input[id="qa_reviewer"]:focus,
+        [data-bs-theme="dark"] input[name="qa_reviewer"]:focus {
             background-color: #1a1a1a !important;
             border-color: #60a5fa !important;
             color: #ffffff !important;
@@ -233,8 +243,9 @@
         
         /* Modal backdrop styling */
         .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(8px);
+            background-color: rgba(0, 0, 0, 0.9) !important;
+            backdrop-filter: blur(15px) !important;
+            -webkit-backdrop-filter: blur(15px) !important;
         }
         
         /* Darken the ticket details modal when reopen confirmation is shown */
@@ -279,7 +290,9 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div class="logo-container">
                         <img src="{{ url_for('static', filename='izzyagents_logo_white.png') }}" alt="IzzyAgents Logo" class="logo-img">
-                        <h2 class="mb-0">
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center w-100">
+                        <h2 class="mb-0 text-center">
                             Sweats Collective Email AI Agent Dashboard
                         </h2>
                     </div>
