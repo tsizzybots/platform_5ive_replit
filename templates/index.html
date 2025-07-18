@@ -192,6 +192,47 @@
             margin-bottom: 0;
         }
         
+        /* Stats card tooltips */
+        .stats-card {
+            position: relative;
+        }
+        
+        .stats-card .info-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 16px;
+            height: 16px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #333;
+            cursor: help;
+        }
+        
+        /* QA Reviewer input styling for dark mode */
+        [data-bs-theme="dark"] #qa_reviewer {
+            background-color: #1a1a1a !important;
+            border-color: #444 !important;
+            color: #ffffff !important;
+        }
+        
+        [data-bs-theme="dark"] #qa_reviewer:focus {
+            background-color: #1a1a1a !important;
+            border-color: #60a5fa !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25) !important;
+        }
+        
+        /* Modal backdrop styling */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            backdrop-filter: blur(3px);
+        }
+        
         /* Darken the ticket details modal when reopen confirmation is shown */
         .modal-dimmed {
             position: relative;
@@ -232,10 +273,9 @@
         <div class="row">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="logo-container">
-                        <img src="{{ url_for('static', filename='izzyagents_logo_white.png') }}" alt="IzzyAgents Logo" class="logo-img">
-                        <h1 class="mb-0">
-                            IzzyAgents & Sweats Collective - Email AI Agent Dashboard
+                    <div class="d-flex justify-content-center align-items-center w-100">
+                        <h1 class="mb-0 text-center">
+                            Sweats Collective Email AI Agent Dashboard
                         </h1>
                     </div>
                     <div class="d-flex align-items-center">

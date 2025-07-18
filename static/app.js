@@ -227,7 +227,8 @@ function displayStats(stats) {
     
     container.innerHTML = `
         <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-primary text-white">
+            <div class="card stats-card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets reviewed by AI">
+                <div class="info-icon">i</div>
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.total_inquiries}</h3>
                     <p class="card-text mb-0">Total Tickets</p>
@@ -235,7 +236,8 @@ function displayStats(stats) {
             </div>
         </div>
         <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-success text-white">
+            <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI engaged with and closed">
+                <div class="info-icon">i</div>
                 <div class="card-body text-center">
                     <h3 class="card-title">${stats.engaged_inquiries}</h3>
                     <p class="card-text mb-0">Engaged</p>
@@ -243,7 +245,8 @@ function displayStats(stats) {
             </div>
         </div>
         <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-warning text-white">
+            <div class="card stats-card bg-warning text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets regarding commercial / marketing inquiries">
+                <div class="info-icon">i</div>
                 <div class="card-body text-center">
                     <h3 class="card-title">${marketingCount}</h3>
                     <p class="card-text mb-0">Marketing</p>
@@ -251,7 +254,8 @@ function displayStats(stats) {
             </div>
         </div>
         <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-secondary text-white">
+            <div class="card stats-card bg-secondary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI did not engage and were left in the Gorgias inbox">
+                <div class="info-icon">i</div>
                 <div class="card-body text-center">
                     <h3 class="card-title">${skippedCount}</h3>
                     <p class="card-text mb-0">Skipped</p>
@@ -259,7 +263,8 @@ function displayStats(stats) {
             </div>
         </div>
         <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-info text-white">
+            <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of automated tickets automatically closed within Gorgias">
+                <div class="info-icon">i</div>
                 <div class="card-body text-center">
                     <h3 class="card-title">${archivedCount}</h3>
                     <p class="card-text mb-0">Archived</p>
@@ -267,6 +272,10 @@ function displayStats(stats) {
             </div>
         </div>
     `;
+    
+    // Initialize Bootstrap tooltips for the newly created cards
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 }
 
 
