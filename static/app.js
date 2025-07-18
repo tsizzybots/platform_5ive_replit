@@ -8,6 +8,27 @@ let emailSearchTimeout = null;
 let currentDateRangeLabel = sessionStorage.getItem('dateRangeLabel') || null;
 let selectedTickets = new Set();
 
+// Add blur effect when modals are shown
+function addModalBlurEffects() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.addEventListener('show.bs.modal', function() {
+            const mainContent = document.querySelector('.container');
+            if (mainContent) {
+                mainContent.style.filter = 'blur(10px)';
+                mainContent.style.transition = 'filter 0.3s ease';
+            }
+        });
+        
+        modal.addEventListener('hidden.bs.modal', function() {
+            const mainContent = document.querySelector('.container');
+            if (mainContent) {
+                mainContent.style.filter = 'none';
+            }
+        });
+    });
+}
+
 // Load current user information
 async function loadCurrentUser() {
     try {
@@ -37,6 +58,7 @@ async function loadCurrentUser() {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
+    addModalBlurEffects();
     
     // Initialize date range display - start fresh each time
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');
@@ -1247,6 +1269,21 @@ async function viewTicketDetails(id) {
             document.body.classList.remove('modal-open');
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
+            
+            // Remove blur effect
+            const mainContent = document.querySelector('.container');
+            if (mainContent) {
+                mainContent.style.filter = 'none';
+            }
+        }, { once: true });
+        
+        // Add blur effect to background when showing modal
+        modalElement.addEventListener('shown.bs.modal', function () {
+            const mainContent = document.querySelector('.container');
+            if (mainContent) {
+                mainContent.style.filter = 'blur(12px)';
+                mainContent.style.transition = 'filter 0.3s ease';
+            }
         }, { once: true });
         
         modal.show();

@@ -241,11 +241,30 @@
             box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.25) !important;
         }
         
-        /* Modal backdrop styling */
+        /* Modal backdrop styling - stronger blur and positioning */
         .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.9) !important;
-            backdrop-filter: blur(15px) !important;
-            -webkit-backdrop-filter: blur(15px) !important;
+            background-color: rgba(0, 0, 0, 0.95) !important;
+            backdrop-filter: blur(25px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1040 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+        
+        /* Additional blur for content behind modals */
+        .modal.show ~ .container,
+        .modal.show ~ * {
+            filter: blur(8px) !important;
+            -webkit-filter: blur(8px) !important;
+        }
+        
+        /* Ensure modal content is not blurred */
+        .modal-dialog {
+            filter: none !important;
+            -webkit-filter: none !important;
         }
         
         /* Darken the ticket details modal when reopen confirmation is shown */
