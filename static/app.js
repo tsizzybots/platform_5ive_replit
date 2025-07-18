@@ -144,33 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Theme toggle functionality
-function toggleTheme() {
-    const html = document.documentElement;
-    const themeIcon = document.getElementById('themeIcon');
-    const currentTheme = html.getAttribute('data-bs-theme');
-    
-    if (currentTheme === 'dark') {
-        html.setAttribute('data-bs-theme', 'light');
-        themeIcon.className = 'fas fa-moon';
-    } else {
-        html.setAttribute('data-bs-theme', 'dark');
-        themeIcon.className = 'fas fa-sun';
-    }
-    
-    // Re-render chart with new theme colors if chart exists
-    if (dailyChart && dailyChart.data.datasets.length > 0) {
-        const chartData = dailyChart.data.datasets[0].data.map((_, index) => {
-            return {
-                date: dailyChart.data.labels[index],
-                total: dailyChart.data.datasets[0].data[index] || 0,
-                engaged: dailyChart.data.datasets[1].data[index] || 0,
-                escalated: dailyChart.data.datasets[2].data[index] || 0,
-                skipped: dailyChart.data.datasets[3].data[index] || 0
-            };
-        });
-        renderChart(chartData);
-    }
-}
+
 
 
 
@@ -1630,12 +1604,12 @@ async function loadDailyStats() {
 }
 
 function getThemeColors() {
-    const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    // Always use dark mode colors
     return {
-        textColor: isDarkMode ? '#ffffff' : '#212529',
-        gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-        titleColor: isDarkMode ? '#ffffff' : '#212529',
-        legendColor: isDarkMode ? '#ffffff' : '#212529'
+        textColor: '#ffffff',
+        gridColor: 'rgba(255, 255, 255, 0.2)',
+        titleColor: '#ffffff',
+        legendColor: '#ffffff'
     };
 }
 
@@ -1733,8 +1707,7 @@ function renderChart(data) {
                         usePointStyle: false,
                         generateLabels: function(chart) {
                             const datasets = chart.data.datasets;
-                            const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-                            const labelColor = isDarkMode ? '#ffffff' : '#212529';
+                            const labelColor = '#ffffff'; // Always use white for dark mode
                             return datasets.map((dataset, i) => ({
                                 text: dataset.label,
                                 fillStyle: dataset.backgroundColor,
