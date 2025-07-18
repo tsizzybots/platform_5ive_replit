@@ -184,11 +184,11 @@
             gap: 15px;
         }
         .logo-img {
-            width: 250px;
+            width: 200px;
             height: auto;
         }
-        .logo-container h1 {
-            font-size: 1.5rem;
+        .logo-container h2 {
+            font-size: 1.3rem;
             margin-bottom: 0;
         }
         
@@ -213,14 +213,18 @@
             cursor: help;
         }
         
-        /* QA Reviewer input styling for dark mode */
-        [data-bs-theme="dark"] #qa_reviewer {
+        /* QA Reviewer input styling for dark mode - stronger selectors */
+        input#qa_reviewer,
+        [data-bs-theme="dark"] input#qa_reviewer,
+        .modal input#qa_reviewer {
             background-color: #1a1a1a !important;
             border-color: #444 !important;
             color: #ffffff !important;
         }
         
-        [data-bs-theme="dark"] #qa_reviewer:focus {
+        input#qa_reviewer:focus,
+        [data-bs-theme="dark"] input#qa_reviewer:focus,
+        .modal input#qa_reviewer:focus {
             background-color: #1a1a1a !important;
             border-color: #60a5fa !important;
             color: #ffffff !important;
@@ -229,8 +233,8 @@
         
         /* Modal backdrop styling */
         .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.7) !important;
-            backdrop-filter: blur(3px);
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(8px);
         }
         
         /* Darken the ticket details modal when reopen confirmation is shown */
@@ -273,10 +277,11 @@
         <div class="row">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="d-flex justify-content-center align-items-center w-100">
-                        <h1 class="mb-0 text-center">
+                    <div class="logo-container">
+                        <img src="{{ url_for('static', filename='izzyagents_logo_white.png') }}" alt="IzzyAgents Logo" class="logo-img">
+                        <h2 class="mb-0">
                             Sweats Collective Email AI Agent Dashboard
-                        </h1>
+                        </h2>
                     </div>
                     <div class="d-flex align-items-center">
                         <span class="me-3" id="currentUsername">Loading...</span>
