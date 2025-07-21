@@ -311,7 +311,7 @@
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 1070;
+            z-index: 9999;
             display: none;
             resize: both;
             overflow: hidden;
@@ -388,16 +388,17 @@
         }
         
         .message.user {
-            background: var(--bs-primary);
-            color: white;
-            margin-left: auto;
-            text-align: right;
+            background: var(--bs-secondary);
+            color: var(--bs-body-color);
+            margin-right: auto;
+            text-align: left;
         }
         
         .message.ai {
             background: var(--bs-primary);
             color: white;
-            margin-right: auto;
+            margin-left: auto;
+            text-align: right;
         }
         
         .test-ai-input {
@@ -419,6 +420,20 @@
         .send-btn {
             margin-top: 8px;
             width: 100%;
+        }
+        
+        /* Prevent blur effect on Test AI modal */
+        .test-ai-modal,
+        .test-ai-modal * {
+            filter: none !important;
+            -webkit-filter: none !important;
+        }
+        
+        /* Ensure Test AI modal is never blurred by any backdrop */
+        body.modal-open .test-ai-modal {
+            filter: none !important;
+            -webkit-filter: none !important;
+            z-index: 9999 !important;
         }
     </style>
 </head>

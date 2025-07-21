@@ -119,7 +119,7 @@ async function sendTestMessage() {
     // Add user message to chat
     const userMessage = document.createElement('div');
     userMessage.className = 'message user';
-    userMessage.innerHTML = `<small class="text-muted">You</small><br>${message}`;
+    userMessage.innerHTML = `<small style="color: var(--bs-gray-600);">You</small><br>${message}`;
     messagesContainer.appendChild(userMessage);
 
     // Clear input
