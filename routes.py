@@ -224,55 +224,55 @@ def update_messenger_session(session_id):
 
 @app.route('/api/messenger-sessions', methods=['GET'])
 def get_messenger_sessions():
-    """Get messenger sessions with filtering and pagination"""
+    """Get messenger sessions with filtering and pagination - now from Supabase"""
     try:
         query_params = chat_session_query_schema.load(request.args)
         
-        query = ChatSession.query
-        
-        # Apply filters
-        if 'status' in query_params:
-            query = query.filter(ChatSession.status == query_params['status'])
-        
-        if 'ai_engaged' in query_params:
-            query = query.filter(ChatSession.ai_engaged == query_params['ai_engaged'])
-        
-        if 'contact_id' in query_params:
-            query = query.filter(ChatSession.contact_id.ilike(f"%{query_params['contact_id']}%"))
-        
-        if 'session_id' in query_params:
-            query = query.filter(ChatSession.session_id == query_params['session_id'])
-        
+        # Prepare filters for Supabase
+        filters = {}
         if 'date_from' in query_params:
-            query = query.filter(ChatSession.conversation_start >= query_params['date_from'])
-        
+            filters['date_from'] = query_params['date_from'].isoformat()
         if 'date_to' in query_params:
-            query = query.filter(ChatSession.conversation_start <= query_params['date_to'])
-        
-        if 'qa_status' in query_params:
-            query = query.filter(ChatSession.qa_status == query_params['qa_status'])
-        
-        # Order by creation date (newest first)
-        query = query.order_by(ChatSession.created_at.desc())
+            filters['date_to'] = query_params['date_to'].isoformat()
+        if 'contact_id' in query_params:
+            filters['contact_id'] = query_params['contact_id']
+        if 'session_id' in query_params:
+            filters['session_id'] = query_params['session_id']
         
         # Pagination
         page = query_params.get('page', 1)
         per_page = query_params.get('per_page', 20)
+        offset = (page - 1) * per_page
         
-        paginated = query.paginate(
-            page=page, per_page=per_page, error_out=False
+        # Get sessions from Supabase
+        result = supabase_service.get_sessions(
+            limit=per_page,
+            offset=offset,
+            filters=filters
         )
+        
+        if result.get('error'):
+            logger.error(f"Supabase error: {result['error']}")
+            # Fallback to empty result
+            sessions = []
+            total = 0
+        else:
+            sessions = result.get('sessions', [])
+            total = result.get('total', 0)
+        
+        # Calculate pagination info
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
         
         return jsonify({
             'status': 'success',
-            'data': chat_session_schema.dump(paginated.items, many=True),
+            'data': sessions,
             'pagination': {
-                'page': paginated.page,
-                'pages': paginated.pages,
-                'per_page': paginated.per_page,
-                'total': paginated.total,
-                'has_next': paginated.has_next,
-                'has_prev': paginated.has_prev
+                'page': page,
+                'pages': total_pages,
+                'per_page': per_page,
+                'total': total,
+                'has_next': page < total_pages,
+                'has_prev': page > 1
             }
         })
         

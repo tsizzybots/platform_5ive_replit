@@ -15,7 +15,7 @@ class SupabaseService:
     def __init__(self):
         """Initialize Supabase client"""
         self.supabase_url = os.environ.get('SUPABASE_URL')
-        self.supabase_key = os.environ.get('SUPABASE_ANON_KEY')
+        self.supabase_key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
         
         if not self.supabase_url or not self.supabase_key:
             logger.error("Supabase credentials not found in environment variables")
