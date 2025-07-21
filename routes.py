@@ -309,7 +309,8 @@ def get_messenger_sessions():
             sessions = result.get('sessions', [])
             total = result.get('total', 0)
             
-            # Merge QA data from PostgreSQL for each session
+            # Merge QA data from PostgreSQL for each session and filter archived
+            filtered_sessions = []
             for session in sessions:
                 session_id_str = session.get('session_id')
                 if session_id_str:
@@ -325,6 +326,16 @@ def get_messenger_sessions():
                         session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
                     else:
                         session['qa_status'] = 'unchecked'
+                
+                # Only include non-archived sessions unless specifically requested
+                qa_status_filter = query_params.get('qa_status')
+                if qa_status_filter == 'archived' or session.get('qa_status') != 'archived':
+                    filtered_sessions.append(session)
+            
+            sessions = filtered_sessions
+            # Adjust total count for filtered sessions
+            if qa_status_filter != 'archived':
+                total = len(sessions)
         
         # Calculate pagination info
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
@@ -499,6 +510,7 @@ def get_messenger_session_stats():
         unchecked_sessions = sum(1 for s in sessions if s.get('qa_status') == 'unchecked')
         issue_sessions = sum(1 for s in sessions if s.get('qa_status') == 'issue')
         fixed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'fixed')
+        archived_sessions = sum(1 for s in sessions if s.get('qa_status') == 'archived')
         
         return jsonify({
             'status': 'success',
@@ -510,7 +522,8 @@ def get_messenger_session_stats():
                 'incomplete': incomplete_sessions,
                 'unchecked': unchecked_sessions,
                 'issue': issue_sessions,
-                'fixed': fixed_sessions
+                'fixed': fixed_sessions,
+                'archived': archived_sessions
             }
         })
         

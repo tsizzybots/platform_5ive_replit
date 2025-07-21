@@ -1185,7 +1185,7 @@ async function markSelectedAsPassed() {
         
         // Update QA status for each selected ticket
         for (const ticketId of selectedTickets) {
-            const response = await fetch(`/api/inquiries/${ticketId}/qa`, {
+            const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1257,16 +1257,25 @@ async function performBulkArchive() {
         let successCount = 0;
         let failureCount = 0;
         
-        // Archive each selected ticket
+        // Archive each selected ticket by updating status
         for (const ticketId of selectedTickets) {
-            const result = await apiRequest(`/api/inquiries/${ticketId}`, {
-                method: 'DELETE'
+            const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    qa_status: 'archived',
+                    qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
+                }),
+                credentials: 'same-origin'
             });
             
-            if (result.ok) {
+            if (response.ok) {
                 successCount++;
             } else {
                 failureCount++;
+                console.error(`Failed to archive ticket ${ticketId}:`, await response.text());
             }
         }
         
@@ -1318,11 +1327,11 @@ async function applyBulkStatus() {
         
         // Update each selected ticket
         for (const ticketId of selectedTickets) {
-            const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+            const result = await apiRequest(`/api/messenger-sessions/${ticketId}`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     status: selectedStatus,
-                    engaged: selectedStatus === 'Engaged'
+                    ai_engaged: selectedStatus === 'active'
                 })
             });
             
