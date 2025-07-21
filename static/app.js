@@ -149,48 +149,84 @@ async function sendTestMessage() {
         // Send to actual webhook
         const webhookUrl = 'https://n8n-g0cw.onrender.com/webhook-test/stay-golden-health-ai-agent';
         
+        console.log('Sending payload to webhook:', webhookUrl, payload);
+        
         const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            mode: 'cors'
         });
+
+        console.log('Webhook response status:', response.status);
+        console.log('Webhook response headers:', [...response.headers.entries()]);
 
         // Remove typing indicator
         messagesContainer.removeChild(typingIndicator);
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Webhook error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
-        const aiResponse = await response.json();
+        const responseText = await response.text();
+        console.log('Raw webhook response:', responseText);
+        
+        let aiResponse;
+        try {
+            aiResponse = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse JSON response:', parseError);
+            throw new Error('Invalid JSON response from webhook');
+        }
+
+        console.log('Parsed AI response:', aiResponse);
 
         // Save session ID for future messages
-        if (!testAISessionId) {
+        if (!testAISessionId && aiResponse.sessionId) {
             testAISessionId = aiResponse.sessionId;
         }
 
+        // Extract the AI response message - handle different possible response formats
+        let aiMessage = '';
+        if (aiResponse.aiResponse) {
+            aiMessage = aiResponse.aiResponse;
+        } else if (aiResponse.message) {
+            aiMessage = aiResponse.message;
+        } else if (aiResponse.response) {
+            aiMessage = aiResponse.response;
+        } else if (typeof aiResponse === 'string') {
+            aiMessage = aiResponse;
+        } else {
+            aiMessage = 'AI response received but format not recognized';
+        }
+
         // Add AI response to chat
-        const aiMessage = document.createElement('div');
-        aiMessage.className = 'message ai';
-        aiMessage.innerHTML = `<small class="text-muted">AI Agent</small><br>${aiResponse.aiResponse}`;
-        messagesContainer.appendChild(aiMessage);
+        const aiMessageDiv = document.createElement('div');
+        aiMessageDiv.className = 'message ai';
+        aiMessageDiv.innerHTML = `<small class="text-muted">AI Agent</small><br>${aiMessage}`;
+        messagesContainer.appendChild(aiMessageDiv);
 
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     } catch (error) {
+        console.error('Webhook request failed:', error);
+        
         // Remove typing indicator if it exists
         const typingIndicator = messagesContainer.querySelector('.typing-indicator');
         if (typingIndicator) {
             messagesContainer.removeChild(typingIndicator);
         }
 
-        // Show error message
+        // Show detailed error message
         const errorMessage = document.createElement('div');
         errorMessage.className = 'message ai';
-        errorMessage.innerHTML = `<small class="text-muted text-danger">Error</small><br>Failed to get AI response. Please check webhook configuration.`;
+        errorMessage.innerHTML = `<small class="text-muted text-danger">Error</small><br>Failed to get AI response: ${error.message}<br><small class="text-muted">Check browser console for more details.</small>`;
         messagesContainer.appendChild(errorMessage);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
