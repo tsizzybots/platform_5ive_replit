@@ -7,6 +7,7 @@ let currentUser = null;
 let emailSearchTimeout = null;
 let currentDateRangeLabel = sessionStorage.getItem('dateRangeLabel') || null;
 let selectedTickets = new Set();
+let currentMode = 'messenger'; // Default to messenger sessions mode
 
 // Add blur effect when modals are shown
 function addModalBlurEffects() {
@@ -76,6 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dateFromInput) dateFromInput.value = '';
     if (dateToInput) dateToInput.value = '';
     
+    // Set up mode switching
+    setupModeSwitching();
+    
+    // Load data based on current mode
     loadStats();
     loadTickets();
     loadInquiryTypes();
@@ -201,29 +206,38 @@ async function apiRequest(url, options = {}) {
 
 // Load inquiry types and populate dropdown
 async function loadInquiryTypes() {
-    const result = await apiRequest('/api/inquiries/types');
-    
-    if (result.ok) {
-        const dropdown = document.getElementById('inquiryTypeFilter');
-        // Clear existing options except "All Types"
-        dropdown.innerHTML = '<option value="">All Types</option>';
+    // Only load inquiry types for email mode, messenger mode doesn't use them
+    if (currentMode === 'email') {
+        const result = await apiRequest('/api/inquiries/types');
         
-        // Add each inquiry type as an option
-        result.data.data.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            dropdown.appendChild(option);
-        });
+        if (result.ok) {
+            const dropdown = document.getElementById('inquiryTypeFilter');
+            // Clear existing options except "All Types"
+            dropdown.innerHTML = '<option value="">All Types</option>';
+            
+            // Add each inquiry type as an option
+            result.data.data.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                dropdown.appendChild(option);
+            });
+        } else {
+            console.error('Failed to load inquiry types:', result.data.message);
+        }
     } else {
-        console.error('Failed to load inquiry types:', result.data.message);
+        // For messenger mode, clear the inquiry type dropdown
+        const dropdown = document.getElementById('inquiryTypeFilter');
+        if (dropdown) {
+            dropdown.innerHTML = '<option value="">All Types</option>';
+        }
     }
 }
 
 // Load statistics with optional date filtering
 async function loadStats(dateFilters = {}) {
     const params = new URLSearchParams(dateFilters);
-    const url = '/api/inquiries/stats' + (params.toString() ? '?' + params.toString() : '');
+    const url = getApiEndpoint('stats') + (params.toString() ? '?' + params.toString() : '');
     const result = await apiRequest(url);
     
     if (result.ok) {
@@ -243,57 +257,106 @@ async function loadStats(dateFilters = {}) {
 // Display statistics as cards
 function displayStats(stats) {
     const container = document.getElementById('statsContainer');
-    const marketingCount = stats.marketing_inquiries || 0;
-    const archivedCount = stats.archived_inquiries || 0;
-    const skippedCount = stats.skipped_inquiries || 0;
     
-    container.innerHTML = `
-        <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets reviewed by AI">
-                <div class="info-icon">i</div>
-                <div class="card-body text-center">
-                    <h3 class="card-title">${stats.total_inquiries}</h3>
-                    <p class="card-text mb-0">Total Tickets</p>
+    if (currentMode === 'messenger') {
+        // Messenger session stats
+        const totalSessions = stats.total_sessions || 0;
+        const passedSessions = stats.passed || 0;
+        const uncheckedSessions = stats.unchecked || 0;
+        const issueSessions = stats.issues || 0;
+        
+        container.innerHTML = `
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card stats-card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of messenger sessions">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${totalSessions}</h3>
+                        <p class="card-text mb-0">Total Sessions</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI engaged with and closed">
-                <div class="info-icon">i</div>
-                <div class="card-body text-center">
-                    <h3 class="card-title">${stats.engaged_inquiries}</h3>
-                    <p class="card-text mb-0">Engaged</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions that have been QA checked and marked as passed">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${passedSessions}</h3>
+                        <p class="card-text mb-0">Passed</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-warning text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets regarding commercial / marketing inquiries">
-                <div class="info-icon">i</div>
-                <div class="card-body text-center">
-                    <h3 class="card-title">${marketingCount}</h3>
-                    <p class="card-text mb-0">Marketing</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card stats-card bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions with no QA status set">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${uncheckedSessions}</h3>
+                        <p class="card-text mb-0">Unchecked</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-secondary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI did not engage and were left in the Gorgias inbox">
-                <div class="info-icon">i</div>
-                <div class="card-body text-center">
-                    <h3 class="card-title">${skippedCount}</h3>
-                    <p class="card-text mb-0">Skipped</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card stats-card bg-danger text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions marked with any QA flag indicating an issue">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${issueSessions}</h3>
+                        <p class="card-text mb-0">Issues</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-2-4 col-md-6 mb-3">
-            <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of automated tickets automatically closed within Gorgias">
-                <div class="info-icon">i</div>
-                <div class="card-body text-center">
-                    <h3 class="card-title">${archivedCount}</h3>
-                    <p class="card-text mb-0">Archived</p>
+        `;
+    } else {
+        // Email inquiry stats
+        const marketingCount = stats.marketing_inquiries || 0;
+        const archivedCount = stats.archived_inquiries || 0;
+        const skippedCount = stats.skipped_inquiries || 0;
+        
+        container.innerHTML = `
+            <div class="col-lg-2-4 col-md-6 mb-3">
+                <div class="card stats-card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets reviewed by AI">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${stats.total_inquiries}</h3>
+                        <p class="card-text mb-0">Total Tickets</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+            <div class="col-lg-2-4 col-md-6 mb-3">
+                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI engaged with and closed">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${stats.engaged_inquiries}</h3>
+                        <p class="card-text mb-0">Engaged</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2-4 col-md-6 mb-3">
+                <div class="card stats-card bg-warning text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets regarding commercial / marketing inquiries">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${marketingCount}</h3>
+                        <p class="card-text mb-0">Marketing</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2-4 col-md-6 mb-3">
+                <div class="card stats-card bg-secondary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of tickets AI did not engage and were left in the Gorgias inbox">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${skippedCount}</h3>
+                        <p class="card-text mb-0">Skipped</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2-4 col-md-6 mb-3">
+                <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of automated tickets automatically closed within Gorgias">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${archivedCount}</h3>
+                        <p class="card-text mb-0">Archived</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
     
     // Initialize Bootstrap tooltips for the newly created cards
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -583,7 +646,7 @@ async function loadTickets(page = 1) {
         ...currentFilters
     });
 
-    const result = await apiRequest(`/api/inquiries?${params}`);
+    const result = await apiRequest(`${getApiEndpoint('list')}?${params}`);
     
     if (result.ok) {
         displayTickets(result.data.data, result.data.pagination);
@@ -603,68 +666,129 @@ function displayTickets(tickets, pagination) {
     const container = document.getElementById('ticketsContainer');
     
     if (tickets.length === 0) {
+        const noResultsText = currentMode === 'messenger' ? 'No messenger sessions found matching your criteria.' : 'No tickets found matching your criteria.';
         container.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                No tickets found matching your criteria.
+                ${noResultsText}
             </div>
         `;
         return;
     }
 
     let html = '<div class="table-responsive"><table class="table table-hover ticket-table">';
-    html += `
-        <thead>
-            <tr>
-                <th class="checkbox-column">
-                    <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
-                </th>
-                <th style="width: 12%;">Received</th>
-                <th style="width: 8%;">Ticket ID</th>
-                <th style="width: 10%;">Inquiry Type</th>
-                <th style="width: 22%;">Subject</th>
-                <th style="width: 15%;">Sender</th>
-                <th style="width: 8%;">Status</th>
-                <th style="width: 8%;">QA Status</th>
-                <th style="width: 10%; padding-right: 8px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-    `;
+    
+    if (currentMode === 'messenger') {
+        // Messenger sessions table headers
+        html += `
+            <thead>
+                <tr>
+                    <th class="checkbox-column">
+                        <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
+                    </th>
+                    <th style="width: 12%;">Created</th>
+                    <th style="width: 10%;">Session ID</th>
+                    <th style="width: 8%;">User ID</th>
+                    <th style="width: 25%;">Message Content</th>
+                    <th style="width: 10%;">Engagement Score</th>
+                    <th style="width: 8%;">QA Status</th>
+                    <th style="width: 15%; padding-right: 8px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+    } else {
+        // Email inquiries table headers  
+        html += `
+            <thead>
+                <tr>
+                    <th class="checkbox-column">
+                        <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
+                    </th>
+                    <th style="width: 12%;">Received</th>
+                    <th style="width: 8%;">Ticket ID</th>
+                    <th style="width: 10%;">Inquiry Type</th>
+                    <th style="width: 22%;">Subject</th>
+                    <th style="width: 15%;">Sender</th>
+                    <th style="width: 8%;">Status</th>
+                    <th style="width: 8%;">QA Status</th>
+                    <th style="width: 10%; padding-right: 8px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+    }
 
     tickets.forEach(ticket => {
-        const statusBadge = getStatusBadge(ticket.status, ticket.archived);
-        const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
-        
-        html += `
-            <tr id="ticket-row-${ticket.id}" class="ticket-row">
-                <td class="checkbox-column">
-                    <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
-                </td>
-                <td class="text-nowrap">${formatDate(ticket.received_date)}</td>
-                <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
-                <td class="text-nowrap">${escapeHtml(ticket.inquiry_type || 'N/A')}</td>
-                <td class="text-truncate" style="max-width: 230px;" title="${escapeHtml(ticket.subject)}">
-                    ${escapeHtml(ticket.subject)}
-                </td>
-                <td class="sender-column" style="max-width: 150px;">
-                    <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
-                    <small class="text-muted text-truncate d-block" style="max-width: 150px;" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
-                </td>
-                <td>${statusBadge}</td>
-                <td>${qaStatusBadge}</td>
-                <td>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTicket(${ticket.id})" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        if (currentMode === 'messenger') {
+            // Messenger sessions row
+            const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
+            const engagementScore = ticket.engagement_score ? ticket.engagement_score.toFixed(2) : 'N/A';
+            
+            html += `
+                <tr id="ticket-row-${ticket.id}" class="ticket-row">
+                    <td class="checkbox-column">
+                        <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
+                    </td>
+                    <td class="text-nowrap">${formatDate(ticket.created_at)}</td>
+                    <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
+                    <td class="text-nowrap">${escapeHtml(ticket.user_id || 'N/A')}</td>
+                    <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.message_content)}">
+                        ${escapeHtml(ticket.message_content || 'N/A')}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${engagementScore !== 'N/A' && parseFloat(engagementScore) > 7 ? 'bg-success' : engagementScore !== 'N/A' && parseFloat(engagementScore) > 4 ? 'bg-warning' : 'bg-secondary'}">
+                            ${engagementScore}
+                        </span>
+                    </td>
+                    <td>${qaStatusBadge}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTicket(${ticket.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            // Email inquiries row
+            const statusBadge = getStatusBadge(ticket.status, ticket.archived);
+            const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
+            
+            html += `
+                <tr id="ticket-row-${ticket.id}" class="ticket-row">
+                    <td class="checkbox-column">
+                        <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
+                    </td>
+                    <td class="text-nowrap">${formatDate(ticket.received_date)}</td>
+                    <td><strong>${escapeHtml(ticket.ticket_id || 'N/A')}</strong></td>
+                    <td class="text-nowrap">${escapeHtml(ticket.inquiry_type || 'N/A')}</td>
+                    <td class="text-truncate" style="max-width: 230px;" title="${escapeHtml(ticket.subject)}">
+                        ${escapeHtml(ticket.subject)}
+                    </td>
+                    <td class="sender-column" style="max-width: 150px;">
+                        <div class="text-truncate" title="${escapeHtml(ticket.sender_name || 'Unknown')}"><strong>${escapeHtml(ticket.sender_name || 'Unknown')}</strong></div>
+                        <small class="text-muted text-truncate d-block" style="max-width: 150px;" title="${escapeHtml(ticket.sender_email)}">${escapeHtml(ticket.sender_email)}</small>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>${qaStatusBadge}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTicket(${ticket.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     });
 
     html += '</tbody></table></div>';
@@ -1850,6 +1974,87 @@ function updateChartDateRange(dateFrom, dateTo) {
         chartDateRangeElement.textContent = `${fromFormatted} - ${toFormatted}`;
     } else {
         chartDateRangeElement.textContent = 'Current Month';
+    }
+}
+
+// Mode switching functionality
+function setupModeSwitching() {
+    const emailModeBtn = document.getElementById('emailMode');
+    const messengerModeBtn = document.getElementById('messengerMode');
+    const dashboardTitle = document.getElementById('dashboardText');
+    
+    // Set default mode to messenger
+    currentMode = 'messenger';
+    messengerModeBtn.checked = true;
+    updateDashboardTitle();
+    
+    // Add event listeners
+    emailModeBtn.addEventListener('change', function() {
+        if (this.checked) {
+            currentMode = 'email';
+            updateDashboardTitle();
+            resetFiltersAndReload();
+        }
+    });
+    
+    messengerModeBtn.addEventListener('change', function() {
+        if (this.checked) {
+            currentMode = 'messenger';
+            updateDashboardTitle();
+            resetFiltersAndReload();
+        }
+    });
+}
+
+function updateDashboardTitle() {
+    const dashboardText = document.getElementById('dashboardText');
+    if (currentMode === 'email') {
+        dashboardText.textContent = 'Sweats Collective Email AI Agent Dashboard';
+    } else {
+        dashboardText.textContent = 'Sweats Collective AI Messenger Sessions Dashboard';
+    }
+}
+
+function resetFiltersAndReload() {
+    // Clear current filters and reset to page 1
+    currentPage = 1;
+    currentFilters = {};
+    selectedTickets.clear();
+    
+    // Clear filter inputs
+    const filterInputs = document.querySelectorAll('#statusFilter, #engagedFilter, #qaStatusFilter, #senderEmailFilter, #ticketIdFilter, #inquiryTypeFilter');
+    filterInputs.forEach(input => {
+        if (input.type === 'select-one') {
+            input.selectedIndex = 0;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Reload data
+    loadStats();
+    loadTickets();
+    loadInquiryTypes();
+}
+
+// Update API endpoints based on current mode
+function getApiEndpoint(endpoint) {
+    if (currentMode === 'messenger') {
+        switch(endpoint) {
+            case 'list': return '/api/messenger-sessions';
+            case 'stats': return '/api/messenger-sessions/stats';
+            case 'get': return '/api/messenger-sessions/';
+            case 'qa': return '/api/messenger-sessions/';
+            default: return endpoint;
+        }
+    } else {
+        switch(endpoint) {
+            case 'list': return '/api/inquiries';
+            case 'stats': return '/api/inquiries/stats';
+            case 'get': return '/api/inquiries/';
+            case 'qa': return '/api/inquiries/';
+            default: return endpoint;
+        }
     }
 }
 

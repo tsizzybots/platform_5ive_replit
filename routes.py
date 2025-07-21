@@ -1,7 +1,10 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import EmailInquiry, Error, User
-from schemas import email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, error_schema, error_query_schema
+from models import EmailInquiry, Error, User, MessengerSession
+from schemas import (email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, 
+                    error_schema, error_query_schema, messenger_session_schema, 
+                    messenger_session_update_schema, messenger_session_query_schema)
+from supabase_service import supabase_service
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_
 from datetime import datetime, timedelta
@@ -909,6 +912,346 @@ def delete_error(error_id):
             'message': 'Failed to delete error',
             'error': str(e)
         }), 500
+
+# Messenger Session endpoints
+@app.route('/api/messenger-sessions', methods=['GET'])
+def list_messenger_sessions():
+    """List messenger sessions from Supabase with optional filtering and pagination"""
+    try:
+        # Validate query parameters
+        query_params = messenger_session_query_schema.load(request.args)
+        
+        # Build filters for Supabase
+        filters = {}
+        if 'status' in query_params:
+            filters['status'] = query_params['status']
+        if 'ai_engaged' in query_params:
+            filters['ai_engaged'] = query_params['ai_engaged']
+        if 'customer_id' in query_params:
+            filters['customer_id'] = query_params['customer_id']
+        if 'qa_status' in query_params:
+            filters['qa_status'] = query_params['qa_status']
+        if 'date_from' in query_params:
+            filters['date_from'] = query_params['date_from'].isoformat()
+        if 'date_to' in query_params:
+            filters['date_to'] = query_params['date_to'].isoformat()
+        
+        # Pagination
+        page = query_params.get('page', 1)
+        per_page = query_params.get('per_page', 20)
+        offset = (page - 1) * per_page
+        
+        # Get sessions from Supabase
+        result = supabase_service.get_sessions(limit=per_page, offset=offset, filters=filters)
+        
+        if result['error']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to retrieve messenger sessions',
+                'error': result['error']
+            }), 500
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'sessions': result['sessions'],
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': result['total'],
+                    'pages': (result['total'] + per_page - 1) // per_page,
+                    'has_next': offset + per_page < result['total'],
+                    'has_prev': page > 1
+                }
+            }
+        })
+        
+    except ValidationError as e:
+        logger.error(f"Validation error: {e.messages}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid query parameters',
+            'errors': e.messages
+        }), 400
+    except Exception as e:
+        logger.error(f"Error listing messenger sessions: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve messenger sessions',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/stats', methods=['GET'])
+def get_messenger_session_stats():
+    """Get statistics about messenger sessions for the analytics dashboard"""
+    try:
+        result = supabase_service.get_session_stats()
+        
+        if result['error']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to retrieve session statistics',
+                'error': result['error']
+            }), 500
+        
+        return jsonify({
+            'status': 'success',
+            'data': result['stats']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting messenger session stats: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve session statistics',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/<session_id>', methods=['GET'])
+def get_messenger_session(session_id):
+    """Get a specific messenger session by ID from Supabase"""
+    try:
+        result = supabase_service.get_session_by_id(session_id)
+        
+        if result['error']:
+            if result['error'] == 'Session not found':
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Messenger session not found'
+                }), 404
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to retrieve messenger session',
+                    'error': result['error']
+                }), 500
+        
+        return jsonify({
+            'status': 'success',
+            'data': result['session']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving messenger session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve messenger session',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/<session_id>/qa', methods=['PUT'])
+@login_required
+def update_messenger_session_qa(session_id):
+    """Update QA status and notes for a messenger session"""
+    try:
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        # Build update data
+        update_data = {}
+        current_time = get_sydney_time()
+        
+        # Update QA status
+        if 'qa_status' in data:
+            valid_statuses = ['unchecked', 'passed', 'issue', 'fixed']
+            if data['qa_status'] not in valid_statuses:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Invalid QA status. Must be one of: {", ".join(valid_statuses)}'
+                }), 400
+            
+            update_data['qa_status'] = data['qa_status']
+            update_data['qa_status_updated_at'] = current_time.isoformat()
+        
+        # Update QA reviewer (automatically use logged-in user if not provided)
+        if 'qa_status_updated_by' in data:
+            update_data['qa_status_updated_by'] = data['qa_status_updated_by']
+        elif 'qa_status' in data:
+            # Auto-assign the logged-in user as QA reviewer when status changes
+            current_user = get_current_user()
+            update_data['qa_status_updated_by'] = current_user.username if current_user else 'Unknown'
+        
+        # Update QA notes
+        if 'qa_notes' in data:
+            update_data['qa_notes'] = data['qa_notes']
+            update_data['qa_notes_updated_at'] = current_time.isoformat()
+        
+        # Update developer feedback
+        if 'dev_feedback' in data:
+            update_data['dev_feedback'] = data['dev_feedback']
+            update_data['dev_feedback_at'] = current_time.isoformat()
+            if 'dev_feedback_by' in data:
+                update_data['dev_feedback_by'] = data['dev_feedback_by']
+        
+        # Update session in Supabase
+        result = supabase_service.update_session(session_id, update_data)
+        
+        if result['error']:
+            if result['error'] == 'Session not found or update failed':
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Messenger session not found'
+                }), 404
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to update messenger session',
+                    'error': result['error']
+                }), 500
+        
+        # Send email notification if QA status changed to 'issue'
+        if 'qa_status' in data and data['qa_status'] == 'issue':
+            # Create a pseudo-inquiry object for the email function
+            class PseudoSession:
+                def __init__(self, session_data):
+                    self.session_id = session_data['session_id']
+                    self.customer_name = session_data.get('customer_name', 'Unknown')
+                    self.session_summary = session_data.get('session_summary', 'No summary available')
+                    self.qa_status_updated_by = session_data.get('qa_status_updated_by', 'Unknown')
+                    self.qa_notes = session_data.get('qa_notes', 'No notes provided')
+            
+            pseudo_session = PseudoSession(result['session'])
+            send_messenger_qa_issue_email(pseudo_session)
+        
+        logger.info(f"Updated QA status for messenger session {session_id}: {data.get('qa_status', 'no status change')}")
+        return jsonify({
+            'status': 'success',
+            'message': 'Messenger session QA updated successfully',
+            'data': result['session']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating QA status for messenger session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to update messenger session QA',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions', methods=['POST'])
+@require_api_key
+def create_messenger_session():
+    """Create a new messenger session in Supabase"""
+    try:
+        # Validate input data
+        data = messenger_session_schema.load(request.json)
+        
+        # Create session in Supabase
+        result = supabase_service.create_session(data)
+        
+        if result['error']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to create messenger session',
+                'error': result['error']
+            }), 500
+        
+        logger.info(f"Created new messenger session: {result['session']['session_id']}")
+        return jsonify({
+            'status': 'success',
+            'message': 'Messenger session created successfully',
+            'data': result['session']
+        }), 201
+        
+    except ValidationError as e:
+        logger.error(f"Validation error: {e.messages}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Validation failed',
+            'errors': e.messages
+        }), 400
+    except Exception as e:
+        logger.error(f"Error creating messenger session: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to create messenger session',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/<session_id>', methods=['PUT'])
+@require_api_key
+def update_messenger_session(session_id):
+    """Update a messenger session in Supabase"""
+    try:
+        # Validate update data
+        data = messenger_session_update_schema.load(request.json)
+        
+        # Update session in Supabase
+        result = supabase_service.update_session(session_id, data)
+        
+        if result['error']:
+            if result['error'] == 'Session not found or update failed':
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Messenger session not found'
+                }), 404
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Failed to update messenger session',
+                    'error': result['error']
+                }), 500
+        
+        logger.info(f"Updated messenger session: {session_id}")
+        return jsonify({
+            'status': 'success',
+            'message': 'Messenger session updated successfully',
+            'data': result['session']
+        })
+        
+    except ValidationError as e:
+        logger.error(f"Validation error: {e.messages}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Validation failed',
+            'errors': e.messages
+        }), 400
+    except Exception as e:
+        logger.error(f"Error updating messenger session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to update messenger session',
+            'error': str(e)
+        }), 500
+
+def send_messenger_qa_issue_email(session):
+    """Send email notification when QA status is set to 'issue' for messenger sessions"""
+    try:
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
+            logger.error("RESEND_API_KEY not found in environment variables")
+            return False
+        
+        # Prepare email data for messenger session
+        email_data = {
+            "from": "noreply@izzyagents.ai",
+            "to": "team@izzyagents.ai",
+            "subject": "Messenger Session QA Issue Opened",
+            "html": f"<p>New Messenger Session QA Issue Opened</p><p>Session ID: {session.session_id}</p><p>QA Reviewer: {session.qa_status_updated_by or 'Unknown'}</p><p>Customer: {session.customer_name}</p><p>Summary: {session.session_summary}</p><p></p><p>QA Notes: {session.qa_notes or 'No notes provided'}</p>"
+        }
+        
+        headers = {
+            'Authorization': f'Bearer {resend_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(
+            'https://api.resend.com/emails',
+            json=email_data,
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        logger.info(f"QA issue email sent successfully for messenger session {session.session_id}")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to send QA issue email for messenger session {session.session_id}: {str(e)}")
+        return False
 
 # Error handlers
 @app.errorhandler(404)
