@@ -146,18 +146,25 @@ async function sendTestMessage() {
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Note: Webhook URL would be configured here
-        // For now, we'll simulate a response
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Send to actual webhook
+        const webhookUrl = 'https://n8n-g0cw.onrender.com/webhook-test/stay-golden-health-ai-agent';
+        
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
 
         // Remove typing indicator
         messagesContainer.removeChild(typingIndicator);
 
-        // Simulate AI response (in production, this would come from the webhook)
-        const aiResponse = {
-            aiResponse: "I'm a test AI response. In production, this would connect to the actual AI webhook endpoint.",
-            sessionId: testAISessionId || "test_session_" + Date.now()
-        };
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const aiResponse = await response.json();
 
         // Save session ID for future messages
         if (!testAISessionId) {
