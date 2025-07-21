@@ -29,14 +29,14 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
-class MessengerSession(db.Model):
+class ChatSession(db.Model):
     """Model for AI Messenger sessions from Facebook Messenger"""
-    __tablename__ = 'messenger_sessions'
+    __tablename__ = 'chat_sessions_for_dashboard'
     
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.String(100), nullable=False, unique=True)
     customer_name = db.Column(db.String(255), nullable=True)
-    customer_id = db.Column(db.String(255), nullable=True)  # Facebook user ID
+    contact_id = db.Column(db.String(255), nullable=True)  # Contact/Customer ID
     conversation_start = db.Column(db.DateTime, nullable=False)
     last_message_time = db.Column(db.DateTime, nullable=False)
     message_count = db.Column(db.Integer, nullable=False, default=1)
@@ -66,7 +66,7 @@ class MessengerSession(db.Model):
         Index('idx_messenger_session_id', 'session_id'),
         Index('idx_messenger_status', 'status'),
         Index('idx_messenger_conversation_start', 'conversation_start'),
-        Index('idx_messenger_customer_id', 'customer_id'),
+        Index('idx_chat_contact_id', 'contact_id'),
         Index('idx_messenger_ai_engaged', 'ai_engaged'),
         Index('idx_messenger_created_at', 'created_at'),
         Index('idx_messenger_qa_status', 'qa_status'),
@@ -78,7 +78,7 @@ class MessengerSession(db.Model):
             'id': self.id,
             'session_id': self.session_id,
             'customer_name': self.customer_name,
-            'customer_id': self.customer_id,
+            'contact_id': self.contact_id,
             'conversation_start': self.conversation_start.isoformat() if self.conversation_start else None,
             'last_message_time': self.last_message_time.isoformat() if self.last_message_time else None,
             'message_count': self.message_count,
@@ -101,7 +101,7 @@ class MessengerSession(db.Model):
         }
     
     def __repr__(self):
-        return f'<MessengerSession {self.id}: {self.session_id}>'
+        return f'<ChatSession {self.id}: {self.session_id}>'
 
 
 

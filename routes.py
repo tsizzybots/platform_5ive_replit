@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, MessengerSession
+from models import Error, User, ChatSession
 from schemas import (error_schema, error_query_schema, messenger_session_schema, 
                     messenger_session_update_schema, messenger_session_query_schema)
 from supabase_service import supabase_service

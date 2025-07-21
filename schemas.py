@@ -19,11 +19,11 @@ class ErrorQuerySchema(Schema):
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 
-class MessengerSessionSchema(Schema):
+class ChatSessionSchema(Schema):
     id = fields.Integer(dump_only=True)
     session_id = fields.String(required=True, validate=validate.Length(min=1, max=100))
     customer_name = fields.String(allow_none=True, validate=validate.Length(max=255))
-    customer_id = fields.String(allow_none=True, validate=validate.Length(max=255))
+    contact_id = fields.String(allow_none=True, validate=validate.Length(max=255))
     conversation_start = fields.DateTime(required=True)
     last_message_time = fields.DateTime(required=True)
     message_count = fields.Integer(load_default=1, validate=validate.Range(min=1))
@@ -48,7 +48,7 @@ class MessengerSessionSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
     dev_feedback_at = fields.DateTime(dump_only=True)
 
-class MessengerSessionUpdateSchema(Schema):
+class ChatSessionUpdateSchema(Schema):
     status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
     ai_engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
@@ -65,7 +65,7 @@ class MessengerSessionUpdateSchema(Schema):
     dev_feedback = fields.String(allow_none=True)
     dev_feedback_by = fields.String(allow_none=True)
 
-class MessengerSessionQuerySchema(Schema):
+class ChatSessionQuerySchema(Schema):
     status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
     ai_engaged = fields.Boolean()
     customer_id = fields.String()
