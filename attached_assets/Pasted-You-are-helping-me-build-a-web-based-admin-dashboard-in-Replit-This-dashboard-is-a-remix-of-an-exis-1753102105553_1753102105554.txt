@@ -1,0 +1,37 @@
+You are helping me build a web-based admin dashboard in Replit. This dashboard is a remix of an existing project we built for an email helpdesk system.  
+
+Here’s exactly what I need you to do:  
+
+1. **Remix Purpose**  
+   - The new app will manage and display **AI Messenger sessions** (from Facebook Messenger), not email tickets.  
+   - Sessions are stored in a **Supabase database**, and the app needs to **read from Supabase** and display these sessions in a list view (like the old ticket list).  
+
+2. **Database Connections**  
+   - **Supabase** will be used to store and fetch session data.  
+   - The app will also need to **read and write to a separate table in Supabase** for session notes, QA status, and other session-level metadata.  
+   - You can continue using the **existing Repl.it database** for internal app settings, QA/dev feedback storage, and other non-session-related data.  
+
+3. **User Interface & Features**  
+   - Keep the **existing UI design** and layout from the email helpdesk project.  
+   - The session list should show Messenger sessions instead of tickets.  
+   - Available options and actions for each session should remain the same as the email ticket options (reply, close, QA actions, feedback, etc.).  
+   - Modify session categories/labels where necessary to reflect Messenger session context.  
+
+4. **Analytics Dashboard (Display at Top of the Page)**  
+   - **Total Sessions** — Total count of sessions in the system.  
+   - **Passed** — Sessions that have been QA checked and marked as "Passed."  
+   - **Unchecked** — Sessions with no QA status set.  
+   - **Issues** — Sessions marked with any QA flag indicating an issue.  
+   - This should be dynamically updated based on live data.  
+
+5. **Important Notes**  
+   - The core difference is swapping “email tickets” for “Messenger sessions” while keeping the structure and most functions intact.  
+   - Adjust any backend queries, data models, and table schemas accordingly.  
+   - Ensure the Supabase connection works for both **reading sessions** and **writing QA/feedback** updates.  
+
+6. **Tech Stack Reminder**  
+   - Frontend: Keep Bootstrap + custom CSS  
+   - Backend: Repl.it database (internal), Supabase (sessions), REST API where needed  
+   - Analytics: Use the same logic as the current project, adjusted for the new data source  
+
+Your goal is to remix the existing project with minimal changes to design and core functions — adapting it for Messenger sessions with the correct database connections and analytics updates.  
