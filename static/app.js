@@ -2206,32 +2206,32 @@ function renderChart(data) {
             fill: false
         },
         {
-            label: 'Engaged',
-            data: data.map(item => item.engaged || 0),
+            label: 'AI Engaged',
+            data: data.map(item => item.ai_engaged || 0),
             backgroundColor: 'rgba(25, 135, 84, 0.6)',
             borderColor: 'rgba(25, 135, 84, 1)',
             borderWidth: 2,
             fill: false
         },
         {
-            label: 'Escalated',
-            data: data.map(item => item.escalated || 0),
+            label: 'Complete',
+            data: data.map(item => item.completed || 0),
+            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 2,
+            fill: false
+        },
+        {
+            label: 'In Progress',
+            data: data.map(item => item.in_progress || 0),
             backgroundColor: 'rgba(255, 193, 7, 0.6)',
             borderColor: 'rgba(255, 193, 7, 1)',
             borderWidth: 2,
             fill: false
         },
         {
-            label: 'Skipped',
-            data: data.map(item => item.skipped || 0),
-            backgroundColor: 'rgba(108, 117, 125, 0.6)',
-            borderColor: 'rgba(108, 117, 125, 1)',
-            borderWidth: 2,
-            fill: false
-        },
-        {
-            label: 'Archived',
-            data: data.map(item => item.archived || 0),
+            label: 'Active',
+            data: data.map(item => item.active || 0),
             backgroundColor: 'rgba(13, 202, 240, 0.6)',
             borderColor: 'rgba(13, 202, 240, 1)',
             borderWidth: 2,
@@ -2264,7 +2264,7 @@ function renderChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Daily Ticket Statistics',
+                    text: 'Daily Session Statistics',
                     color: themeColors.titleColor
                 },
                 legend: {
