@@ -400,40 +400,42 @@ def get_messenger_session_stats():
         else:
             sessions = result.get('sessions', [])
         
-        # Calculate stats from Supabase data
+        # Merge QA data from PostgreSQL for each session (same as in get_messenger_sessions)
+        for session in sessions:
+            session_id_str = session.get('session_id')
+            if session_id_str:
+                qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+                if qa_session:
+                    session['qa_status'] = qa_session.qa_status
+                    session['qa_notes'] = qa_session.qa_notes
+                    session['qa_status_updated_by'] = qa_session.qa_status_updated_by
+                    session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+                    session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
+                    session['dev_feedback'] = qa_session.dev_feedback
+                    session['dev_feedback_by'] = qa_session.dev_feedback_by
+                    session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
+                else:
+                    session['qa_status'] = 'unchecked'
+        
+        # Calculate stats from merged data (Supabase + PostgreSQL QA data)
         total_sessions = len(sessions)
-        active_sessions = sum(1 for s in sessions if s.get('status') == 'active')
-        escalated_sessions = sum(1 for s in sessions if s.get('status') == 'escalated') 
-        resolved_sessions = sum(1 for s in sessions if s.get('status') == 'resolved')
         completed_sessions = sum(1 for s in sessions if s.get('completed', False))
         
-        # Calculate AI engagement stats
-        ai_engaged_sessions = sum(1 for s in sessions if s.get('ai_engaged', False))
-        ai_not_engaged_sessions = total_sessions - ai_engaged_sessions
-        
-        # QA Statistics
-        qa_stats = {
-            'unchecked': sum(1 for s in sessions if s.get('qa_status') == 'unchecked'),
-            'passed': sum(1 for s in sessions if s.get('qa_status') == 'passed'),
-            'issue': sum(1 for s in sessions if s.get('qa_status') == 'issue'),
-            'fixed': sum(1 for s in sessions if s.get('qa_status') == 'fixed')
-        }
-        
-        # Get QA stats from PostgreSQL  
-        qa_result = db.session.query(
-            func.count(MessengerSessionQA.id).label('total_qa'),
-            func.sum(case((MessengerSessionQA.qa_status == 'passed', 1), else_=0)).label('passed'),
-            func.sum(case((MessengerSessionQA.qa_status == 'unchecked', 1), else_=0)).label('unchecked'),
-            func.sum(case((MessengerSessionQA.qa_status.in_(['issue', 'fixed']), 1), else_=0)).label('issues')
-        ).first()
+        # QA Statistics from merged data
+        passed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'passed')
+        unchecked_sessions = sum(1 for s in sessions if s.get('qa_status') == 'unchecked')
+        issue_sessions = sum(1 for s in sessions if s.get('qa_status') == 'issue')
+        fixed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'fixed')
         
         return jsonify({
             'status': 'success',
             'data': {
                 'total_sessions': total_sessions,
-                'passed': qa_result.passed or 0,
+                'passed': passed_sessions,
                 'completed': completed_sessions,
-                'unchecked': qa_result.unchecked or 0
+                'unchecked': unchecked_sessions,
+                'issue': issue_sessions,
+                'fixed': fixed_sessions
             }
         })
         
