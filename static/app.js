@@ -695,7 +695,7 @@ function displayTickets(tickets, pagination) {
                     <th style="width: 12%;">Session ID</th>
                     <th style="width: 15%;">Customer</th>
                     <th style="width: 20%;">Contact ID</th>
-                    <th style="width: 10%;">Status</th>
+                    <th style="width: 10%;">QA Status</th>
                     <th style="width: 10%;">Completed</th>
                     <th style="width: 13%; padding-right: 8px;">Actions</th>
                 </tr>
@@ -727,11 +727,10 @@ function displayTickets(tickets, pagination) {
     tickets.forEach(ticket => {
         if (currentMode === 'messenger') {
             // Messenger sessions row
-            const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             const completedBadge = ticket.completed ? 
                 '<span class="badge bg-success">Yes</span>' : 
                 '<span class="badge bg-danger">No</span>';
-            const statusBadge = getStatusBadge(ticket.status);
+            const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             
             html += `
                 <tr id="ticket-row-${ticket.id}" class="ticket-row">
@@ -742,7 +741,7 @@ function displayTickets(tickets, pagination) {
                     <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
                     <td>${escapeHtml(ticket.customer_name || 'N/A')}</td>
                     <td class="text-nowrap">${escapeHtml(ticket.contact_id || 'N/A')}</td>
-                    <td class="text-center">${statusBadge}</td>
+                    <td class="text-center">${qaStatusBadge}</td>
                     <td class="text-center">${completedBadge}</td>
                     <td>
                         <div class="d-flex gap-1">
