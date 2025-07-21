@@ -1276,44 +1276,7 @@ async function performBulkArchive() {
         // Store archived IDs before processing  
         const archivedIds = Array.from(selectedTickets);
         
-        let successCount = 0;
-        let failureCount = 0;
-        
-        // Archive each selected ticket by updating status
-        for (const ticketId of archivedIds) {
-            const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    qa_status: 'archived',
-                    qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
-                }),
-                credentials: 'same-origin'
-            });
-            
-            if (response.ok) {
-                successCount++;
-            } else {
-                failureCount++;
-                console.error(`Failed to archive ticket ${ticketId}:`, await response.text());
-            }
-        }
-        
-        // Clear selections
-        selectedTickets.clear();
-        
-        // Show results  
-        if (successCount > 0 && failureCount === 0) {
-            showAlert(`Successfully archived ${successCount} session${successCount > 1 ? 's' : ''}.`, 'success');
-        } else if (successCount > 0 && failureCount > 0) {
-            showAlert(`Archived ${successCount} session${successCount > 1 ? 's' : ''}, failed to archive ${failureCount}.`, 'warning');
-        } else {
-            showAlert('Failed to archive selected sessions.', 'danger');
-        }
-        
-        // Remove archived sessions with smooth animation immediately
+        // INSTANTLY remove sessions from UI with animation - don't wait for server response
         for (const ticketId of archivedIds) {
             const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
             if (row) {
@@ -1329,10 +1292,60 @@ async function performBulkArchive() {
             }
         }
         
-        // Update stats without full reload
+        // Clear selections immediately
+        selectedTickets.clear();
+        updateBulkActionControls();
+        
+        // Update stats immediately (optimistic update)
+        updateStatsOnly();
+        
+        // Show immediate success message
+        showAlert(`Archiving ${archivedIds.length} session${archivedIds.length > 1 ? 's' : ''}...`, 'info');
+        
+        // Now perform backend updates in background
+        let successCount = 0;
+        let failureCount = 0;
+        
+        // Archive each selected ticket by updating status
+        for (const ticketId of archivedIds) {
+            try {
+                const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        qa_status: 'archived',
+                        qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
+                    }),
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    successCount++;
+                } else {
+                    failureCount++;
+                    console.error(`Failed to archive session ${ticketId}:`, await response.text());
+                }
+            } catch (error) {
+                failureCount++;
+                console.error(`Error archiving session ${ticketId}:`, error);
+            }
+        }
+        
+        // Show final results  
+        if (successCount > 0 && failureCount === 0) {
+            showAlert(`Successfully archived ${successCount} session${successCount > 1 ? 's' : ''}.`, 'success');
+        } else if (successCount > 0 && failureCount > 0) {
+            showAlert(`Archived ${successCount} session${successCount > 1 ? 's' : ''}, failed to archive ${failureCount}.`, 'warning');
+        } else if (failureCount > 0) {
+            showAlert('Failed to archive selected sessions.', 'danger');
+        }
+        
+        // Final stats update to ensure accuracy
         setTimeout(() => {
             updateStatsOnly();
-        }, 350);
+        }, 1000);
         
     } catch (error) {
         showAlert('Error archiving tickets: ' + error.message, 'danger');
