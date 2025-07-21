@@ -48,13 +48,8 @@ class SupabaseService:
             return {"sessions": [], "total": 0, "error": "Supabase client not initialized"}
         
         try:
-            # Get all messages from the table, ordered by dateTime
-            # Try different possible table name formats
-            try:
-                query = self.client.table('chat_sessions_dashboard').select('*')
-            except:
-                # Fallback to original name with quotes
-                query = self.client.table('"Chat Sessions Dashboard"').select('*')
+            # Get all messages from the correct table name
+            query = self.client.table('chat_sessions_for_dashboard').select('*')
             
             # Apply date filters if provided
             if filters:

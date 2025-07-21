@@ -294,7 +294,7 @@ def get_messenger_sessions():
 
 @app.route('/api/messenger-sessions/stats', methods=['GET'])
 def get_messenger_session_stats():
-    """Get comprehensive statistics for messenger sessions"""
+    """Get comprehensive statistics for messenger sessions from Supabase"""
     try:
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
@@ -314,38 +314,43 @@ def get_messenger_session_stats():
             if date_to_obj.tzinfo is None:
                 date_to_obj = SYDNEY_TZ.localize(date_to_obj)
         
-        # Build base queries with date filters
-        active_query = ChatSession.query.filter(ChatSession.status != 'resolved')
-        archived_query = ChatSession.query.filter(ChatSession.status == 'resolved')
-        
-        # Apply date filters if provided
+        # Prepare filters for Supabase
+        filters = {}
         if date_from:
-            active_query = active_query.filter(ChatSession.conversation_start >= date_from_obj)
-            archived_query = archived_query.filter(ChatSession.conversation_start >= date_from_obj)
-        
+            filters['date_from'] = date_from_obj.isoformat()
         if date_to:
-            active_query = active_query.filter(ChatSession.conversation_start <= date_to_obj)
-            archived_query = archived_query.filter(ChatSession.conversation_start <= date_to_obj)
+            filters['date_to'] = date_to_obj.isoformat()
         
-        # Calculate session counts by status
-        active_sessions = active_query.filter(ChatSession.status == 'active').count()
-        escalated_sessions = active_query.filter(ChatSession.status == 'escalated').count()
-        resolved_sessions = archived_query.count()
+        # Get all sessions from Supabase (no pagination limit for stats)
+        result = supabase_service.get_sessions(
+            limit=1000,  # Large limit for stats
+            offset=0,
+            filters=filters
+        )
+        
+        if result.get('error'):
+            logger.error(f"Supabase error in stats: {result['error']}")
+            sessions = []
+        else:
+            sessions = result.get('sessions', [])
+        
+        # Calculate stats from Supabase data
+        total_sessions = len(sessions)
+        active_sessions = sum(1 for s in sessions if s.get('status') == 'active')
+        escalated_sessions = sum(1 for s in sessions if s.get('status') == 'escalated') 
+        resolved_sessions = sum(1 for s in sessions if s.get('status') == 'resolved')
         
         # Calculate AI engagement stats
-        ai_engaged_sessions = active_query.filter(ChatSession.ai_engaged == True).count()
-        total_active_sessions = active_query.count()
+        ai_engaged_sessions = sum(1 for s in sessions if s.get('ai_engaged', False))
+        ai_not_engaged_sessions = total_sessions - ai_engaged_sessions
         
         # QA Statistics
         qa_stats = {
-            'unchecked': ChatSession.query.filter(ChatSession.qa_status == 'unchecked').count(),
-            'passed': ChatSession.query.filter(ChatSession.qa_status == 'passed').count(),
-            'issue': ChatSession.query.filter(ChatSession.qa_status == 'issue').count(),
-            'fixed': ChatSession.query.filter(ChatSession.qa_status == 'fixed').count()
+            'unchecked': sum(1 for s in sessions if s.get('qa_status') == 'unchecked'),
+            'passed': sum(1 for s in sessions if s.get('qa_status') == 'passed'),
+            'issue': sum(1 for s in sessions if s.get('qa_status') == 'issue'),
+            'fixed': sum(1 for s in sessions if s.get('qa_status') == 'fixed')
         }
-        
-        # Total sessions
-        total_sessions = total_active_sessions + resolved_sessions
         
         return jsonify({
             'status': 'success',
@@ -358,8 +363,8 @@ def get_messenger_session_stats():
                 },
                 'ai_engagement': {
                     'ai_engaged': ai_engaged_sessions,
-                    'ai_not_engaged': total_active_sessions - ai_engaged_sessions,
-                    'engagement_rate': round((ai_engaged_sessions / total_active_sessions * 100) if total_active_sessions > 0 else 0, 2)
+                    'ai_not_engaged': ai_not_engaged_sessions,
+                    'engagement_rate': round((ai_engaged_sessions / total_sessions * 100) if total_sessions > 0 else 0, 2)
                 },
                 'qa_stats': qa_stats,
                 'date_range': {
