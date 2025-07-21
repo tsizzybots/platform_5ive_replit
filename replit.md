@@ -22,12 +22,12 @@ This is a Flask-based web application that manages email inquiries and provides 
 ## Key Components
 
 ### Database Models
-1. **EmailInquiry**: Core ticket data with AI engagement tracking
-   - Ticket metadata (ID, subject, body, sender info)
-   - AI decision tracking (engaged/skipped status)
+1. **MessengerSession**: Facebook Messenger session tracking
+   - Session metadata (session_id, customer info, conversation timing)
+   - AI engagement tracking (ai_engaged, ai_response)
    - QA system fields (qa_status, qa_notes, qa_status_updated_by)
    - Developer feedback system
-   - Archival system for completed tickets
+   - Archival system for completed sessions
 
 2. **User**: Authentication and role management
    - Username/password authentication with hashing
@@ -40,9 +40,11 @@ This is a Flask-based web application that manages email inquiries and provides 
    - API-based error submission
 
 ### API Endpoints
-- **POST /api/inquiries**: Create new tickets from Gorgias integration
-- **GET /api/inquiries**: Retrieve tickets with filtering and pagination
-- **PATCH /api/inquiries/{id}**: Update ticket status and QA information
+- **POST /api/messenger-sessions**: Create new messenger sessions
+- **GET /api/messenger-sessions**: Retrieve sessions with filtering and pagination
+- **PUT /api/messenger-sessions/{id}**: Update session status and AI engagement
+- **PUT /api/messenger-sessions/{id}/qa**: Update QA information for sessions
+- **GET /api/messenger-sessions/stats**: Get comprehensive session statistics
 - **POST /api/errors**: Log automation errors
 - **Authentication endpoints**: Login/logout with session management
 
@@ -54,18 +56,18 @@ This is a Flask-based web application that manages email inquiries and provides 
 
 ## Data Flow
 
-1. **Ticket Ingestion**: Gorgias sends tickets via POST to /api/inquiries
-2. **AI Processing**: External AI agent decides engagement and updates ticket status
-3. **Dashboard Display**: Web interface shows tickets with filtering and statistics
+1. **Session Creation**: Messenger bot creates sessions via POST to /api/messenger-sessions
+2. **AI Processing**: External AI agent processes conversations and updates session status
+3. **Dashboard Display**: Web interface shows messenger sessions with filtering and statistics
 4. **QA Review**: Team members review AI decisions and mark QA status
-5. **Issue Escalation**: QA issues trigger webhook notifications to development team
+5. **Issue Escalation**: QA issues can be tracked and managed through the interface
 6. **Developer Feedback**: Developers can respond to QA issues with feedback
 
 ## External Dependencies
 
 ### Required Services
 - **PostgreSQL**: Primary data storage
-- **Gorgias**: Source system for customer tickets
+- **Facebook Messenger**: Source platform for customer conversations
 - **n8n Webhook**: QA issue notification system (https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue)
 
 ### Python Dependencies
@@ -100,11 +102,12 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
-- July 21, 2025: PostgreSQL database successfully configured and integrated
+- July 21, 2025: PostgreSQL database successfully configured and streamlined for messenger sessions
   - Created dedicated PostgreSQL database instance with full environment variable setup
-  - All database tables created and verified: email_inquiries, errors, messenger_sessions, users
-  - Database connection properly configured with pool settings and health checks
-  - Application running successfully with persistent PostgreSQL storage
+  - Removed email_inquiries table as system now focuses exclusively on messenger sessions
+  - Refactored API routes to only include messenger session endpoints and authentication
+  - Created admin user with login credentials for dashboard access
+  - Application running successfully with messenger_sessions, users, and errors tables
 - July 16, 2025: Added "Reopen Ticket in Gorgias" functionality for archived tickets
   - New API endpoint `/api/inquiries/{id}/reopen-gorgias` to reopen tickets in Gorgias
   - Frontend button appears only for archived tickets with ticket URLs

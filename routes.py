@@ -1,12 +1,11 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import EmailInquiry, Error, User, MessengerSession
-from schemas import (email_inquiry_schema, email_inquiry_update_schema, email_inquiry_query_schema, 
-                    error_schema, error_query_schema, messenger_session_schema, 
+from models import Error, User, MessengerSession
+from schemas import (error_schema, error_query_schema, messenger_session_schema, 
                     messenger_session_update_schema, messenger_session_query_schema)
 from supabase_service import supabase_service
 from marshmallow import ValidationError
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, func, case
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -23,107 +22,71 @@ def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
 
-
-
-def send_qa_issue_email(inquiry):
-    """Send email notification when QA status is set to 'issue' using Resend API"""
-    try:
-        resend_api_key = os.environ.get('RESEND_API_KEY')
-        if not resend_api_key:
-            logger.error("RESEND_API_KEY not found in environment variables")
-            return False
-        
-        # Prepare email data with placeholders filled
-        email_data = {
-            "from": "noreply@izzyagents.ai",
-            "to": "team@izzyagents.ai",
-            "subject": "Sweats QA Issue Opened",
-            "html": f"<p>New Sweats QA Issue Opened</p><p>Ticket ID: {inquiry.ticket_id}</p>QA Reviewer {inquiry.qa_status_updated_by or 'Unknown'}<p>Sender: {inquiry.sender_email}</p><p>Subject: {inquiry.subject}</p><p></p><p>QA Notes: {inquiry.qa_notes or 'No notes provided'}</p>"
-        }
-        
-        headers = {
-            'Authorization': f'Bearer {resend_api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.post(
-            'https://api.resend.com/emails',
-            json=email_data,
-            headers=headers,
-            timeout=10
-        )
-        response.raise_for_status()
-        logger.info(f"QA issue email sent successfully for ticket {inquiry.ticket_id}")
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send QA issue email for ticket {inquiry.ticket_id}: {str(e)}")
-        return False
-
-# Helper function to get current user
-def get_current_user():
-    """Get the current logged-in user from session"""
-    user_id = session.get('user_id')
-    if user_id:
-        return User.query.get(user_id)
-    return None
-
-# Login required decorator
-def login_required(f):
+def require_api_key(f):
+    """Decorator to require API key for route access"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
+        if api_key and api_key.startswith('Bearer '):
+            api_key = api_key[7:]  # Remove "Bearer " prefix
+        
+        expected_key = os.environ.get('API_KEY')
+        if not expected_key or api_key != expected_key:
+            return jsonify({
+                'status': 'error', 
+                'message': 'Valid API key required'
+            }), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def login_required(f):
+    """Decorator to require login for route access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please log in to access this page.', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
-# API Key Authentication
-def require_api_key(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        api_key = request.headers.get('X-API-Key')
-        expected_api_key = os.environ.get('API_KEY')
-        
-        if not expected_api_key:
-            # If no API key is set, allow access (for development)
-            return f(*args, **kwargs)
-            
-        if not api_key or api_key != expected_api_key:
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid or missing API key'
-            }), 401
-            
-        return f(*args, **kwargs)
-    return decorated_function
+def get_current_user():
+    """Get the current logged-in user"""
+    if 'user_id' in session:
+        return User.query.get(session['user_id'])
+    return None
 
+# Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handle login page and authentication"""
+    """Login page and authentication"""
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return render_template('login.html')
+        
         user = User.query.filter_by(username=username).first()
+        
         if user and user.check_password(password):
-            session['logged_in'] = True
             session['user_id'] = user.id
-            session['username'] = user.username
-            session['user_role'] = user.role
-            flash('Successfully logged in!', 'success')
+            session.permanent = True  # Use permanent session
+            flash('Logged in successfully!', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password', 'error')
+            flash('Invalid username or password.', 'error')
     
     return render_template('login.html')
 
 @app.route('/logout')
-@login_required
 def logout():
-    """Handle logout"""
-    session.clear()
-    flash('Successfully logged out!', 'info')
+    """Logout the user"""
+    session.pop('user_id', None)
+    flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
+# Main routes
 @app.route('/')
 @login_required
 def index():
@@ -153,24 +116,23 @@ def get_current_user_api():
             }
         })
 
-@app.route('/api/inquiries', methods=['POST'])
+# Messenger Session routes
+@app.route('/api/messenger-sessions', methods=['POST'])
 @require_api_key
-def create_inquiry():
-    """Create a new email inquiry"""
+def create_messenger_session():
+    """Create a new messenger session"""
     try:
-        # Validate input data
-        data = email_inquiry_schema.load(request.json)
+        data = messenger_session_schema.load(request.json)
         
-        # Create new inquiry
-        inquiry = EmailInquiry(**data)
-        db.session.add(inquiry)
+        session_obj = MessengerSession(**data)
+        db.session.add(session_obj)
         db.session.commit()
         
-        logger.info(f"Created new inquiry: {inquiry.id}")
+        logger.info(f"Created new messenger session: {session_obj.id}")
         return jsonify({
             'status': 'success',
-            'message': 'Email inquiry created successfully',
-            'data': email_inquiry_schema.dump(inquiry)
+            'message': 'Messenger session created successfully',
+            'data': messenger_session_schema.dump(session_obj)
         }), 201
         
     except ValidationError as e:
@@ -182,95 +144,65 @@ def create_inquiry():
         }), 400
         
     except Exception as e:
-        logger.error(f"Error creating inquiry: {str(e)}")
+        logger.error(f"Error creating messenger session: {str(e)}")
         db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to create email inquiry',
+            'message': 'Failed to create messenger session',
             'error': str(e)
         }), 500
 
-@app.route('/api/inquiries/<int:inquiry_id>', methods=['GET'])
-def get_inquiry(inquiry_id):
-    """Get a specific email inquiry by ID"""
+@app.route('/api/messenger-sessions/<int:session_id>', methods=['GET'])
+def get_messenger_session(session_id):
+    """Get a specific messenger session by ID"""
     try:
-        inquiry = EmailInquiry.query.get(inquiry_id)
-        if not inquiry:
+        session_obj = MessengerSession.query.get(session_id)
+        if not session_obj:
             return jsonify({
                 'status': 'error',
-                'message': 'Email inquiry not found'
+                'message': 'Messenger session not found'
             }), 404
             
         return jsonify({
             'status': 'success',
-            'data': email_inquiry_schema.dump(inquiry)
+            'data': messenger_session_schema.dump(session_obj)
         })
         
     except Exception as e:
-        logger.error(f"Error retrieving inquiry {inquiry_id}: {str(e)}")
+        logger.error(f"Error retrieving messenger session {session_id}: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': 'Failed to retrieve email inquiry',
+            'message': 'Failed to retrieve messenger session',
             'error': str(e)
         }), 500
 
-@app.route('/api/inquiries/<int:inquiry_id>', methods=['PUT'])
+@app.route('/api/messenger-sessions/<int:session_id>', methods=['PUT'])
 @require_api_key
-def update_inquiry(inquiry_id):
-    """Update an email inquiry (status, engagement, AI response)"""
+def update_messenger_session(session_id):
+    """Update a messenger session"""
     try:
-        inquiry = EmailInquiry.query.get(inquiry_id)
-        if not inquiry:
+        session_obj = MessengerSession.query.get(session_id)
+        if not session_obj:
             return jsonify({
                 'status': 'error',
-                'message': 'Email inquiry not found'
+                'message': 'Messenger session not found'
             }), 404
-            
-        # Validate update data
-        logger.info(f"Received request data: {request.json}")
-        data = email_inquiry_update_schema.load(request.json)
-        logger.info(f"Validated data: {data}")
         
-        # Store original QA status to detect changes
-        original_qa_status = inquiry.qa_status
-        current_time = get_sydney_time()
+        data = messenger_session_update_schema.load(request.json)
         
-        # Update basic fields
         for key, value in data.items():
-            if key not in ['qa_status', 'qa_status_updated_by', 'qa_notes', 'dev_feedback', 'dev_feedback_by']:
-                setattr(inquiry, key, value)
+            if hasattr(session_obj, key):
+                setattr(session_obj, key, value)
         
-        # Handle QA status updates with metadata
-        if 'qa_status' in data:
-            inquiry.qa_status = data['qa_status']
-            inquiry.qa_status_updated_at = current_time
-            if 'qa_status_updated_by' in data:
-                inquiry.qa_status_updated_by = data['qa_status_updated_by']
+        session_obj.updated_at = get_sydney_time()
         
-        # Handle QA notes updates
-        if 'qa_notes' in data:
-            inquiry.qa_notes = data['qa_notes']
-            inquiry.qa_notes_updated_at = current_time
-        
-        # Handle developer feedback updates
-        if 'dev_feedback' in data:
-            inquiry.dev_feedback = data['dev_feedback']
-            inquiry.dev_feedback_at = current_time
-            if 'dev_feedback_by' in data:
-                inquiry.dev_feedback_by = data['dev_feedback_by']
-        
-        inquiry.updated_at = current_time
         db.session.commit()
         
-        # Send email if QA status changed to 'issue'
-        if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
-            send_qa_issue_email(inquiry)
-        
-        logger.info(f"Updated inquiry: {inquiry.id}")
+        logger.info(f"Updated messenger session: {session_obj.id}")
         return jsonify({
             'status': 'success',
-            'message': 'Email inquiry updated successfully',
-            'data': email_inquiry_schema.dump(inquiry)
+            'message': 'Messenger session updated successfully',
+            'data': messenger_session_schema.dump(session_obj)
         })
         
     except ValidationError as e:
@@ -282,87 +214,63 @@ def update_inquiry(inquiry_id):
         }), 400
         
     except Exception as e:
-        logger.error(f"Error updating inquiry {inquiry_id}: {str(e)}")
+        logger.error(f"Error updating messenger session {session_id}: {str(e)}")
         db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to update email inquiry',
+            'message': 'Failed to update messenger session',
             'error': str(e)
         }), 500
 
-@app.route('/api/inquiries', methods=['GET'])
-def list_inquiries():
-    """List email inquiries with optional filtering and pagination"""
+@app.route('/api/messenger-sessions', methods=['GET'])
+def get_messenger_sessions():
+    """Get messenger sessions with filtering and pagination"""
     try:
-        # Validate query parameters
-        query_params = email_inquiry_query_schema.load(request.args)
+        query_params = messenger_session_query_schema.load(request.args)
         
-        # Build query
-        query = EmailInquiry.query
+        query = MessengerSession.query
         
-        # Handle status filtering
+        # Apply filters
         if 'status' in query_params:
-            query = query.filter(EmailInquiry.status == query_params['status'])
-        else:
-            # Default: exclude archived items EXCEPT those with QA status 'issue' or 'fixed'
-            query = query.filter(
-                db.or_(
-                    EmailInquiry.status != 'Archived',
-                    db.and_(
-                        EmailInquiry.status == 'Archived',
-                        EmailInquiry.qa_status.in_(['issue', 'fixed'])
-                    )
-                )
-            )
+            query = query.filter(MessengerSession.status == query_params['status'])
         
-        # Only apply engaged filter if not looking at archived items
-        if 'engaged' in query_params and not ('status' in query_params and query_params['status'] == 'Archived'):
-            query = query.filter(EmailInquiry.engaged == query_params['engaged'])
-            
-        if 'sender_email' in query_params:
-            query = query.filter(EmailInquiry.sender_email.ilike(f"%{query_params['sender_email']}%"))
-            
-        if 'ticket_id' in query_params:
-            query = query.filter(EmailInquiry.ticket_id == query_params['ticket_id'])
-            
-        if 'inquiry_type' in query_params:
-            query = query.filter(EmailInquiry.inquiry_type == query_params['inquiry_type'])
-            
+        if 'ai_engaged' in query_params:
+            query = query.filter(MessengerSession.ai_engaged == query_params['ai_engaged'])
+        
+        if 'customer_id' in query_params:
+            query = query.filter(MessengerSession.customer_id.ilike(f"%{query_params['customer_id']}%"))
+        
+        if 'session_id' in query_params:
+            query = query.filter(MessengerSession.session_id == query_params['session_id'])
+        
         if 'date_from' in query_params:
-            # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
-            adjusted_date_from = query_params['date_from'] - timedelta(hours=10)
-            query = query.filter(EmailInquiry.received_date >= adjusted_date_from)
-            
-        if 'date_to' in query_params:
-            # Adjust for Sydney timezone: subtract 10 hours from the filter to match frontend display
-            adjusted_date_to = query_params['date_to'] - timedelta(hours=10)
-            query = query.filter(EmailInquiry.received_date <= adjusted_date_to)
-            
-        if 'qa_status' in query_params:
-            query = query.filter(EmailInquiry.qa_status == query_params['qa_status'])
+            query = query.filter(MessengerSession.conversation_start >= query_params['date_from'])
         
-        # Apply pagination
+        if 'date_to' in query_params:
+            query = query.filter(MessengerSession.conversation_start <= query_params['date_to'])
+        
+        if 'qa_status' in query_params:
+            query = query.filter(MessengerSession.qa_status == query_params['qa_status'])
+        
+        # Order by creation date (newest first)
+        query = query.order_by(MessengerSession.created_at.desc())
+        
+        # Pagination
         page = query_params.get('page', 1)
         per_page = query_params.get('per_page', 20)
         
-        # Order by most recent first
-        query = query.order_by(EmailInquiry.created_at.desc())
-        
-        # Execute paginated query
         paginated = query.paginate(
-            page=page, 
-            per_page=per_page, 
-            error_out=False
+            page=page, per_page=per_page, error_out=False
         )
         
         return jsonify({
             'status': 'success',
-            'data': email_inquiry_schema.dump(paginated.items, many=True),
+            'data': messenger_session_schema.dump(paginated.items, many=True),
             'pagination': {
                 'page': paginated.page,
+                'pages': paginated.pages,
                 'per_page': paginated.per_page,
                 'total': paginated.total,
-                'pages': paginated.pages,
                 'has_next': paginated.has_next,
                 'has_prev': paginated.has_prev
             }
@@ -377,604 +285,7 @@ def list_inquiries():
         }), 400
         
     except Exception as e:
-        logger.error(f"Error listing inquiries: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve email inquiries',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/inquiries/types', methods=['GET'])
-def get_inquiry_types():
-    """Get distinct inquiry types from the database"""
-    try:
-        # Query distinct inquiry types, excluding null values
-        types_query = db.session.query(EmailInquiry.inquiry_type).distinct().filter(EmailInquiry.inquiry_type.isnot(None)).all()
-        
-        # Extract the type values and sort them
-        inquiry_types = sorted([type_row[0] for type_row in types_query if type_row[0]])
-        
-        return jsonify({
-            'status': 'success',
-            'data': inquiry_types
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting inquiry types: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve inquiry types',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/inquiries/stats', methods=['GET'])
-def get_stats():
-    """Get statistics about email inquiries with optional date filtering"""
-    try:
-        # Parse date filters from query parameters
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
-        
-        # Build base query for active items (exclude archived)
-        active_query = EmailInquiry.query.filter(EmailInquiry.status != 'Archived')
-        
-        # Build base query for archived items
-        archived_query = EmailInquiry.query.filter(EmailInquiry.status == 'Archived')
-        
-        # Apply date filters if provided
-        if date_from:
-            try:
-                from datetime import datetime
-                date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-                active_query = active_query.filter(EmailInquiry.received_date >= date_from_obj)
-                archived_query = archived_query.filter(EmailInquiry.received_date >= date_from_obj)
-            except ValueError:
-                pass  # Ignore invalid date format
-                
-        if date_to:
-            try:
-                from datetime import datetime
-                date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-                active_query = active_query.filter(EmailInquiry.received_date <= date_to_obj)
-                archived_query = archived_query.filter(EmailInquiry.received_date <= date_to_obj)
-            except ValueError:
-                pass  # Ignore invalid date format
-        
-        # Get counts for active items
-        active_inquiries = active_query.count()
-        engaged_inquiries = active_query.filter(EmailInquiry.status == 'Engaged').count()
-        marketing_inquiries = active_query.filter(EmailInquiry.status == 'Marketing').count()
-        skipped_inquiries = active_query.filter(EmailInquiry.status == 'Skipped').count()
-        
-        # Get counts for archived items
-        archived_inquiries = archived_query.count()
-        
-        # Total includes both active and archived items
-        total_inquiries = active_inquiries + archived_inquiries
-        
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'total_inquiries': total_inquiries,
-                'engaged_inquiries': engaged_inquiries,
-                'marketing_inquiries': marketing_inquiries,
-                'skipped_inquiries': skipped_inquiries,
-                'archived_inquiries': archived_inquiries,
-                'engagement_rate': round((engaged_inquiries / active_inquiries * 100), 2) if active_inquiries > 0 else 0
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting stats: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve statistics',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/inquiries/daily-stats', methods=['GET'])
-def get_daily_stats():
-    """Get daily statistics for chart visualization"""
-    try:
-        from datetime import datetime, timedelta
-        from sqlalchemy import func, case
-        
-        # Parse date filters from query parameters
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
-        
-        # Default to current month if no dates provided
-        if not date_from or not date_to:
-            today = datetime.now()
-            date_from = today.replace(day=1).strftime('%Y-%m-%d')
-            date_to = today.strftime('%Y-%m-%d')
-        
-        # Parse dates
-        try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
-        except ValueError:
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid date format. Use YYYY-MM-DD'
-            }), 400
-        
-        # Query daily statistics (including archived items)
-        daily_stats = db.session.query(
-            func.date(EmailInquiry.received_date).label('date'),
-            func.count(EmailInquiry.id).label('total'),
-            func.sum(case((EmailInquiry.status == 'Engaged', 1), else_=0)).label('engaged'),
-            func.sum(case((EmailInquiry.status == 'Escalated', 1), else_=0)).label('escalated'),
-            func.sum(case((EmailInquiry.status == 'Skipped', 1), else_=0)).label('skipped'),
-            func.sum(case((EmailInquiry.status == 'Archived', 1), else_=0)).label('archived')
-        ).filter(
-            func.date(EmailInquiry.received_date) >= date_from_obj.date(),
-            func.date(EmailInquiry.received_date) <= date_to_obj.date()
-        ).group_by(
-            func.date(EmailInquiry.received_date)
-        ).order_by(
-            func.date(EmailInquiry.received_date)
-        ).all()
-        
-        # Format results
-        chart_data = []
-        for stat in daily_stats:
-            chart_data.append({
-                'date': stat.date.strftime('%Y-%m-%d'),
-                'total': stat.total or 0,
-                'engaged': stat.engaged or 0,
-                'escalated': stat.escalated or 0,
-                'skipped': stat.skipped or 0,
-                'archived': stat.archived or 0
-            })
-        
-        return jsonify({
-            'status': 'success',
-            'data': chart_data
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting daily stats: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to get daily statistics'
-        }), 500
-
-@app.route('/api/inquiries/<int:inquiry_id>/qa', methods=['PUT'])
-@login_required
-def update_qa_status(inquiry_id):
-    """Update QA status, notes, and reviewer information for an inquiry"""
-    try:
-        inquiry = EmailInquiry.query.get(inquiry_id)
-        if not inquiry:
-            return jsonify({
-                'status': 'error',
-                'message': 'Email inquiry not found'
-            }), 404
-            
-        # Get request data
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No data provided'
-            }), 400
-            
-        # Store original QA status to detect changes
-        original_qa_status = inquiry.qa_status
-        current_time = get_sydney_time()
-        
-        # Update QA status
-        if 'qa_status' in data:
-            valid_statuses = ['unchecked', 'checked', 'passed', 'issue', 'fixed']
-            if data['qa_status'] not in valid_statuses:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Invalid QA status. Must be one of: {", ".join(valid_statuses)}'
-                }), 400
-            
-            inquiry.qa_status = data['qa_status']
-            inquiry.qa_status_updated_at = current_time
-            
-        # Update QA reviewer (automatically use logged-in user if not provided)
-        if 'qa_status_updated_by' in data:
-            inquiry.qa_status_updated_by = data['qa_status_updated_by']
-        elif 'qa_status' in data:
-            # Auto-assign the logged-in user as QA reviewer when status changes
-            current_user = get_current_user()
-            inquiry.qa_status_updated_by = current_user.username if current_user else 'Unknown'
-            
-        # Update QA notes
-        if 'qa_notes' in data:
-            inquiry.qa_notes = data['qa_notes']
-            inquiry.qa_notes_updated_at = current_time
-            
-        inquiry.updated_at = current_time
-        db.session.commit()
-        
-        # Send email if QA status changed to 'issue'
-        if 'qa_status' in data and data['qa_status'] == 'issue' and original_qa_status != 'issue':
-            send_qa_issue_email(inquiry)
-        
-        logger.info(f"Updated QA status for inquiry {inquiry_id}: {data.get('qa_status', 'no status change')}")
-        return jsonify({
-            'status': 'success',
-            'message': 'QA status updated successfully',
-            'data': email_inquiry_schema.dump(inquiry)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error updating QA status for inquiry {inquiry_id}: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to update QA status',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/inquiries/<int:inquiry_id>', methods=['DELETE'])
-@require_api_key
-def delete_inquiry(inquiry_id):
-    """Archive an email inquiry (soft delete)"""
-    try:
-        inquiry = EmailInquiry.query.get(inquiry_id)
-        if not inquiry:
-            return jsonify({
-                'status': 'error',
-                'message': 'Email inquiry not found'
-            }), 404
-            
-        # Mark as archived instead of deleting
-        inquiry.archived = True
-        inquiry.archived_at = get_sydney_time()
-        inquiry.status = 'Archived'
-        inquiry.updated_at = get_sydney_time()
-        db.session.commit()
-        
-        logger.info(f"Archived inquiry: {inquiry_id}")
-        return jsonify({
-            'status': 'success',
-            'message': 'Email inquiry archived successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error archiving inquiry {inquiry_id}: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to archive email inquiry',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/inquiries/<int:inquiry_id>/reopen-gorgias', methods=['POST'])
-@login_required
-def reopen_ticket_in_gorgias(inquiry_id):
-    """Reopen a ticket in Gorgias for archived tickets"""
-    try:
-        inquiry = EmailInquiry.query.get(inquiry_id)
-        if not inquiry:
-            return jsonify({
-                'status': 'error',
-                'message': 'Email inquiry not found'
-            }), 404
-            
-        # Check if ticket is archived (either archived field is True or status is 'Archived')
-        if not inquiry.archived and inquiry.status != 'Archived':
-            return jsonify({
-                'status': 'error',
-                'message': 'Ticket is not archived. Only archived tickets can be reopened in Gorgias.'
-            }), 400
-            
-        # Check if we have a ticket_id that looks like it's from Gorgias
-        if not inquiry.ticket_id:
-            return jsonify({
-                'status': 'error',
-                'message': 'No ticket ID found. Cannot reopen in Gorgias without ticket ID.'
-            }), 400
-            
-        # Extract the Gorgias ticket number from ticket_id
-        # Assuming format is "GORGIAS-12345" or just "12345"
-        gorgias_ticket_number = inquiry.ticket_id
-        if gorgias_ticket_number.startswith('GORGIAS-'):
-            gorgias_ticket_number = gorgias_ticket_number.replace('GORGIAS-', '')
-        
-        # Get Gorgias API key from environment
-        gorgias_api_key = os.environ.get('GORGIAS_API_KEY')
-        if not gorgias_api_key:
-            return jsonify({
-                'status': 'error',
-                'message': 'Gorgias API key not configured. Please contact administrator.'
-            }), 500
-            
-        # Make API call to Gorgias to reopen the ticket
-        gorgias_url = f"https://sweatscollective.gorgias.com/api/tickets/{gorgias_ticket_number}"
-        
-        # Use the API key directly (it's already properly encoded)
-        headers = {
-            'Authorization': f'Basic {gorgias_api_key}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        }
-        
-        payload = {
-            'status': 'open'
-        }
-        
-        logger.info(f"Attempting to reopen Gorgias ticket {gorgias_ticket_number} for inquiry {inquiry_id}")
-        
-        response = requests.put(
-            gorgias_url,
-            json=payload,
-            headers=headers,
-            timeout=30
-        )
-        
-        # Check if the request was successful (200 or 202 are acceptable)
-        if response.status_code in [200, 202]:
-            # Update our local ticket status to reflect the change
-            inquiry.status = 'skipped'  # Set status to skipped when reopened
-            inquiry.archived = False
-            inquiry.archived_at = None
-            inquiry.updated_at = get_sydney_time()
-            db.session.commit()
-            
-            logger.info(f"Successfully reopened Gorgias ticket {gorgias_ticket_number} for inquiry {inquiry_id}")
-            return jsonify({
-                'status': 'success',
-                'message': 'Ticket successfully reopened in Gorgias',
-                'data': {
-                    'gorgias_ticket_number': gorgias_ticket_number,
-                    'updated_status': inquiry.status
-                }
-            })
-        else:
-            # Log the error response from Gorgias
-            logger.error(f"Failed to reopen Gorgias ticket {gorgias_ticket_number}. Status: {response.status_code}, Response: {response.text}")
-            return jsonify({
-                'status': 'error',
-                'message': f'Failed to reopen ticket in Gorgias. Status: {response.status_code}',
-                'details': response.text if response.text else 'No additional details from Gorgias API'
-            }), 500
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Network error when reopening Gorgias ticket for inquiry {inquiry_id}: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Network error occurred while contacting Gorgias',
-            'error': str(e)
-        }), 500
-    except Exception as e:
-        logger.error(f"Error reopening Gorgias ticket for inquiry {inquiry_id}: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to reopen ticket in Gorgias',
-            'error': str(e)
-        }), 500
-
-# Error logging endpoints
-@app.route('/api/errors', methods=['POST'])
-@require_api_key
-def create_error():
-    """Log a new automation error"""
-    try:
-        data = error_schema.load(request.json)
-        
-        error = Error(
-            timestamp=data['timestamp'],
-            workflow=data['workflow'],
-            url=data.get('url'),
-            node=data.get('node'),
-            error_message=data['error_message']
-        )
-        
-        db.session.add(error)
-        db.session.commit()
-        
-        logger.info(f"New error logged: {error.workflow} - {error.error_message[:100]}...")
-        return jsonify({
-            'status': 'success',
-            'message': 'Error logged successfully',
-            'data': error_schema.dump(error)
-        }), 201
-        
-    except ValidationError as e:
-        logger.warning(f"Validation error in create_error: {e.messages}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Validation failed',
-            'errors': e.messages
-        }), 400
-    except Exception as e:
-        logger.error(f"Error creating error log: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to log error',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/errors', methods=['GET'])
-@login_required
-def list_errors():
-    """List errors with optional filtering and pagination"""
-    try:
-        # Parse and validate query parameters
-        query_data = error_query_schema.load(request.args)
-        
-        # Build base query
-        query = Error.query
-        
-        # Apply filters
-        if query_data.get('workflow'):
-            query = query.filter(Error.workflow.ilike(f"%{query_data['workflow']}%"))
-            
-        if query_data.get('date_from'):
-            query = query.filter(Error.timestamp >= query_data['date_from'])
-            
-        if query_data.get('date_to'):
-            query = query.filter(Error.timestamp <= query_data['date_to'])
-        
-        # Order by timestamp descending (newest first)
-        query = query.order_by(Error.timestamp.desc())
-        
-        # Pagination
-        page = query_data.get('page', 1)
-        per_page = query_data.get('per_page', 20)
-        
-        paginated_errors = query.paginate(
-            page=page,
-            per_page=per_page,
-            error_out=False
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'errors': [error_schema.dump(error) for error in paginated_errors.items],
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'total': paginated_errors.total,
-                    'pages': paginated_errors.pages,
-                    'has_next': paginated_errors.has_next,
-                    'has_prev': paginated_errors.has_prev
-                }
-            }
-        })
-        
-    except ValidationError as e:
-        logger.warning(f"Validation error in list_errors: {e.messages}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Validation failed',
-            'errors': e.messages
-        }), 400
-    except Exception as e:
-        logger.error(f"Error listing errors: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve errors',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/errors/<int:error_id>', methods=['GET'])
-@login_required
-def get_error(error_id):
-    """Get a specific error by ID"""
-    try:
-        error = Error.query.get(error_id)
-        if not error:
-            return jsonify({
-                'status': 'error',
-                'message': 'Error not found'
-            }), 404
-            
-        return jsonify({
-            'status': 'success',
-            'data': error_schema.dump(error)
-        })
-        
-    except Exception as e:
-        logger.error(f"Error retrieving error {error_id}: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve error',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/errors/<int:error_id>', methods=['DELETE'])
-@login_required
-def delete_error(error_id):
-    """Delete an error"""
-    try:
-        error = Error.query.get(error_id)
-        if not error:
-            return jsonify({
-                'status': 'error',
-                'message': 'Error not found'
-            }), 404
-            
-        db.session.delete(error)
-        db.session.commit()
-        
-        logger.info(f"Deleted error: {error_id}")
-        return jsonify({
-            'status': 'success',
-            'message': 'Error deleted successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error deleting error {error_id}: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to delete error',
-            'error': str(e)
-        }), 500
-
-# Messenger Session endpoints
-@app.route('/api/messenger-sessions', methods=['GET'])
-def list_messenger_sessions():
-    """List messenger sessions from Supabase with optional filtering and pagination"""
-    try:
-        # Validate query parameters
-        query_params = messenger_session_query_schema.load(request.args)
-        
-        # Build filters for Supabase
-        filters = {}
-        if 'status' in query_params:
-            filters['status'] = query_params['status']
-        if 'ai_engaged' in query_params:
-            filters['ai_engaged'] = query_params['ai_engaged']
-        if 'customer_id' in query_params:
-            filters['customer_id'] = query_params['customer_id']
-        if 'qa_status' in query_params:
-            filters['qa_status'] = query_params['qa_status']
-        if 'date_from' in query_params:
-            filters['date_from'] = query_params['date_from'].isoformat()
-        if 'date_to' in query_params:
-            filters['date_to'] = query_params['date_to'].isoformat()
-        
-        # Pagination
-        page = query_params.get('page', 1)
-        per_page = query_params.get('per_page', 20)
-        offset = (page - 1) * per_page
-        
-        # Get sessions from Supabase
-        result = supabase_service.get_sessions(limit=per_page, offset=offset, filters=filters)
-        
-        if result['error']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve messenger sessions',
-                'error': result['error']
-            }), 500
-        
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'sessions': result['sessions'],
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'total': result['total'],
-                    'pages': (result['total'] + per_page - 1) // per_page,
-                    'has_next': offset + per_page < result['total'],
-                    'has_prev': page > 1
-                }
-            }
-        })
-        
-    except ValidationError as e:
-        logger.error(f"Validation error: {e.messages}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Invalid query parameters',
-            'errors': e.messages
-        }), 400
-    except Exception as e:
-        logger.error(f"Error listing messenger sessions: {str(e)}")
+        logger.error(f"Error retrieving messenger sessions: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': 'Failed to retrieve messenger sessions',
@@ -983,179 +294,165 @@ def list_messenger_sessions():
 
 @app.route('/api/messenger-sessions/stats', methods=['GET'])
 def get_messenger_session_stats():
-    """Get statistics about messenger sessions for the analytics dashboard"""
+    """Get comprehensive statistics for messenger sessions"""
     try:
-        result = supabase_service.get_session_stats()
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
         
-        if result['error']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve session statistics',
-                'error': result['error']
-            }), 500
+        # Default to last 30 days if no dates provided
+        if not date_from:
+            date_from_obj = datetime.now(SYDNEY_TZ) - timedelta(days=30)
+        else:
+            date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            if date_from_obj.tzinfo is None:
+                date_from_obj = SYDNEY_TZ.localize(date_from_obj)
+        
+        if not date_to:
+            date_to_obj = datetime.now(SYDNEY_TZ)
+        else:
+            date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            if date_to_obj.tzinfo is None:
+                date_to_obj = SYDNEY_TZ.localize(date_to_obj)
+        
+        # Build base queries with date filters
+        active_query = MessengerSession.query.filter(MessengerSession.status != 'resolved')
+        archived_query = MessengerSession.query.filter(MessengerSession.status == 'resolved')
+        
+        # Apply date filters if provided
+        if date_from:
+            active_query = active_query.filter(MessengerSession.conversation_start >= date_from_obj)
+            archived_query = archived_query.filter(MessengerSession.conversation_start >= date_from_obj)
+        
+        if date_to:
+            active_query = active_query.filter(MessengerSession.conversation_start <= date_to_obj)
+            archived_query = archived_query.filter(MessengerSession.conversation_start <= date_to_obj)
+        
+        # Calculate session counts by status
+        active_sessions = active_query.filter(MessengerSession.status == 'active').count()
+        escalated_sessions = active_query.filter(MessengerSession.status == 'escalated').count()
+        resolved_sessions = archived_query.count()
+        
+        # Calculate AI engagement stats
+        ai_engaged_sessions = active_query.filter(MessengerSession.ai_engaged == True).count()
+        total_active_sessions = active_query.count()
+        
+        # QA Statistics
+        qa_stats = {
+            'unchecked': MessengerSession.query.filter(MessengerSession.qa_status == 'unchecked').count(),
+            'passed': MessengerSession.query.filter(MessengerSession.qa_status == 'passed').count(),
+            'issue': MessengerSession.query.filter(MessengerSession.qa_status == 'issue').count(),
+            'fixed': MessengerSession.query.filter(MessengerSession.qa_status == 'fixed').count()
+        }
+        
+        # Total sessions
+        total_sessions = total_active_sessions + resolved_sessions
         
         return jsonify({
             'status': 'success',
-            'data': result['stats']
+            'data': {
+                'totals': {
+                    'total_sessions': total_sessions,
+                    'active_sessions': active_sessions,
+                    'escalated_sessions': escalated_sessions,
+                    'resolved_sessions': resolved_sessions
+                },
+                'ai_engagement': {
+                    'ai_engaged': ai_engaged_sessions,
+                    'ai_not_engaged': total_active_sessions - ai_engaged_sessions,
+                    'engagement_rate': round((ai_engaged_sessions / total_active_sessions * 100) if total_active_sessions > 0 else 0, 2)
+                },
+                'qa_stats': qa_stats,
+                'date_range': {
+                    'from': date_from_obj.isoformat(),
+                    'to': date_to_obj.isoformat()
+                }
+            }
         })
         
     except Exception as e:
         logger.error(f"Error getting messenger session stats: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': 'Failed to retrieve session statistics',
+            'message': 'Failed to get messenger session statistics',
             'error': str(e)
         }), 500
 
-@app.route('/api/messenger-sessions/<session_id>', methods=['GET'])
-def get_messenger_session(session_id):
-    """Get a specific messenger session by ID from Supabase"""
-    try:
-        result = supabase_service.get_session_by_id(session_id)
-        
-        if result['error']:
-            if result['error'] == 'Session not found':
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Messenger session not found'
-                }), 404
-            else:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Failed to retrieve messenger session',
-                    'error': result['error']
-                }), 500
-        
-        return jsonify({
-            'status': 'success',
-            'data': result['session']
-        })
-        
-    except Exception as e:
-        logger.error(f"Error retrieving messenger session {session_id}: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': 'Failed to retrieve messenger session',
-            'error': str(e)
-        }), 500
-
-@app.route('/api/messenger-sessions/<session_id>/qa', methods=['PUT'])
+@app.route('/api/messenger-sessions/<int:session_id>/qa', methods=['PUT'])
 @login_required
 def update_messenger_session_qa(session_id):
     """Update QA status and notes for a messenger session"""
     try:
-        # Get request data
-        data = request.get_json()
-        if not data:
+        session_obj = MessengerSession.query.get(session_id)
+        if not session_obj:
             return jsonify({
                 'status': 'error',
-                'message': 'No data provided'
-            }), 400
+                'message': 'Messenger session not found'
+            }), 404
         
-        # Build update data
-        update_data = {}
-        current_time = get_sydney_time()
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'status': 'error',
+                'message': 'User not found'
+            }), 401
         
-        # Update QA status
+        data = request.json
+        sydney_now = get_sydney_time()
+        
+        # Update QA status if provided
         if 'qa_status' in data:
-            valid_statuses = ['unchecked', 'passed', 'issue', 'fixed']
-            if data['qa_status'] not in valid_statuses:
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Invalid QA status. Must be one of: {", ".join(valid_statuses)}'
-                }), 400
-            
-            update_data['qa_status'] = data['qa_status']
-            update_data['qa_status_updated_at'] = current_time.isoformat()
+            session_obj.qa_status = data['qa_status']
+            session_obj.qa_status_updated_by = current_user.username
+            session_obj.qa_status_updated_at = sydney_now
         
-        # Update QA reviewer (automatically use logged-in user if not provided)
-        if 'qa_status_updated_by' in data:
-            update_data['qa_status_updated_by'] = data['qa_status_updated_by']
-        elif 'qa_status' in data:
-            # Auto-assign the logged-in user as QA reviewer when status changes
-            current_user = get_current_user()
-            update_data['qa_status_updated_by'] = current_user.username if current_user else 'Unknown'
-        
-        # Update QA notes
+        # Update QA notes if provided
         if 'qa_notes' in data:
-            update_data['qa_notes'] = data['qa_notes']
-            update_data['qa_notes_updated_at'] = current_time.isoformat()
+            session_obj.qa_notes = data['qa_notes']
+            session_obj.qa_notes_updated_at = sydney_now
         
-        # Update developer feedback
+        # Update developer feedback if provided
         if 'dev_feedback' in data:
-            update_data['dev_feedback'] = data['dev_feedback']
-            update_data['dev_feedback_at'] = current_time.isoformat()
-            if 'dev_feedback_by' in data:
-                update_data['dev_feedback_by'] = data['dev_feedback_by']
+            session_obj.dev_feedback = data['dev_feedback']
+            session_obj.dev_feedback_by = current_user.username
+            session_obj.dev_feedback_at = sydney_now
         
-        # Update session in Supabase
-        result = supabase_service.update_session(session_id, update_data)
+        session_obj.updated_at = sydney_now
+        db.session.commit()
         
-        if result['error']:
-            if result['error'] == 'Session not found or update failed':
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Messenger session not found'
-                }), 404
-            else:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Failed to update messenger session',
-                    'error': result['error']
-                }), 500
+        logger.info(f"Updated QA for messenger session {session_obj.id} by {current_user.username}")
         
-        # Send email notification if QA status changed to 'issue'
-        if 'qa_status' in data and data['qa_status'] == 'issue':
-            # Create a pseudo-inquiry object for the email function
-            class PseudoSession:
-                def __init__(self, session_data):
-                    self.session_id = session_data['session_id']
-                    self.customer_name = session_data.get('customer_name', 'Unknown')
-                    self.session_summary = session_data.get('session_summary', 'No summary available')
-                    self.qa_status_updated_by = session_data.get('qa_status_updated_by', 'Unknown')
-                    self.qa_notes = session_data.get('qa_notes', 'No notes provided')
-            
-            pseudo_session = PseudoSession(result['session'])
-            send_messenger_qa_issue_email(pseudo_session)
-        
-        logger.info(f"Updated QA status for messenger session {session_id}: {data.get('qa_status', 'no status change')}")
         return jsonify({
             'status': 'success',
-            'message': 'Messenger session QA updated successfully',
-            'data': result['session']
+            'message': 'QA information updated successfully',
+            'data': messenger_session_schema.dump(session_obj)
         })
         
     except Exception as e:
-        logger.error(f"Error updating QA status for messenger session {session_id}: {str(e)}")
+        logger.error(f"Error updating QA for messenger session {session_id}: {str(e)}")
+        db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to update messenger session QA',
+            'message': 'Failed to update QA information',
             'error': str(e)
         }), 500
 
-@app.route('/api/messenger-sessions', methods=['POST'])
+# Error logging routes
+@app.route('/api/errors', methods=['POST'])
 @require_api_key
-def create_messenger_session():
-    """Create a new messenger session in Supabase"""
+def create_error():
+    """Create a new error log entry"""
     try:
-        # Validate input data
-        data = messenger_session_schema.load(request.json)
+        data = error_schema.load(request.json)
         
-        # Create session in Supabase
-        result = supabase_service.create_session(data)
+        error = Error(**data)
+        db.session.add(error)
+        db.session.commit()
         
-        if result['error']:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to create messenger session',
-                'error': result['error']
-            }), 500
-        
-        logger.info(f"Created new messenger session: {result['session']['session_id']}")
+        logger.info(f"Created new error log: {error.id}")
         return jsonify({
             'status': 'success',
-            'message': 'Messenger session created successfully',
-            'data': result['session']
+            'message': 'Error logged successfully',
+            'data': error_schema.dump(error)
         }), 201
         
     except ValidationError as e:
@@ -1165,106 +462,70 @@ def create_messenger_session():
             'message': 'Validation failed',
             'errors': e.messages
         }), 400
+        
     except Exception as e:
-        logger.error(f"Error creating messenger session: {str(e)}")
+        logger.error(f"Error logging error: {str(e)}")
+        db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to create messenger session',
+            'message': 'Failed to log error',
             'error': str(e)
         }), 500
 
-@app.route('/api/messenger-sessions/<session_id>', methods=['PUT'])
-@require_api_key
-def update_messenger_session(session_id):
-    """Update a messenger session in Supabase"""
+@app.route('/api/errors', methods=['GET'])
+def get_errors():
+    """Get error logs with filtering and pagination"""
     try:
-        # Validate update data
-        data = messenger_session_update_schema.load(request.json)
+        query_params = error_query_schema.load(request.args)
         
-        # Update session in Supabase
-        result = supabase_service.update_session(session_id, data)
+        query = Error.query
         
-        if result['error']:
-            if result['error'] == 'Session not found or update failed':
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Messenger session not found'
-                }), 404
-            else:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Failed to update messenger session',
-                    'error': result['error']
-                }), 500
+        # Apply filters
+        if 'workflow' in query_params:
+            query = query.filter(Error.workflow.ilike(f"%{query_params['workflow']}%"))
         
-        logger.info(f"Updated messenger session: {session_id}")
+        if 'date_from' in query_params:
+            query = query.filter(Error.timestamp >= query_params['date_from'])
+        
+        if 'date_to' in query_params:
+            query = query.filter(Error.timestamp <= query_params['date_to'])
+        
+        # Order by timestamp (newest first)
+        query = query.order_by(Error.timestamp.desc())
+        
+        # Pagination
+        page = query_params.get('page', 1)
+        per_page = query_params.get('per_page', 20)
+        
+        paginated = query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
         return jsonify({
             'status': 'success',
-            'message': 'Messenger session updated successfully',
-            'data': result['session']
+            'data': error_schema.dump(paginated.items, many=True),
+            'pagination': {
+                'page': paginated.page,
+                'pages': paginated.pages,
+                'per_page': paginated.per_page,
+                'total': paginated.total,
+                'has_next': paginated.has_next,
+                'has_prev': paginated.has_prev
+            }
         })
         
     except ValidationError as e:
-        logger.error(f"Validation error: {e.messages}")
+        logger.error(f"Query validation error: {e.messages}")
         return jsonify({
             'status': 'error',
-            'message': 'Validation failed',
+            'message': 'Invalid query parameters',
             'errors': e.messages
         }), 400
+        
     except Exception as e:
-        logger.error(f"Error updating messenger session {session_id}: {str(e)}")
+        logger.error(f"Error retrieving errors: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': 'Failed to update messenger session',
+            'message': 'Failed to retrieve errors',
             'error': str(e)
         }), 500
-
-def send_messenger_qa_issue_email(session):
-    """Send email notification when QA status is set to 'issue' for messenger sessions"""
-    try:
-        resend_api_key = os.environ.get('RESEND_API_KEY')
-        if not resend_api_key:
-            logger.error("RESEND_API_KEY not found in environment variables")
-            return False
-        
-        # Prepare email data for messenger session
-        email_data = {
-            "from": "noreply@izzyagents.ai",
-            "to": "team@izzyagents.ai",
-            "subject": "Messenger Session QA Issue Opened",
-            "html": f"<p>New Messenger Session QA Issue Opened</p><p>Session ID: {session.session_id}</p><p>QA Reviewer: {session.qa_status_updated_by or 'Unknown'}</p><p>Customer: {session.customer_name}</p><p>Summary: {session.session_summary}</p><p></p><p>QA Notes: {session.qa_notes or 'No notes provided'}</p>"
-        }
-        
-        headers = {
-            'Authorization': f'Bearer {resend_api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.post(
-            'https://api.resend.com/emails',
-            json=email_data,
-            headers=headers,
-            timeout=10
-        )
-        response.raise_for_status()
-        logger.info(f"QA issue email sent successfully for messenger session {session.session_id}")
-        return True
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send QA issue email for messenger session {session.session_id}: {str(e)}")
-        return False
-
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({
-        'status': 'error',
-        'message': 'Endpoint not found'
-    }), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    db.session.rollback()
-    return jsonify({
-        'status': 'error',
-        'message': 'Internal server error'
-    }), 500
