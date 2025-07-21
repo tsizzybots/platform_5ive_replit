@@ -285,14 +285,22 @@ class SupabaseService:
         
         try:
             # Delete all messages with this session_id from both possible tables
+            total_deleted = 0
+            
             # First try the main table
             response1 = self.client.table('chat_sessions_for_dashboard').delete().eq('session_id', session_id).execute()
+            if response1.data:
+                total_deleted += len(response1.data)
+                logger.info(f"Deleted {len(response1.data)} records from chat_sessions_for_dashboard for session {session_id}")
             
             # Also try alternative table names to be thorough
             response2 = self.client.table('Chat Sessions Dashboard').delete().eq('session_id', session_id).execute()
+            if response2.data:
+                total_deleted += len(response2.data)
+                logger.info(f"Deleted {len(response2.data)} records from Chat Sessions Dashboard for session {session_id}")
             
-            logger.info(f"Deleted {len(response.data) if response.data else 0} records for session {session_id}")
-            return {"success": True, "deleted_count": len(response.data) if response.data else 0, "error": None}
+            logger.info(f"Total deleted {total_deleted} records for session {session_id}")
+            return {"success": True, "deleted_count": total_deleted, "error": None}
                 
         except Exception as e:
             logger.error(f"Error deleting session {session_id} from Supabase: {str(e)}")

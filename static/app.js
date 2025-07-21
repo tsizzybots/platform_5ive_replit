@@ -125,6 +125,42 @@ function initializeTestAIModal() {
             sendTestMessage();
         }
     });
+    
+    // FORCE TEST AI MODAL INPUT TO WORK EVEN WHEN OTHER MODALS ARE OPEN
+    // Override any event stopping and force focus capability
+    function forceTestAIInteraction() {
+        const testAIInput = document.getElementById('testAIInput');
+        if (testAIInput) {
+            // Remove all event listeners that might block interaction
+            testAIInput.style.pointerEvents = 'auto';
+            testAIInput.style.zIndex = '100001';
+            testAIInput.tabIndex = 0; // Make sure it can receive focus
+            
+            // Force focus capability even when modal backdrop exists
+            testAIInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.focus();
+            }, true);
+            
+            testAIInput.addEventListener('focus', function(e) {
+                e.stopPropagation();
+                this.style.pointerEvents = 'auto';
+            }, true);
+        }
+        
+        const sendBtn = document.getElementById('testAISendBtn');
+        if (sendBtn) {
+            sendBtn.style.pointerEvents = 'auto';
+            sendBtn.style.zIndex = '100001';
+        }
+    }
+    
+    // Run force interaction immediately and also when other modals open
+    forceTestAIInteraction();
+    
+    // Re-enable Test AI interaction when Bootstrap modals are shown
+    document.addEventListener('shown.bs.modal', forceTestAIInteraction);
+    document.addEventListener('hidden.bs.modal', forceTestAIInteraction);
 }
 
 async function sendTestMessage() {
@@ -1963,16 +1999,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Now perform backend deletion in background
                 try {
+                    console.log(`🗑️ Deleting session ID ${ticketToDelete} from backend...`);
                     const result = await apiRequest(`/api/messenger-sessions/${ticketToDelete}`, 'DELETE');
+                    
+                    console.log(`🔄 Delete result:`, result);
                     
                     if (result.ok) {
                         // Show success message
+                        console.log(`✅ Successfully deleted session ${ticketToDelete} from Supabase`);
                         showAlert('Testing session deleted successfully!', 'success');
                     } else {
                         // Show error message
+                        console.error(`❌ Failed to delete session ${ticketToDelete}:`, result);
                         showAlert('Failed to delete session: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
                     }
                 } catch (error) {
+                    console.error(`💥 Error deleting session ${ticketToDelete}:`, error);
                     showAlert('Error deleting session: ' + error.message, 'danger');
                 }
                 

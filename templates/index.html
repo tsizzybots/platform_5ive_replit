@@ -480,15 +480,31 @@
         .test-ai-modal .test-ai-close,
         .test-ai-modal .test-ai-refresh,
         .test-ai-modal .test-ai-input-area,
-        .test-ai-modal textarea {
+        .test-ai-modal textarea,
+        .test-ai-modal input {
             pointer-events: auto !important;
             z-index: 100000 !important;
             position: relative !important;
         }
         
-        /* Override any modal backdrop interference */
+        /* Override any modal backdrop interference - force interaction capability */
         .test-ai-modal {
             isolation: isolate !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Override Bootstrap modal backdrop interference */
+        .modal-backdrop ~ .test-ai-modal,
+        .modal-backdrop ~ .test-ai-modal * {
+            pointer-events: auto !important;
+        }
+        
+        /* Force Test AI modal inputs to be interactive even when other modals are open */
+        body.modal-open .test-ai-modal textarea,
+        body.modal-open .test-ai-modal input,
+        body.modal-open .test-ai-modal button {
+            pointer-events: auto !important;
+            z-index: 100001 !important;
         }
         
         /* Session Details Chat Styling */
