@@ -419,7 +419,11 @@ def get_messenger_session_stats():
         
         # Calculate stats from merged data (Supabase + PostgreSQL QA data)
         total_sessions = len(sessions)
-        completed_sessions = sum(1 for s in sessions if s.get('completed', False))
+        
+        # Completion status statistics
+        completed_sessions = sum(1 for s in sessions if s.get('completion_status') == 'complete')
+        in_progress_sessions = sum(1 for s in sessions if s.get('completion_status') == 'in_progress')
+        incomplete_sessions = sum(1 for s in sessions if s.get('completion_status') == 'incomplete')
         
         # QA Statistics from merged data
         passed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'passed')
@@ -433,6 +437,8 @@ def get_messenger_session_stats():
                 'total_sessions': total_sessions,
                 'passed': passed_sessions,
                 'completed': completed_sessions,
+                'in_progress': in_progress_sessions,
+                'incomplete': incomplete_sessions,
                 'unchecked': unchecked_sessions,
                 'issue': issue_sessions,
                 'fixed': fixed_sessions
@@ -782,6 +788,7 @@ def get_messenger_session_daily_stats():
                     'total': 0,
                     'active': 0,
                     'completed': 0,
+                    'in_progress': 0,
                     'ai_engaged': 0
                 }
             
@@ -790,8 +797,15 @@ def get_messenger_session_daily_stats():
             if session.get('status') == 'active':
                 daily_stats[session_date]['active'] += 1
             
-            if session.get('completed', False):
+            # Update daily stats based on completion status
+            completion_status = session.get('completion_status', 'incomplete')
+            if completion_status == 'complete':
                 daily_stats[session_date]['completed'] += 1
+            elif completion_status == 'in_progress':
+                # Add in_progress to daily stats if not exists
+                if 'in_progress' not in daily_stats[session_date]:
+                    daily_stats[session_date]['in_progress'] = 0
+                daily_stats[session_date]['in_progress'] += 1
                 
             if session.get('ai_engaged', False):
                 daily_stats[session_date]['ai_engaged'] += 1

@@ -106,12 +106,51 @@ class SupabaseService:
                     sessions_dict[session_id]['ai_engaged'] = True
             
             # Process completion status for all sessions
+            from datetime import datetime, timedelta
+            import pytz
+            
+            sydney_tz = pytz.timezone('Australia/Sydney')
+            current_time = datetime.now(sydney_tz)
+            
             for session_id, session_data in sessions_dict.items():
                 # Check if session contains the booking URL (completed session)
-                session_data['completed'] = any(
+                has_booking_url = any(
                     'https://shorturl.at/9u9oh' in str(msg.get('message', ''))
                     for msg in session_data['messages']
                 )
+                
+                if has_booking_url:
+                    session_data['completion_status'] = 'complete'
+                    session_data['completed'] = True  # Keep for backward compatibility
+                else:
+                    # Check if last message is within 12 hours
+                    last_message_str = session_data.get('last_message_time', '')
+                    try:
+                        # Parse the ISO datetime string
+                        if '+' in last_message_str:
+                            last_message_time = datetime.fromisoformat(last_message_str.replace('Z', '+00:00'))
+                        else:
+                            last_message_time = datetime.fromisoformat(last_message_str)
+                        
+                        # Ensure timezone awareness
+                        if last_message_time.tzinfo is None:
+                            last_message_time = pytz.UTC.localize(last_message_time)
+                        
+                        # Convert to Sydney time for comparison
+                        last_message_sydney = last_message_time.astimezone(sydney_tz)
+                        time_diff = current_time - last_message_sydney
+                        
+                        if time_diff <= timedelta(hours=12):
+                            session_data['completion_status'] = 'in_progress'
+                        else:
+                            session_data['completion_status'] = 'incomplete'
+                        
+                        session_data['completed'] = False  # Keep for backward compatibility
+                        
+                    except (ValueError, TypeError) as e:
+                        # If we can't parse the date, default to incomplete
+                        session_data['completion_status'] = 'incomplete'
+                        session_data['completed'] = False
             
             # Convert to list and apply filters
             sessions_list = list(sessions_dict.values())
@@ -119,7 +158,16 @@ class SupabaseService:
             # Apply additional filters after grouping
             if filters:
                 if 'completed' in filters:
-                    sessions_list = [s for s in sessions_list if s['completed'] == filters['completed']]
+                    # Handle new completion status filtering
+                    if filters['completed'] == 'complete':
+                        sessions_list = [s for s in sessions_list if s.get('completion_status') == 'complete']
+                    elif filters['completed'] == 'in_progress':
+                        sessions_list = [s for s in sessions_list if s.get('completion_status') == 'in_progress']
+                    elif filters['completed'] == 'incomplete':
+                        sessions_list = [s for s in sessions_list if s.get('completion_status') == 'incomplete']
+                    elif isinstance(filters['completed'], bool):
+                        # Backward compatibility for true/false
+                        sessions_list = [s for s in sessions_list if s['completed'] == filters['completed']]
                 if 'status' in filters:
                     sessions_list = [s for s in sessions_list if s['status'] == filters['status']]
                 if 'ai_engaged' in filters:

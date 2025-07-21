@@ -262,10 +262,12 @@ function displayStats(stats) {
         const totalSessions = stats.total_sessions || 0;
         const passedSessions = stats.passed || 0;
         const completedSessions = stats.completed || 0;
+        const inProgressSessions = stats.in_progress || 0;
+        const incompleteSessions = stats.incomplete || 0;
         const uncheckedSessions = stats.unchecked || 0;
         
         container.innerHTML = `
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="card stats-card bg-primary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of messenger sessions">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
@@ -274,7 +276,7 @@ function displayStats(stats) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
+            <div class="col-lg-2 col-md-4 mb-3">
                 <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions that have passed QA review">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
@@ -283,17 +285,35 @@ function displayStats(stats) {
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where booking URL was provided to complete the conversation">
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where customers completed booking">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
                         <h3 class="card-title">${completedSessions}</h3>
-                        <p class="card-text mb-0">Completed</p>
+                        <p class="card-text mb-0">Complete</p>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card stats-card bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions with no QA status set">
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="card stats-card bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions with recent activity (within 12 hours)">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${inProgressSessions}</h3>
+                        <p class="card-text mb-0">In Progress</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="card stats-card bg-danger text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions with no recent activity (over 12 hours)">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${incompleteSessions}</h3>
+                        <p class="card-text mb-0">Incomplete</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-3">
+                <div class="card stats-card bg-secondary text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions not yet reviewed for quality">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
                         <h3 class="card-title">${uncheckedSessions}</h3>
@@ -529,11 +549,7 @@ function applyFilters() {
     
     const completionStatus = document.getElementById('completionFilter').value;
     if (completionStatus) {
-        if (completionStatus === 'completed') {
-            currentFilters.completed = true;
-        } else if (completionStatus === 'incomplete') {
-            currentFilters.completed = false;
-        }
+        currentFilters.completed = completionStatus;
     }
     
     const contactId = document.getElementById('contactIdFilter').value;
@@ -726,10 +742,22 @@ function displayTickets(tickets, pagination) {
 
     tickets.forEach(ticket => {
         if (currentMode === 'messenger') {
-            // Messenger sessions row
-            const completedBadge = ticket.completed ? 
-                '<span class="badge bg-success">Complete</span>' : 
-                '<span class="badge bg-danger">Incomplete</span>';
+            // Messenger sessions row - handle new completion statuses
+            let completedBadge;
+            const completionStatus = ticket.completion_status || (ticket.completed ? 'complete' : 'incomplete');
+            
+            switch(completionStatus) {
+                case 'complete':
+                    completedBadge = '<span class="badge bg-success">Complete</span>';
+                    break;
+                case 'in_progress':
+                    completedBadge = '<span class="badge bg-warning text-dark">In Progress</span>';
+                    break;
+                case 'incomplete':
+                default:
+                    completedBadge = '<span class="badge bg-danger">Incomplete</span>';
+                    break;
+            }
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             
             html += `
