@@ -188,6 +188,23 @@ def get_messenger_session(session_id):
         # Sort messages by ID (chronological order - oldest first)
         if 'messages' in session_data:
             session_data['messages'].sort(key=lambda x: x.get('id', 0))
+        
+        # Get QA data from PostgreSQL if it exists
+        session_id_str = session_data.get('session_id')
+        if session_id_str:
+            qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+            if qa_session:
+                # Merge QA data from PostgreSQL
+                session_data.update({
+                    'qa_status': qa_session.qa_status,
+                    'qa_notes': qa_session.qa_notes,
+                    'qa_status_updated_by': qa_session.qa_status_updated_by,
+                    'qa_status_updated_at': qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None,
+                    'qa_notes_updated_at': qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None,
+                    'dev_feedback': qa_session.dev_feedback,
+                    'dev_feedback_by': qa_session.dev_feedback_by,
+                    'dev_feedback_at': qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
+                })
             
         return jsonify({
             'status': 'success',
@@ -409,15 +426,36 @@ def get_messenger_session_stats():
         }), 500
 
 @app.route('/api/messenger-sessions/<int:session_id>/qa', methods=['PUT'])
-@login_required
+@login_required  
 def update_messenger_session_qa(session_id):
     """Update QA status and notes for a messenger session"""
     try:
-        session_obj = ChatSession.query.get(session_id)
-        if not session_obj:
+        # First get the session from Supabase to get session_id string
+        result = supabase_service.get_sessions(limit=1000, offset=0, filters={})
+        if result.get('error'):
             return jsonify({
                 'status': 'error',
-                'message': 'Messenger session not found'
+                'message': 'Failed to retrieve session from database'
+            }), 500
+            
+        sessions = result.get('sessions', [])
+        supabase_session = None
+        for session in sessions:
+            if session.get('id') == session_id:
+                supabase_session = session
+                break
+                
+        if not supabase_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+            
+        session_id_str = supabase_session.get('session_id')
+        if not session_id_str:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session ID not found'
             }), 404
         
         current_user = get_current_user()
@@ -427,35 +465,61 @@ def update_messenger_session_qa(session_id):
                 'message': 'User not found'
             }), 401
         
+        # Find or create QA record in PostgreSQL
+        qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+        if not qa_session:
+            # Create new QA record
+            qa_session = ChatSession(
+                session_id=session_id_str,
+                customer_name=supabase_session.get('customer_name'),
+                contact_id=supabase_session.get('contact_id'),
+                conversation_start=datetime.fromisoformat(supabase_session.get('conversation_start', '').replace('Z', '+00:00')),
+                last_message_time=datetime.fromisoformat(supabase_session.get('last_message_time', '').replace('Z', '+00:00')),
+                message_count=supabase_session.get('message_count', 0),
+                status=supabase_session.get('status', 'active'),
+                ai_engaged=supabase_session.get('ai_engaged', False)
+            )
+            db.session.add(qa_session)
+        
         data = request.json
         sydney_now = get_sydney_time()
         
         # Update QA status if provided
         if 'qa_status' in data:
-            session_obj.qa_status = data['qa_status']
-            session_obj.qa_status_updated_by = current_user.username
-            session_obj.qa_status_updated_at = sydney_now
+            qa_session.qa_status = data['qa_status']
+            qa_session.qa_status_updated_by = current_user.username
+            qa_session.qa_status_updated_at = sydney_now
         
         # Update QA notes if provided
         if 'qa_notes' in data:
-            session_obj.qa_notes = data['qa_notes']
-            session_obj.qa_notes_updated_at = sydney_now
+            qa_session.qa_notes = data['qa_notes']
+            qa_session.qa_notes_updated_at = sydney_now
+            
+        # Update QA reviewer if provided
+        if 'qa_reviewer' in data:
+            qa_session.qa_status_updated_by = data['qa_reviewer']
         
         # Update developer feedback if provided
         if 'dev_feedback' in data:
-            session_obj.dev_feedback = data['dev_feedback']
-            session_obj.dev_feedback_by = current_user.username
-            session_obj.dev_feedback_at = sydney_now
+            qa_session.dev_feedback = data['dev_feedback']
+            qa_session.dev_feedback_by = current_user.username
+            qa_session.dev_feedback_at = sydney_now
         
-        session_obj.updated_at = sydney_now
+        # If marking as fixed
+        if data.get('mark_fixed', False):
+            qa_session.qa_status = 'fixed'
+            qa_session.qa_status_updated_by = current_user.username
+            qa_session.qa_status_updated_at = sydney_now
+        
+        qa_session.updated_at = sydney_now
         db.session.commit()
         
-        logger.info(f"Updated QA for messenger session {session_obj.id} by {current_user.username}")
+        logger.info(f"Updated QA for messenger session {session_id} by {current_user.username}")
         
         return jsonify({
             'status': 'success',
             'message': 'QA information updated successfully',
-            'data': chat_session_schema.dump(session_obj)
+            'data': qa_session.to_dict()
         })
         
     except Exception as e:

@@ -102,11 +102,19 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: Quality Assurance system fully restored with role-based permissions
+  - Successfully restored QA functionality in session details modal with accordions for QA Management and Developer Feedback
+  - Created three user accounts with secure passwords and role-based access:
+    * IzzyAdmin (password: HUcYi4PHS#h!Htl9) - QA role (can only access QA section)
+    * Brooklyn (password: qEmA@B79^4QV6r$i) - QA role (can only access QA section) 
+    * IzzyDev (password: dBWmYvLk!XW&wGxG) - Developer role (can access both QA and Developer Feedback sections)
+  - QA data stored in Replit PostgreSQL database while session data remains in Supabase
+  - API endpoints updated to handle QA operations with PostgreSQL integration
+  - Role-based UI controls: QA users see QA section only, developers see both sections
 - July 21, 2025: PostgreSQL database successfully configured and streamlined for messenger sessions
   - Created dedicated PostgreSQL database instance with full environment variable setup
   - Removed email_inquiries table as system now focuses exclusively on messenger sessions
   - Refactored API routes to only include messenger session endpoints and authentication
-  - Created admin user with login credentials for dashboard access
   - Application running successfully with messenger_sessions, users, and errors tables
 - July 16, 2025: Added "Reopen Ticket in Gorgias" functionality for archived tickets
   - New API endpoint `/api/inquiries/{id}/reopen-gorgias` to reopen tickets in Gorgias

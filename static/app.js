@@ -1242,9 +1242,101 @@ async function viewTicketDetails(id) {
                     }
                 </div>
             </div>
+            
+            <!-- Quality Assurance Management Section -->
+            <div class="mt-4">
+                <div class="accordion" id="qaAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="qaHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#qaCollapse" aria-expanded="false" aria-controls="qaCollapse">
+                                <i class="fas fa-clipboard-check me-2"></i> Quality Assurance Management
+                            </button>
+                        </h2>
+                        <div id="qaCollapse" class="accordion-collapse collapse" aria-labelledby="qaHeading" data-bs-parent="#qaAccordion">
+                            <div class="accordion-body">
+                                <input type="hidden" id="qa_session_id" value="${session.id}">
+                                
+                                <!-- QA Status and Reviewer Section - visible to all -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="qa_status_select" class="form-label">QA Status</label>
+                                        <select class="form-select" id="qa_status_select">
+                                            <option value="unchecked" ${(session.qa_status || 'unchecked') === 'unchecked' ? 'selected' : ''}>Unchecked</option>
+                                            <option value="passed" ${session.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
+                                            <option value="issue" ${session.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
+                                            <option value="fixed" ${session.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
+                                        </select>
+                                        <small class="form-text text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="qa_reviewer" class="form-label">QA Reviewer</label>
+                                        <input type="text" class="form-control" id="qa_reviewer" 
+                                               value="${session.qa_status_updated_by || currentUser?.username || ''}" 
+                                               placeholder="Enter reviewer name">
+                                    </div>
+                                </div>
+                                
+                                <!-- QA Notes Section - visible to all -->
+                                <div class="mb-3">
+                                    <label for="qa_notes_text" class="form-label">QA Notes</label>
+                                    <textarea class="form-control" id="qa_notes_text" rows="4" 
+                                              placeholder="Add quality assurance notes...">${session.qa_notes || ''}</textarea>
+                                </div>
+                                
+                                <!-- Action buttons for QA -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-primary" onclick="updateSessionQA()">
+                                        <i class="fas fa-save me-1"></i>Update QA Status
+                                    </button>
+                                </div>
+                                
+                                <!-- Developer Feedback Section - only visible to developers -->
+                                <div id="devFeedbackSection" style="display: none;">
+                                    <div class="accordion mt-3" id="devFeedbackAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="devFeedbackHeading">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devFeedbackCollapse" aria-expanded="false" aria-controls="devFeedbackCollapse">
+                                                    <i class="fas fa-code me-2"></i> Developer Feedback
+                                                </button>
+                                            </h2>
+                                            <div id="devFeedbackCollapse" class="accordion-collapse collapse" aria-labelledby="devFeedbackHeading" data-bs-parent="#devFeedbackAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="mb-3">
+                                                        <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
+                                                        <textarea class="form-control" id="dev_feedback_text" rows="4" 
+                                                                  placeholder="Add developer response to QA notes...">${session.dev_feedback || ''}</textarea>
+                                                    </div>
+                                                    
+                                                    <div class="d-flex gap-2">
+                                                        <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
+                                                            <i class="fas fa-save me-1"></i>Save Feedback
+                                                        </button>
+                                                        <button type="button" class="btn btn-warning" onclick="saveDevFeedbackAndMarkFixed()">
+                                                            <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
         
         document.getElementById('ticketDetailsContent').innerHTML = details;
+        
+        // Show/hide developer feedback section based on user role
+        if (currentUser && currentUser.role === 'developer') {
+            const devSection = document.getElementById('devFeedbackSection');
+            if (devSection) {
+                devSection.style.display = 'block';
+            }
+        }
+        
         const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
         modal.show();
     } else {
@@ -1252,34 +1344,26 @@ async function viewTicketDetails(id) {
     }
 }
 
-// Update QA Status
-async function updateQAStatus() {
-    const ticketId = document.getElementById('qa_ticket_id').value;
+// Update Session QA Status
+async function updateSessionQA() {
+    const sessionId = document.getElementById('qa_session_id').value;
     const qaStatus = document.getElementById('qa_status_select').value;
     const qaNotes = document.getElementById('qa_notes_text').value;
+    const qaReviewer = document.getElementById('qa_reviewer').value;
+    
+    if (!sessionId) {
+        showAlert('Session ID not found', 'danger');
+        return;
+    }
     
     const updateData = {
         qa_status: qaStatus,
-        qa_status_updated_by: currentUser ? currentUser.username : 'Unknown',
-        qa_notes: qaNotes
+        qa_notes: qaNotes,
+        qa_reviewer: qaReviewer
     };
     
-    // Add developer feedback if it exists and user has permission
-    if (currentUser && currentUser.username === 'IzzyAgents') {
-        const devFeedbackElement = document.getElementById('dev_feedback_text');
-        
-        if (devFeedbackElement) {
-            const devFeedback = devFeedbackElement.value;
-            
-            if (devFeedback.trim()) {
-                updateData.dev_feedback = devFeedback;
-                updateData.dev_feedback_by = currentUser.username;
-            }
-        }
-    }
-    
     try {
-        const result = await apiRequest(`/api/inquiries/${ticketId}/qa`, {
+        const result = await apiRequest(`/api/messenger-sessions/${sessionId}/qa`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
         });
@@ -1296,7 +1380,7 @@ async function updateQAStatus() {
             // Refresh the tickets table
             loadTickets(currentPage);
         } else {
-            showAlert('Failed to update QA status: ' + result.data.message, 'danger');
+            showAlert('Failed to update QA status: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
     } catch (error) {
         showAlert('Error updating QA status: ' + error.message, 'danger');
@@ -1305,14 +1389,19 @@ async function updateQAStatus() {
 
 // Save Developer Feedback
 async function saveDevFeedback() {
-    // Check permission
-    if (!currentUser || currentUser.username !== 'IzzyAgents') {
-        showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
+    // Check permission - only developers can add feedback
+    if (!currentUser || currentUser.role !== 'developer') {
+        showAlert('Access denied: Only developers can add feedback', 'danger');
         return;
     }
     
-    const ticketId = document.getElementById('qa_ticket_id').value;
+    const sessionId = document.getElementById('qa_session_id').value;
     const devFeedback = document.getElementById('dev_feedback_text').value;
+    
+    if (!sessionId) {
+        showAlert('Session ID not found', 'danger');
+        return;
+    }
     
     if (!devFeedback.trim()) {
         showAlert('Please enter developer feedback', 'warning');
@@ -1320,12 +1409,11 @@ async function saveDevFeedback() {
     }
     
     const updateData = {
-        dev_feedback: devFeedback,
-        dev_feedback_by: currentUser.username
+        dev_feedback: devFeedback
     };
     
     try {
-        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+        const result = await apiRequest(`/api/messenger-sessions/${sessionId}/qa`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
         });
@@ -1342,7 +1430,7 @@ async function saveDevFeedback() {
             // Refresh the tickets table
             loadTickets(currentPage);
         } else {
-            showAlert('Failed to save developer feedback: ' + result.data.message, 'danger');
+            showAlert('Failed to save developer feedback: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
     } catch (error) {
         showAlert('Error saving developer feedback: ' + error.message, 'danger');
@@ -1351,14 +1439,19 @@ async function saveDevFeedback() {
 
 // Save Developer Feedback and Mark as Fixed
 async function saveDevFeedbackAndMarkFixed() {
-    // Check permission
-    if (!currentUser || currentUser.username !== 'IzzyAgents') {
-        showAlert('Access denied: Only IzzyAgents can add developer feedback', 'danger');
+    // Check permission - only developers can mark as fixed
+    if (!currentUser || currentUser.role !== 'developer') {
+        showAlert('Access denied: Only developers can mark issues as fixed', 'danger');
         return;
     }
     
-    const ticketId = document.getElementById('qa_ticket_id').value;
+    const sessionId = document.getElementById('qa_session_id').value;
     const devFeedback = document.getElementById('dev_feedback_text').value;
+    
+    if (!sessionId) {
+        showAlert('Session ID not found', 'danger');
+        return;
+    }
     
     if (!devFeedback.trim()) {
         showAlert('Please enter developer feedback', 'warning');
@@ -1367,18 +1460,18 @@ async function saveDevFeedbackAndMarkFixed() {
     
     const updateData = {
         dev_feedback: devFeedback,
-        dev_feedback_by: currentUser.username,
-        qa_status: 'fixed'
+        qa_status: 'fixed',
+        mark_fixed: true
     };
     
     try {
-        const result = await apiRequest(`/api/inquiries/${ticketId}`, {
+        const result = await apiRequest(`/api/messenger-sessions/${sessionId}/qa`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
         });
         
         if (result.ok) {
-            showAlert('Developer feedback saved and QA status marked as fixed', 'success');
+            showAlert('Developer feedback saved and status marked as fixed', 'success');
             
             // Close the modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
@@ -1389,10 +1482,10 @@ async function saveDevFeedbackAndMarkFixed() {
             // Refresh the tickets table
             loadTickets(currentPage);
         } else {
-            showAlert('Failed to save developer feedback and mark as fixed: ' + result.data.message, 'danger');
+            showAlert('Failed to save developer feedback: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
     } catch (error) {
-        showAlert('Error saving developer feedback and marking as fixed: ' + error.message, 'danger');
+        showAlert('Error saving developer feedback: ' + error.message, 'danger');
     }
 }
 
