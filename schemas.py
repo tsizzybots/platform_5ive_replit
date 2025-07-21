@@ -68,7 +68,7 @@ class ChatSessionUpdateSchema(Schema):
 class ChatSessionQuerySchema(Schema):
     status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
     ai_engaged = fields.Boolean()
-    customer_id = fields.String()
+    contact_id = fields.String()
     session_id = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
@@ -79,6 +79,6 @@ class ChatSessionQuerySchema(Schema):
 # Schema instances
 error_schema = ErrorSchema()
 error_query_schema = ErrorQuerySchema()
-messenger_session_schema = MessengerSessionSchema()
-messenger_session_update_schema = MessengerSessionUpdateSchema()
-messenger_session_query_schema = MessengerSessionQuerySchema()
+chat_session_schema = ChatSessionSchema()
+chat_session_update_schema = ChatSessionUpdateSchema()
+chat_session_query_schema = ChatSessionQuerySchema()

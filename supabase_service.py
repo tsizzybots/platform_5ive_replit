@@ -48,7 +48,7 @@ class SupabaseService:
             return {"sessions": [], "total": 0, "error": "Supabase client not initialized"}
         
         try:
-            query = self.client.table('messenger_sessions').select('*')
+            query = self.client.table('chat_sessions_for_dashboard').select('*')
             
             # Apply filters if provided
             if filters:
@@ -56,8 +56,8 @@ class SupabaseService:
                     query = query.eq('status', filters['status'])
                 if 'ai_engaged' in filters:
                     query = query.eq('ai_engaged', filters['ai_engaged'])
-                if 'customer_id' in filters:
-                    query = query.eq('customer_id', filters['customer_id'])
+                if 'contact_id' in filters:
+                    query = query.eq('contact_id', filters['contact_id'])
                 if 'qa_status' in filters:
                     query = query.eq('qa_status', filters['qa_status'])
                 if 'date_from' in filters:
@@ -72,7 +72,7 @@ class SupabaseService:
             response = query.execute()
             
             # Get total count for pagination
-            count_response = self.client.table('messenger_sessions').select('id', count='exact').execute()
+            count_response = self.client.table('chat_sessions_for_dashboard').select('id', count='exact').execute()
             total = count_response.count if hasattr(count_response, 'count') else 0
             
             return {
