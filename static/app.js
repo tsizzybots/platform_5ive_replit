@@ -696,7 +696,7 @@ function displayTickets(tickets, pagination) {
                     <th style="width: 15%;">Customer</th>
                     <th style="width: 20%;">Contact ID</th>
                     <th style="width: 10%;">QA Status</th>
-                    <th style="width: 10%;">Completed</th>
+                    <th style="width: 10%;">Status</th>
                     <th style="width: 13%; padding-right: 8px;">Actions</th>
                 </tr>
             </thead>
@@ -728,8 +728,8 @@ function displayTickets(tickets, pagination) {
         if (currentMode === 'messenger') {
             // Messenger sessions row
             const completedBadge = ticket.completed ? 
-                '<span class="badge bg-success">Yes</span>' : 
-                '<span class="badge bg-danger">No</span>';
+                '<span class="badge bg-success">Complete</span>' : 
+                '<span class="badge bg-danger">Incomplete</span>';
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             
             html += `

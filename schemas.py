@@ -68,6 +68,7 @@ class ChatSessionUpdateSchema(Schema):
 class ChatSessionQuerySchema(Schema):
     status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
     ai_engaged = fields.Boolean()
+    completed = fields.Boolean()
     contact_id = fields.String()
     session_id = fields.String()
     date_from = fields.DateTime()

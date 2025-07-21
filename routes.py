@@ -281,6 +281,12 @@ def get_messenger_sessions():
             filters['contact_id'] = query_params['contact_id']
         if 'session_id' in query_params:
             filters['session_id'] = query_params['session_id']
+        if 'status' in query_params:
+            filters['status'] = query_params['status']
+        if 'ai_engaged' in query_params:
+            filters['ai_engaged'] = query_params['ai_engaged']
+        if 'completed' in query_params:
+            filters['completed'] = query_params['completed']
         
         # Pagination
         page = query_params.get('page', 1)
@@ -602,10 +608,10 @@ QA Notes:
 Please review this issue in the dashboard and provide appropriate feedback.
                 """
                 
-                # Send email (you'll need to specify the recipient email addresses)
+                # Send email to team
                 email_params = {
-                    "from": "qa-alerts@yourdomain.com",
-                    "to": ["team@yourdomain.com"],  # Update with actual email addresses
+                    "from": "noreply@izzyagents.ai",
+                    "to": ["team@izzyagents.ai"],
                     "subject": subject,
                     "html": html_content,
                     "text": text_content

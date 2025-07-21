@@ -113,8 +113,19 @@ class SupabaseService:
                     for msg in session_data['messages']
                 )
             
-            # Convert to list and sort by last message time (newest first)
+            # Convert to list and apply filters
             sessions_list = list(sessions_dict.values())
+            
+            # Apply additional filters after grouping
+            if filters:
+                if 'completed' in filters:
+                    sessions_list = [s for s in sessions_list if s['completed'] == filters['completed']]
+                if 'status' in filters:
+                    sessions_list = [s for s in sessions_list if s['status'] == filters['status']]
+                if 'ai_engaged' in filters:
+                    sessions_list = [s for s in sessions_list if s['ai_engaged'] == filters['ai_engaged']]
+            
+            # Sort by last message time (newest first)
             sessions_list.sort(key=lambda x: x['last_message_time'], reverse=True)
             
             # Apply pagination to the grouped sessions
