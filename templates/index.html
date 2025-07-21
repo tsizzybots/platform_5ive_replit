@@ -326,7 +326,7 @@
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 9999;
+            z-index: 10000;
             display: none;
             resize: both;
             overflow: hidden;
@@ -464,11 +464,22 @@
             -webkit-filter: none !important;
         }
         
-        /* Ensure Test AI modal is never blurred by any backdrop */
+        /* Ensure Test AI modal is always on top and clickable */
         body.modal-open .test-ai-modal {
             filter: none !important;
             -webkit-filter: none !important;
-            z-index: 9999 !important;
+            z-index: 10000 !important;
+            pointer-events: auto !important;
+        }
+        
+        /* Ensure Test AI modal input areas are always interactive */
+        .test-ai-modal .test-ai-input,
+        .test-ai-modal .send-btn,
+        .test-ai-modal .test-ai-header,
+        .test-ai-modal .test-ai-close,
+        .test-ai-modal .test-ai-refresh {
+            pointer-events: auto !important;
+            z-index: 10001 !important;
         }
         
         /* Session Details Chat Styling */

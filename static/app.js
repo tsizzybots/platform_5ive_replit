@@ -242,6 +242,39 @@ async function sendTestMessage() {
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+        // INSTANT COMPLETION DETECTION: Check if booking URL was provided
+        const bookingUrl = 'https://shorturl.at/9u9oh';
+        if (aiMessage.includes(bookingUrl) && testAISessionId) {
+            console.log('🎯 BOOKING URL DETECTED! Triggering instant completion update for session:', testAISessionId);
+            
+            // Immediately trigger session refresh to show completion status
+            setTimeout(() => {
+                console.log('🔄 Refreshing table to show completion status...');
+                loadTickets(currentPage);
+                updateStatsOnly();
+                
+                // Show success notification
+                showAlert('🎉 Session completed! Booking URL provided.', 'success');
+            }, 2000); // 2 second delay to allow backend processing
+            
+            // Also trigger a follow-up refresh to ensure accuracy
+            setTimeout(() => {
+                console.log('🔄 Follow-up refresh to ensure completion status is accurate...');
+                loadTickets(currentPage);
+                updateStatsOnly();
+            }, 5000); // 5 second follow-up
+        }
+
+        // AUTO-UPDATE SESSION DETAILS MODAL: If session details modal is open and matches this session
+        const sessionModal = document.getElementById('sessionDetailsModal');
+        if (sessionModal && sessionModal.classList.contains('show') && currentSessionId == testAISessionId) {
+            console.log('🔄 Auto-updating open session details modal...');
+            setTimeout(() => {
+                // Refresh the modal content with updated session data
+                openSessionDetails(testAISessionId);
+            }, 1500); // 1.5 second delay to allow message to be processed
+        }
+
     } catch (error) {
         console.error('Webhook request failed:', error);
         
