@@ -1430,18 +1430,25 @@ async function viewTicketDetails(id) {
             </div>
             <div class="mt-3">
                 <h6><strong>Conversation Thread:</strong></h6>
-                <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem;">
+                <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem; padding: 12px; background: var(--bs-body-bg);">
                     ${session.messages && session.messages.length > 0 ? 
                         session.messages.map(msg => `
-                            <div class="message p-3 border-bottom ${msg.user_ai === 'ai' ? 'bg-dark' : 'bg-secondary bg-opacity-50'}" style="background-color: ${msg.user_ai === 'ai' ? '#1a1a1a !important' : '#2a2a2a !important'}">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong class="text-light">
-                                        ${msg.user_ai === 'ai' ? '👩‍💻 AI Brooklyn' : '👤 ' + (session.customer_name || 'Customer')}
-                                    </strong>
-                                    <small class="text-muted">${formatDate(msg.timestamp)}</small>
-                                </div>
-                                <div class="message-content text-light">
-                                    ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                            <div class="session-message mb-3 ${msg.user_ai === 'ai' ? 'ai-message' : 'user-message'}">
+                                <div class="message-bubble p-2" style="
+                                    ${msg.user_ai === 'ai' ? 
+                                        'background: var(--bs-primary); color: white; margin-left: auto; text-align: right; max-width: 85%; border-radius: 8px;' : 
+                                        'background: var(--bs-secondary); color: var(--bs-body-color); margin-right: auto; text-align: left; max-width: 85%; border-radius: 8px;'
+                                    }
+                                ">
+                                    <small style="color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.7)' : 'var(--bs-gray-600)'};">
+                                        ${msg.user_ai === 'ai' ? 'AI Brooklyn' : (session.customer_name || 'Customer')}
+                                    </small><br>
+                                    <div class="message-content">
+                                        ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                                    </div>
+                                    <small class="message-time d-block mt-1" style="font-size: 0.7em; color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.5)' : 'var(--bs-gray-500)'};">
+                                        ${formatDate(msg.timestamp)}
+                                    </small>
                                 </div>
                             </div>
                         `).join('') 

@@ -435,6 +435,25 @@
             -webkit-filter: none !important;
             z-index: 9999 !important;
         }
+        
+        /* Session Details Chat Styling */
+        .session-message {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .session-message.user-message {
+            align-items: flex-start;
+        }
+        
+        .session-message.ai-message {
+            align-items: flex-end;
+        }
+        
+        .message-bubble {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
     </style>
 </head>
 <body>
