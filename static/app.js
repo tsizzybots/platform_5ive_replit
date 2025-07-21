@@ -1379,14 +1379,13 @@ async function performBulkArchive() {
         // Archive each selected ticket by updating status
         for (const ticketId of archivedIds) {
             try {
-                const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
+                const response = await fetch(`/api/messenger-sessions/${ticketId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        qa_status: 'archived',
-                        qa_status_updated_by: currentUser ? currentUser.username : 'Unknown'
+                        status: 'archived'
                     }),
                     credentials: 'same-origin'
                 });

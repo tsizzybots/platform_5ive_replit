@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, ChatSession, MessengerSessionQA
+from models import Error, User, ChatSession, MessengerSession, MessengerSessionQA
 from schemas import (error_schema, error_query_schema, chat_session_schema, 
                     chat_session_update_schema, chat_session_query_schema)
 from supabase_service import supabase_service
@@ -318,7 +318,7 @@ def get_messenger_sessions():
                 session_id_str = session.get('session_id')
                 if session_id_str:
                     # MUST exist in PostgreSQL to be shown
-                    qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+                    qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
                     if qa_session:
                         # Merge PostgreSQL QA data
                         session['qa_status'] = qa_session.qa_status
@@ -330,13 +330,18 @@ def get_messenger_sessions():
                         session['dev_feedback_by'] = qa_session.dev_feedback_by
                         session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
                         
-                        # Apply QA status filtering
-                        if requested_qa_status:
+                        # Apply status filtering (archived vs active)
+                        requested_status = query_params.get('status')
+                        if requested_status:
+                            if requested_status == qa_session.status:
+                                filtered_sessions.append(session)
+                        elif requested_qa_status:
+                            # Apply QA status filtering
                             if requested_qa_status == qa_session.qa_status:
                                 filtered_sessions.append(session)
                         else:
                             # Show non-archived sessions by default
-                            if qa_session.qa_status != 'archived':
+                            if qa_session.status != 'archived':
                                 filtered_sessions.append(session)
                     # If no PostgreSQL record exists, skip this session (data consistency requirement)
                 else:

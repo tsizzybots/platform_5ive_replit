@@ -137,6 +137,38 @@ class Error(db.Model):
     def __repr__(self):
         return f'<Error {self.id}: {self.workflow} - {self.error_message[:50]}...>'
 
+class MessengerSession(db.Model):
+    """Model for messenger sessions stored in PostgreSQL"""
+    __tablename__ = 'messenger_sessions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False, unique=True)
+    customer_name = db.Column(db.String(255), nullable=True)
+    customer_id = db.Column(db.String(255), nullable=True)
+    conversation_start = db.Column(db.DateTime, nullable=False)
+    last_message_time = db.Column(db.DateTime, nullable=False)
+    message_count = db.Column(db.Integer, nullable=False, default=1)
+    session_summary = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(50), nullable=False, default='active')
+    ai_engaged = db.Column(db.Boolean, nullable=False, default=False)
+    ai_response = db.Column(db.Text, nullable=True)
+    archived = db.Column(db.Boolean, nullable=False, default=False)
+    archived_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # QA Status System
+    qa_status = db.Column(db.String(50), nullable=False, default='unchecked')
+    qa_status_updated_by = db.Column(db.String(255), nullable=True)
+    qa_status_updated_at = db.Column(db.DateTime, nullable=True)
+    qa_notes = db.Column(db.Text, nullable=True)
+    qa_notes_updated_at = db.Column(db.DateTime, nullable=True)
+    
+    # Developer Feedback
+    dev_feedback = db.Column(db.Text, nullable=True)
+    dev_feedback_by = db.Column(db.String(255), nullable=True)
+    dev_feedback_at = db.Column(db.DateTime, nullable=True)
+
 class MessengerSessionQA(db.Model):
     """Model for storing QA information for messenger sessions in PostgreSQL"""
     __tablename__ = 'messenger_session_qa'
