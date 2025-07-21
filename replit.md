@@ -100,6 +100,11 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: PostgreSQL database successfully configured and integrated
+  - Created dedicated PostgreSQL database instance with full environment variable setup
+  - All database tables created and verified: email_inquiries, errors, messenger_sessions, users
+  - Database connection properly configured with pool settings and health checks
+  - Application running successfully with persistent PostgreSQL storage
 - July 16, 2025: Added "Reopen Ticket in Gorgias" functionality for archived tickets
   - New API endpoint `/api/inquiries/{id}/reopen-gorgias` to reopen tickets in Gorgias
   - Frontend button appears only for archived tickets with ticket URLs
