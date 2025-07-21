@@ -284,8 +284,12 @@ class SupabaseService:
             return {"success": False, "error": "Supabase client not initialized"}
         
         try:
-            # Delete all messages with this session_id
-            response = self.client.table('Chat Sessions Dashboard').delete().eq('session_id', session_id).execute()
+            # Delete all messages with this session_id from both possible tables
+            # First try the main table
+            response1 = self.client.table('chat_sessions_for_dashboard').delete().eq('session_id', session_id).execute()
+            
+            # Also try alternative table names to be thorough
+            response2 = self.client.table('Chat Sessions Dashboard').delete().eq('session_id', session_id).execute()
             
             logger.info(f"Deleted {len(response.data) if response.data else 0} records for session {session_id}")
             return {"success": True, "deleted_count": len(response.data) if response.data else 0, "error": None}

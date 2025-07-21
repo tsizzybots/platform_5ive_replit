@@ -317,7 +317,7 @@
         
         /* Test AI Modal Styling */
         .test-ai-modal {
-            position: fixed;
+            position: fixed !important;
             top: 50px;
             right: 50px;
             width: 400px;
@@ -326,7 +326,7 @@
             border: 1px solid var(--bs-border-color);
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 10000;
+            z-index: 99999 !important;
             display: none;
             resize: both;
             overflow: hidden;
@@ -468,8 +468,9 @@
         body.modal-open .test-ai-modal {
             filter: none !important;
             -webkit-filter: none !important;
-            z-index: 10000 !important;
+            z-index: 99999 !important;
             pointer-events: auto !important;
+            position: fixed !important;
         }
         
         /* Ensure Test AI modal input areas are always interactive */
@@ -477,9 +478,17 @@
         .test-ai-modal .send-btn,
         .test-ai-modal .test-ai-header,
         .test-ai-modal .test-ai-close,
-        .test-ai-modal .test-ai-refresh {
+        .test-ai-modal .test-ai-refresh,
+        .test-ai-modal .test-ai-input-area,
+        .test-ai-modal textarea {
             pointer-events: auto !important;
-            z-index: 10001 !important;
+            z-index: 100000 !important;
+            position: relative !important;
+        }
+        
+        /* Override any modal backdrop interference */
+        .test-ai-modal {
+            isolation: isolate !important;
         }
         
         /* Session Details Chat Styling */

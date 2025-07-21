@@ -1311,7 +1311,8 @@ async function performBulkArchive() {
         
         // INSTANTLY remove sessions from UI with animation - don't wait for server response
         for (const ticketId of archivedIds) {
-            const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+            const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`) || 
+                       document.querySelector(`tr[data-session-id="${ticketId}"]`);
             if (row) {
                 // Add fade-out animation
                 row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
