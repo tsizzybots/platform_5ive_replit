@@ -255,8 +255,7 @@ async function sendTestMessage() {
     }
 }
 
-// Global variable for Test AI session
-let testAISessionId = null;
+
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
