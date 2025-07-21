@@ -74,6 +74,7 @@ class ChatSessionQuerySchema(Schema):
     date_from = fields.DateTime()
     date_to = fields.DateTime()
     qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 

@@ -309,13 +309,18 @@ def get_messenger_sessions():
             sessions = result.get('sessions', [])
             total = result.get('total', 0)
             
-            # Merge QA data from PostgreSQL for each session and filter archived
+            # CRITICAL: Only show sessions that exist in BOTH Replit PostgreSQL AND Supabase
+            # Merge QA data from PostgreSQL and enforce data consistency
             filtered_sessions = []
+            requested_qa_status = query_params.get('qa_status')
+            
             for session in sessions:
                 session_id_str = session.get('session_id')
                 if session_id_str:
+                    # MUST exist in PostgreSQL to be shown
                     qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
                     if qa_session:
+                        # Merge PostgreSQL QA data
                         session['qa_status'] = qa_session.qa_status
                         session['qa_notes'] = qa_session.qa_notes
                         session['qa_status_updated_by'] = qa_session.qa_status_updated_by
@@ -324,18 +329,23 @@ def get_messenger_sessions():
                         session['dev_feedback'] = qa_session.dev_feedback
                         session['dev_feedback_by'] = qa_session.dev_feedback_by
                         session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
-                    else:
-                        session['qa_status'] = 'unchecked'
-                
-                # Only include non-archived sessions unless specifically requested
-                requested_qa_status = query_params.get('qa_status')
-                if requested_qa_status == 'archived' or session.get('qa_status') != 'archived':
-                    filtered_sessions.append(session)
+                        
+                        # Apply QA status filtering
+                        if requested_qa_status:
+                            if requested_qa_status == qa_session.qa_status:
+                                filtered_sessions.append(session)
+                        else:
+                            # Show non-archived sessions by default
+                            if qa_session.qa_status != 'archived':
+                                filtered_sessions.append(session)
+                    # If no PostgreSQL record exists, skip this session (data consistency requirement)
+                else:
+                    # Skip sessions without session_id
+                    continue
             
             sessions = filtered_sessions
-            # Adjust total count for filtered sessions
-            if requested_qa_status != 'archived':
-                total = len(sessions)
+            # Recalculate total after filtering
+            total = len(sessions)
         
         # Calculate pagination info
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
