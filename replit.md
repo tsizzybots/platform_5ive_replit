@@ -102,6 +102,13 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: Implemented instant archive and delete operations with smooth UI updates
+  - Fixed "updateBulkActionControls is not defined" error by adding updateSelectionControls function
+  - Archive and delete operations now close modals instantly and remove items immediately with smooth fade-out animation
+  - Backend processing happens in background without blocking user interface
+  - Both archive and delete functions update statistics instantly for responsive user experience
+  - Delete function properly removes sessions from both Replit PostgreSQL AND Supabase databases
+  - No more 10+ second delays - UI updates are immediate and smooth
 - July 21, 2025: Improved delete functionality and session management
   - Delete sessions now uses Bootstrap modal instead of browser confirm dialog
   - Delete functionality properly removes testing sessions from Supabase database

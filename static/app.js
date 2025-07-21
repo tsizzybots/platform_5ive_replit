@@ -1294,7 +1294,7 @@ async function performBulkArchive() {
         
         // Clear selections immediately
         selectedTickets.clear();
-        updateBulkActionControls();
+        updateSelectionControls();
         
         // Update stats immediately (optimistic update)
         updateStatsOnly();
@@ -1348,10 +1348,14 @@ async function performBulkArchive() {
         }, 1000);
         
     } catch (error) {
-        showAlert('Error archiving tickets: ' + error.message, 'danger');
+        showAlert('Error archiving sessions: ' + error.message, 'danger');
     } finally {
+        // Reset button state
         archiveSelectedBtn.disabled = false;
         archiveSelectedBtn.innerHTML = '<i class="fas fa-archive me-1"></i>Archive Selected';
+        
+        // Update bulk action controls
+        updateSelectionControls();
     }
 }
 
@@ -1900,38 +1904,50 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener('click', async function() {
             if (ticketToDelete) {
+                // INSTANTLY close modal and remove from UI - no waiting
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                modal.hide();
+                
+                // Immediately remove the row from the table with animation
+                const row = document.querySelector(`tr[data-ticket-id="${ticketToDelete}"]`) || 
+                           document.querySelector(`tr[data-session-id="${ticketToDelete}"]`);
+                if (row) {
+                    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(-20px)';
+                    
+                    setTimeout(() => {
+                        row.remove();
+                    }, 300);
+                }
+                
+                // Show immediate feedback
+                showAlert('Deleting session...', 'info');
+                
+                // Update stats immediately
+                updateStatsOnly();
+                
+                // Now perform backend deletion in background
                 try {
                     const result = await apiRequest(`/api/messenger-sessions/${ticketToDelete}`, 'DELETE');
                     
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
-                    modal.hide();
-                    
                     if (result.ok) {
                         // Show success message
-                        showToast('Testing session deleted successfully!', 'success');
-                        
-                        // Remove the row from the table with animation
-                        const row = document.querySelector(`tr[data-session-id="${ticketToDelete}"]`);
-                        if (row) {
-                            row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                            row.style.opacity = '0';
-                            row.style.transform = 'translateX(-20px)';
-                            
-                            setTimeout(() => {
-                                row.remove();
-                            }, 300);
-                        }
-                        
-                        // Refresh stats but don't reload the entire table
-                        loadStats();
+                        showAlert('Testing session deleted successfully!', 'success');
                     } else {
-                        showToast(result.data.message || 'Failed to delete session', 'error');
+                        // Show error message
+                        showAlert('Failed to delete session: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
                     }
                 } catch (error) {
-                    console.error('Error deleting session:', error);
-                    showToast('Error deleting session', 'error');
+                    showAlert('Error deleting session: ' + error.message, 'danger');
                 }
                 
+                // Final stats refresh to ensure accuracy
+                setTimeout(() => {
+                    updateStatsOnly();
+                }, 1000);
+                
+                // Reset the ticketToDelete variable
                 ticketToDelete = null;
             }
         });
@@ -2537,6 +2553,28 @@ function getApiEndpoint(endpoint) {
             case 'get': return '/api/inquiries/';
             case 'qa': return '/api/inquiries/';
             default: return endpoint;
+        }
+    }
+}
+
+// Update selection controls based on current selections
+function updateSelectionControls() {
+    const selectedCount = selectedTickets.size;
+    const bulkActions = document.getElementById('bulkActions');
+    const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
+    const markPassedBtn = document.getElementById('markPassedBtn');
+    
+    if (bulkActions) {
+        if (selectedCount > 0) {
+            bulkActions.style.display = 'block';
+            if (archiveSelectedBtn) {
+                archiveSelectedBtn.textContent = `Archive Selected (${selectedCount})`;
+            }
+            if (markPassedBtn) {
+                markPassedBtn.textContent = `Mark as Passed (${selectedCount})`;
+            }
+        } else {
+            bulkActions.style.display = 'none';
         }
     }
 }
