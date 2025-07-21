@@ -432,16 +432,16 @@
                         <img src="{{ url_for('static', filename='izzyagents_logo_white.png') }}" alt="IzzyAgents Logo" class="logo-img">
                     </div>
                     <div class="d-flex justify-content-center align-items-center w-100">
-                        <h1 class="mb-0 text-center" id="dashboardTitle" style="font-size: 1.8rem;">
+                        <h1 class="mb-0 text-center" id="dashboardTitle" style="font-size: 1.6rem;">
                             <span id="dashboardText">Stay Golden Health AI Messenger Sessions Dashboard</span>
                         </h1>
                     </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <button class="btn btn-outline-info px-3 py-2" id="testAIBtn">
-                            <i class="fas fa-robot me-2"></i>Test AI
+                    <div class="d-flex align-items-center gap-3" style="white-space: nowrap;">
+                        <button class="btn btn-outline-info d-flex align-items-center" id="testAIBtn" style="padding: 8px 16px;">
+                            <i class="fas fa-robot me-2"></i><span>Test AI</span>
                         </button>
-                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger px-3 py-2">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger d-flex align-items-center" style="padding: 8px 16px;">
+                            <i class="fas fa-sign-out-alt me-2"></i><span>Logout</span>
                         </a>
                     </div>
                 </div>
