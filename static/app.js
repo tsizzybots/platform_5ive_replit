@@ -64,6 +64,24 @@ function initializeTestAIModal() {
     closeBtn.addEventListener('click', function() {
         modal.classList.remove('show');
     });
+    
+    // Refresh session button
+    const refreshBtn = document.getElementById('refreshTestAI');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            // Clear session ID to start new session
+            testAISessionId = null;
+            
+            // Clear chat messages except initial greeting
+            const messagesContainer = document.getElementById('testAIMessages');
+            messagesContainer.innerHTML = `
+                <div class="message ai">
+                    <small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br>
+                    Hello! I'm ready to help you test the AI system. Send me a message to get started.
+                </div>
+            `;
+        });
+    }
 
     // Make modal draggable
     header.addEventListener('mousedown', function(e) {
@@ -129,14 +147,19 @@ async function sendTestMessage() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     // Prepare API payload
+    // For new sessions, don't send sessionId so the webhook can generate one
     const payload = {
-        sessionId: testAISessionId || "0000000000",
         action: "sendMessage",
         chatInput: message,
         firstName: "Testing",
         lastName: "Session",
         contactID: "0000000000"
     };
+    
+    // Only include sessionId if we have one from a previous message
+    if (testAISessionId) {
+        payload.sessionId = testAISessionId;
+    }
 
     try {
         // Show typing indicator
@@ -231,6 +254,9 @@ async function sendTestMessage() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 }
+
+// Global variable for Test AI session
+let testAISessionId = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -1434,19 +1460,19 @@ async function viewTicketDetails(id) {
                     ${session.messages && session.messages.length > 0 ? 
                         session.messages.map(msg => `
                             <div class="session-message mb-3 ${msg.user_ai === 'ai' ? 'ai-message' : 'user-message'}">
-                                <div class="message-bubble p-2" style="
+                                <div class="message-bubble p-3" style="
                                     ${msg.user_ai === 'ai' ? 
-                                        'background: var(--bs-primary); color: white; margin-left: auto; text-align: right; max-width: 85%; border-radius: 8px;' : 
-                                        'background: var(--bs-secondary); color: var(--bs-body-color); margin-right: auto; text-align: left; max-width: 85%; border-radius: 8px;'
+                                        'background: var(--bs-primary); color: white; margin-left: auto; text-align: left; max-width: 70%; border-radius: 12px;' : 
+                                        'background: #2c2c2c; color: white; margin-right: auto; text-align: left; max-width: 70%; border-radius: 12px; border: 1px solid #444;'
                                     }
                                 ">
-                                    <small style="color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.7)' : 'var(--bs-gray-600)'};">
-                                        ${msg.user_ai === 'ai' ? 'AI Brooklyn' : (session.customer_name || 'Customer')}
+                                    <small style="color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)'}; font-weight: 500;">
+                                        ${msg.user_ai === 'ai' ? 'AI Brooklyn' : 'Testing User'}
                                     </small><br>
-                                    <div class="message-content">
+                                    <div class="message-content mt-1">
                                         ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
                                     </div>
-                                    <small class="message-time d-block mt-1" style="font-size: 0.7em; color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.5)' : 'var(--bs-gray-500)'};">
+                                    <small class="message-time d-block mt-2" style="font-size: 0.7em; color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.4)'};">
                                         ${formatDate(msg.timestamp)}
                                     </small>
                                 </div>

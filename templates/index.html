@@ -329,9 +329,28 @@
             padding: 12px 16px;
             cursor: move;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--bs-border-color);
+        }
+        
+        .test-ai-header-buttons {
+            display: flex;
+            align-items: center;
+        }
+        
+        .test-ai-refresh {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: white;
+        }
+        
+        .test-ai-refresh:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
         }
         
         .test-ai-header h5 {
@@ -814,7 +833,12 @@
     <div class="test-ai-modal" id="testAIModal">
         <div class="test-ai-header">
             <h5>Test AI Chat</h5>
-            <button class="test-ai-close" id="closeTestAI">&times;</button>
+            <div class="test-ai-header-buttons">
+                <button class="test-ai-refresh btn btn-sm btn-outline-light me-2" id="refreshTestAI" title="Start New Session">
+                    <i class="fas fa-refresh"></i>
+                </button>
+                <button class="test-ai-close" id="closeTestAI">&times;</button>
+            </div>
         </div>
         <div class="test-ai-body">
             <div class="test-ai-messages" id="testAIMessages">
