@@ -136,3 +136,49 @@ class Error(db.Model):
     
     def __repr__(self):
         return f'<Error {self.id}: {self.workflow} - {self.error_message[:50]}...>'
+
+class MessengerSessionQA(db.Model):
+    """Model for storing QA information for messenger sessions in PostgreSQL"""
+    __tablename__ = 'messenger_session_qa'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False, unique=True)  # Links to Supabase session
+    qa_status = db.Column(db.String(50), nullable=False, default='unchecked')  # unchecked, passed, issue, fixed
+    qa_status_updated_by = db.Column(db.String(255), nullable=True)
+    qa_status_updated_at = db.Column(db.DateTime, nullable=True)
+    qa_notes = db.Column(db.Text, nullable=True)
+    qa_notes_updated_at = db.Column(db.DateTime, nullable=True)
+    
+    # Developer Feedback
+    dev_feedback = db.Column(db.Text, nullable=True)
+    dev_feedback_by = db.Column(db.String(255), nullable=True)
+    dev_feedback_at = db.Column(db.DateTime, nullable=True)
+    
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Add indexes for frequently queried fields
+    __table_args__ = (
+        Index('idx_qa_session_id', 'session_id'),
+        Index('idx_qa_status', 'qa_status'),
+        Index('idx_qa_updated_at', 'qa_status_updated_at'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'qa_status': self.qa_status,
+            'qa_status_updated_by': self.qa_status_updated_by,
+            'qa_status_updated_at': self.qa_status_updated_at.isoformat() if self.qa_status_updated_at else None,
+            'qa_notes': self.qa_notes,
+            'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() if self.qa_notes_updated_at else None,
+            'dev_feedback': self.dev_feedback,
+            'dev_feedback_by': self.dev_feedback_by,
+            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<MessengerSessionQA {self.session_id}: {self.qa_status}>'

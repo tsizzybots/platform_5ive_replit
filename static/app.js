@@ -1234,7 +1234,7 @@ async function viewTicketDetails(id) {
                             <div class="message p-3 border-bottom ${msg.user_ai === 'ai' ? 'bg-dark' : 'bg-secondary bg-opacity-50'}" style="background-color: ${msg.user_ai === 'ai' ? '#1a1a1a !important' : '#2a2a2a !important'}">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <strong class="text-light">
-                                        ${msg.user_ai === 'ai' ? '🤖 AI Agent' : '👤 ' + (session.customer_name || 'Customer')}
+                                        ${msg.user_ai === 'ai' ? '👩‍💻 AI Brooklyn' : '👤 ' + (session.customer_name || 'Customer')}
                                     </strong>
                                     <small class="text-muted">${formatDate(msg.timestamp)}</small>
                                 </div>
