@@ -213,8 +213,10 @@ async function sendTestMessage() {
         if (!testAISessionId && aiResponse.sessionId) {
             testAISessionId = aiResponse.sessionId;
             
-            // Add the new session to the table with animation
-            addNewSessionToTable(aiResponse.sessionId);
+            // Immediately add the new session to the table with animation
+            setTimeout(() => {
+                addNewSessionToTable(aiResponse.sessionId);
+            }, 800); // Small delay to ensure session is created in database
         }
 
         // Extract the AI response message - handle different possible response formats
@@ -260,11 +262,41 @@ async function sendTestMessage() {
 
 
 
+// Auto-refresh functionality
+let autoRefreshInterval;
+
+function startAutoRefresh() {
+    // Clear any existing interval
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // Set up auto-refresh every 30 seconds
+    autoRefreshInterval = setInterval(async () => {
+        try {
+            await loadStats();
+            await loadTickets();
+        } catch (error) {
+            console.error('Auto-refresh error:', error);
+        }
+    }, 30000); // 30 seconds
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
     addModalBlurEffects();
     initializeTestAIModal();
+    
+    // Start auto-refresh
+    startAutoRefresh();
     
     // Initialize date range display - start fresh each time
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');
@@ -1894,26 +1926,118 @@ function escapeHtml(text) {
 // Add new testing session to the table with animation
 async function addNewSessionToTable(sessionId) {
     try {
-        // Wait a moment for the session to be fully created in Supabase
-        setTimeout(async () => {
-            // Reload the stats and table to show the new session
-            await loadStats();
-            await loadTickets();
-            
-            // Find the new row and animate it
-            const newRow = document.querySelector(`tr[id*="ticket-row"]`);
-            if (newRow) {
-                newRow.style.backgroundColor = '#d4edda';
-                newRow.style.transition = 'background-color 2s ease';
-                
-                setTimeout(() => {
-                    newRow.style.backgroundColor = '';
-                }, 2000);
+        // Check if this session already exists in the table
+        const existingRow = document.querySelector(`tr[data-session-id]`);
+        const existingSessionIds = Array.from(document.querySelectorAll('tr[data-session-id]')).map(row => {
+            const sessionIdCell = row.children[2]; // Session ID column
+            return sessionIdCell ? sessionIdCell.textContent.trim() : '';
+        });
+        
+        if (existingSessionIds.includes(sessionId)) {
+            console.log('Session already exists in table, skipping addition');
+            return;
+        }
+        
+        // Immediately refresh stats
+        await loadStats();
+        
+        // Get the current sessions to find the new one
+        const result = await apiRequest('/api/messenger-sessions');
+        if (result.ok && result.data.data.length > 0) {
+            // Find the session with the matching sessionId
+            const newSession = result.data.data.find(session => session.session_id === sessionId);
+            if (newSession && !existingSessionIds.includes(sessionId)) {
+                // Add the new session to the top of the table with animation
+                addSessionRowWithAnimation(newSession);
             }
-        }, 1500); // Wait 1.5 seconds for session to be created
+        }
     } catch (error) {
         console.error('Error adding new session to table:', error);
+        // Fallback: just refresh the entire table
+        setTimeout(async () => {
+            await loadTickets();
+            await loadStats();
+        }, 500);
     }
+}
+
+// Add a session row with smooth animation
+function addSessionRowWithAnimation(session) {
+    const tableBody = document.querySelector('#ticketsContainer table tbody');
+    if (!tableBody) return;
+    
+    // Check if row already exists
+    const existingRow = document.querySelector(`#ticket-row-${session.id}`);
+    if (existingRow) {
+        console.log('Row already exists, skipping animation');
+        return;
+    }
+    
+    // Create the new row
+    const completionStatus = session.completion_status || (session.completed ? 'complete' : 'incomplete');
+    let completedBadge;
+    switch(completionStatus) {
+        case 'complete':
+            completedBadge = '<span class="badge bg-success">Complete</span>';
+            break;
+        case 'in_progress':
+            completedBadge = '<span class="badge bg-warning text-dark">In Progress</span>';
+            break;
+        case 'incomplete':
+        default:
+            completedBadge = '<span class="badge bg-danger">Incomplete</span>';
+            break;
+    }
+    
+    const qaStatusBadge = getQAStatusBadge(session.qa_status);
+    
+    const newRow = document.createElement('tr');
+    newRow.id = `ticket-row-${session.id}`;
+    newRow.setAttribute('data-session-id', session.id);
+    newRow.className = 'ticket-row new-session-highlight';
+    newRow.style.opacity = '0';
+    newRow.style.transform = 'translateY(-30px) scale(0.95)';
+    newRow.style.transition = 'all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)';
+    
+    newRow.innerHTML = `
+        <td class="checkbox-column">
+            <input type="checkbox" class="form-check-input ticket-checkbox" value="${session.id}" onchange="toggleTicketSelection(${session.id})">
+        </td>
+        <td class="text-nowrap">${formatDate(session.created_at)}</td>
+        <td><strong>${escapeHtml(session.session_id || 'N/A')}</strong></td>
+        <td>${escapeHtml(session.customer_name || 'N/A')}</td>
+        <td class="text-nowrap">${escapeHtml(session.contact_id || 'N/A')}</td>
+        <td class="text-center">${qaStatusBadge}</td>
+        <td class="text-center">${completedBadge}</td>
+        <td>
+            <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${session.id})" title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteTicket(${session.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    // Insert at the top
+    tableBody.insertBefore(newRow, tableBody.firstChild);
+    
+    // Trigger smooth animation
+    requestAnimationFrame(() => {
+        newRow.style.opacity = '1';
+        newRow.style.transform = 'translateY(0) scale(1)';
+        newRow.style.backgroundColor = '#d1f2eb';
+        newRow.style.borderLeft = '4px solid #28a745';
+    });
+    
+    // Remove highlight and border after animation
+    setTimeout(() => {
+        newRow.style.backgroundColor = '';
+        newRow.style.borderLeft = '';
+        newRow.classList.remove('new-session-highlight');
+    }, 3000);
 }
 
 // Toast notification function  
