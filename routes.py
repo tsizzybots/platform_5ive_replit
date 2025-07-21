@@ -154,18 +154,44 @@ def create_messenger_session():
 
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['GET'])
 def get_messenger_session(session_id):
-    """Get a specific messenger session by ID"""
+    """Get a specific messenger session by ID from Supabase"""
     try:
-        session_obj = ChatSession.query.get(session_id)
-        if not session_obj:
+        # Get all sessions to find the one with matching ID
+        result = supabase_service.get_sessions(
+            limit=1000,  # Large limit to get all sessions
+            offset=0,
+            filters={}
+        )
+        
+        if result.get('error'):
+            logger.error(f"Supabase error: {result['error']}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to retrieve session from database'
+            }), 500
+        
+        sessions = result.get('sessions', [])
+        
+        # Find the session with the matching ID
+        session_data = None
+        for session in sessions:
+            if session.get('id') == session_id:
+                session_data = session
+                break
+        
+        if not session_data:
             return jsonify({
                 'status': 'error',
                 'message': 'Messenger session not found'
             }), 404
+        
+        # Sort messages by ID (chronological order - oldest first)
+        if 'messages' in session_data:
+            session_data['messages'].sort(key=lambda x: x.get('id', 0))
             
         return jsonify({
             'status': 'success',
-            'data': chat_session_schema.dump(session_obj)
+            'data': session_data
         })
         
     except Exception as e:

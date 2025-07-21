@@ -62,8 +62,8 @@ class SupabaseService:
                 if 'contact_id' in filters:
                     query = query.eq('contactID', filters['contact_id'])
             
-            # Order by dateTime to get messages in chronological order
-            query = query.order('dateTime', desc=False)
+            # Order by ID to get messages in chronological order (oldest first)
+            query = query.order('id', desc=False)
             
             response = query.execute()
             
@@ -91,7 +91,7 @@ class SupabaseService:
                         'created_at': message['dateTime']
                     }
                 
-                # Add message to session
+                # Add message to session (messages will be sorted by ID later)
                 sessions_dict[session_id]['messages'].append({
                     'id': message['id'],
                     'user_ai': message['userAi'],

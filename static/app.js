@@ -687,7 +687,7 @@ function displayTickets(tickets, pagination) {
                     </th>
                     <th style="width: 12%;">Created</th>
                     <th style="width: 10%;">Session ID</th>
-                    <th style="width: 8%;">User ID</th>
+                    <th style="width: 8%;">Contact ID</th>
                     <th style="width: 25%;">Message Content</th>
                     <th style="width: 10%;">Engagement Score</th>
                     <th style="width: 8%;">QA Status</th>
@@ -731,7 +731,7 @@ function displayTickets(tickets, pagination) {
                     </td>
                     <td class="text-nowrap">${formatDate(ticket.created_at)}</td>
                     <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
-                    <td class="text-nowrap">${escapeHtml(ticket.user_id || 'N/A')}</td>
+                    <td class="text-nowrap">${escapeHtml(ticket.contact_id || 'N/A')}</td>
                     <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.message_content)}">
                         ${escapeHtml(ticket.message_content || 'N/A')}
                     </td>
@@ -1198,220 +1198,57 @@ async function performReopenTicket() {
 
 // View ticket details
 async function viewTicketDetails(id) {
-    const result = await apiRequest(`/api/inquiries/${id}`);
+    const result = await apiRequest(`/api/messenger-sessions/${id}`);
     
     if (result.ok) {
-        const ticket = result.data.data || result.data;
+        const session = result.data.data || result.data;
         
         const details = `
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Ticket ID:</strong> ${escapeHtml(ticket.ticket_id || 'N/A')}</p>
-                    <p><strong>Subject:</strong> ${escapeHtml(ticket.subject)}</p>
-                    <p><strong>Sender:</strong> ${escapeHtml(ticket.sender_name || 'Unknown')}</p>
-                    <p><strong>Email:</strong><br><span style="word-break: break-all; font-family: monospace; font-size: 0.9em;">${escapeHtml(ticket.sender_email)}</span></p>
-                    ${ticket.ticket_url ? `
-                        <p><strong>View in Gorgias:</strong> <a href="${escapeHtml(ticket.ticket_url)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt me-1"></i>Open Ticket</a></p>
-                        ${(ticket.archived || ticket.status === 'Archived') ? `
-                            <p><strong>Reopen in Gorgias:</strong> <button type="button" class="btn btn-sm btn-success" onclick="reopenTicketInGorgias(${ticket.id})" title="Reopen this archived ticket in Gorgias">
-                                <i class="fas fa-undo me-1"></i>Reopen Ticket
-                            </button></p>
-                        ` : ''}
-                    ` : ''}
+                    <p><strong>Session ID:</strong> ${escapeHtml(session.session_id || 'N/A')}</p>
+                    <p><strong>Customer:</strong> ${escapeHtml(session.customer_name || 'Unknown')}</p>
+                    <p><strong>Contact ID:</strong> ${escapeHtml(session.contact_id || 'N/A')}</p>
+                    <p><strong>Messages:</strong> ${session.message_count || 0} total</p>
+
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Received:</strong> ${formatDate(ticket.received_date)}</p>
-                    <p><strong>Status:</strong> ${getStatusBadge(ticket.status, ticket.archived)}</p>
-                    ${ticket.inquiry_type ? `<p><strong>Type:</strong> ${escapeHtml(ticket.inquiry_type)}</p>` : ''}
-                    <p><strong>QA Status:</strong> ${getQAStatusBadge(ticket.qa_status)}</p>
-                    ${ticket.qa_status_updated_by ? `<p><strong>QA Reviewer:</strong> ${escapeHtml(ticket.qa_status_updated_by)}</p>` : ''}
-                    ${ticket.qa_status_updated_at ? `<p><strong>QA Updated:</strong> ${formatDate(ticket.qa_status_updated_at)}</p>` : ''}
+                    <p><strong>Started:</strong> ${formatDate(session.conversation_start)}</p>
+                    <p><strong>Last Message:</strong> ${formatDate(session.last_message_time)}</p>
+                    <p><strong>Status:</strong> ${getStatusBadge(session.status)}</p>
+                    <p><strong>AI Engaged:</strong> ${session.ai_engaged ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</p>
+                    <p><strong>QA Status:</strong> ${getQAStatusBadge(session.qa_status)}</p>
+
                 </div>
             </div>
             <div class="mt-3">
-                <h6><strong>Message Content:</strong></h6>
-                <div class="message-content p-3 rounded" style="max-height: 200px; overflow-y: auto; background-color: var(--bs-gray-700); color: white;">
-                    ${ticket.body ? escapeHtml(ticket.body).replace(/\n/g, '<br>') : '<span class="text-muted">No message content available</span>'}
-                </div>
-                ${ticket.status === 'Skipped' ? `
-                    <div class="alert alert-info mt-3" role="alert">
-                        <i class="fas fa-info-circle me-2"></i>
-                        This ticket was not engaged by AI, and was left in the Gorgias inbox for the Sweats team to respond to.
-                    </div>
-                ` : ''}
-            </div>
-            ${ticket.ai_response ? `
-                <div class="mt-3">
-                    <h6>AI Response:</h6>
-                    <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                        ${ticket.ai_response}
-                    </div>
-                </div>
-            ` : ''}
-            ${ticket.qa_notes ? `
-                <div class="mt-3">
-                    <h6>QA Notes:</h6>
-                    <div class="bg-warning bg-opacity-10 p-3 rounded border border-warning">
-                        ${escapeHtml(ticket.qa_notes)}
-                        ${ticket.qa_notes_updated_at ? `<br><small class="text-muted">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>` : ''}
-                    </div>
-                </div>
-            ` : ''}
-            ${ticket.dev_feedback ? `
-                <div class="mt-3">
-                    <h6>Developer Feedback:</h6>
-                    <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                        ${escapeHtml(ticket.dev_feedback)}
-                        <br><small class="text-muted">By: ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
-                    </div>
-                </div>
-            ` : ''}
-            
-            <!-- Management Sections with Accordion -->
-            <div class="mt-4 border-top pt-3">
-                <div class="accordion" id="managementAccordion">
-                    <!-- QA Section (Open by default) -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="qaHeading">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#qaCollapse" aria-expanded="true" aria-controls="qaCollapse">
-                                <i class="fas fa-clipboard-check me-2"></i>Quality Assurance Management
-                            </button>
-                        </h2>
-                        <div id="qaCollapse" class="accordion-collapse collapse show" aria-labelledby="qaHeading" data-bs-parent="#managementAccordion">
-                            <div class="accordion-body">
-                                <form id="qaUpdateForm">
-                                    <input type="hidden" id="qa_ticket_id" value="${ticket.id}">
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="qa_status_select" class="form-label">QA Status</label>
-                                                <select class="form-select" id="qa_status_select">
-                                                    <option value="unchecked" ${ticket.qa_status === 'unchecked' ? 'selected' : ''}>Unchecked</option>
-                                                    <option value="passed" ${ticket.qa_status === 'passed' ? 'selected' : ''}>Passed</option>
-                                                    <option value="issue" ${ticket.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
-                                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                                        <option value="fixed" ${ticket.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
-                                                    ` : ''}
-                                                </select>
-                                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                                    <small class="text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="qa_reviewer" class="form-label">QA Reviewer</label>
-                                                <input type="text" class="form-control" id="qa_reviewer" name="qa_reviewer" 
-                                                       value="${escapeHtml(ticket.qa_status_updated_by || (currentUser ? currentUser.username : 'Unknown'))}"
-                                                       style="background-color: #1a1a1a !important; border-color: #444 !important; color: #ffffff !important;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="qa_notes_text" class="form-label">QA Notes</label>
-                                        <textarea class="form-control" id="qa_notes_text" rows="3" 
-                                                  placeholder="Add quality assurance notes...">${escapeHtml(ticket.qa_notes || '')}</textarea>
-                                        ${ticket.qa_notes && ticket.qa_notes_updated_at ? `
-                                            <small class="text-muted d-block mt-1">Updated by ${escapeHtml(ticket.qa_status_updated_by || 'Unknown')} at ${formatDate(ticket.qa_notes_updated_at)}</small>
-                                        ` : ''}
-                                    </div>
-                                    
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <button type="button" class="btn btn-primary" onclick="updateQAStatus()">
-                                            <i class="fas fa-save me-1"></i>Update QA Status
-                                        </button>
-                                        <button type="button" class="btn btn-dark" onclick="archiveTicket(${ticket.id})">
-                                            <i class="fas fa-archive me-1"></i>Archive Ticket
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Developer Feedback Section (Visible to all users, editing only for developers) -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="devHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devCollapse" aria-expanded="false" aria-controls="devCollapse">
-                                <i class="fas fa-code me-2"></i>Developer Feedback
-                                ${ticket.dev_feedback ? '<span class="badge bg-info ms-2">Has Feedback</span>' : ''}
-                            </button>
-                        </h2>
-                        <div id="devCollapse" class="accordion-collapse collapse" aria-labelledby="devHeading" data-bs-parent="#managementAccordion">
-                            <div class="accordion-body">
-                                <div class="mb-3">
-                                    <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
-                                    ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                        <textarea class="form-control" id="dev_feedback_text" rows="3" 
-                                                  placeholder="Add developer response to QA notes...">${escapeHtml(ticket.dev_feedback || '')}</textarea>
-                                    ` : `
-                                        <div class="form-control-plaintext bg-light rounded px-3 py-2" style="min-height: 76px;">
-                                            ${ticket.dev_feedback ? escapeHtml(ticket.dev_feedback) : '<span class="text-muted">No developer feedback yet</span>'}
-                                        </div>
-                                    `}
-                                    ${ticket.dev_feedback && ticket.dev_feedback_at ? `
-                                        <small class="text-muted d-block mt-1">Updated by ${escapeHtml(ticket.dev_feedback_by || 'Unknown')} at ${formatDate(ticket.dev_feedback_at)}</small>
-                                    ` : ''}
+                <h6><strong>Conversation Thread:</strong></h6>
+                <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem;">
+                    ${session.messages && session.messages.length > 0 ? 
+                        session.messages.map(msg => `
+                            <div class="message p-3 border-bottom ${msg.user_ai === 'ai' ? 'bg-primary bg-opacity-10' : 'bg-light'}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong class="${msg.user_ai === 'ai' ? 'text-primary' : 'text-dark'}">
+                                        ${msg.user_ai === 'ai' ? '🤖 AI Assistant' : '👤 ' + (session.customer_name || 'Customer')}
+                                    </strong>
+                                    <small class="text-muted">${formatDate(msg.timestamp)}</small>
                                 </div>
-                                
-                                ${currentUser && currentUser.username === 'IzzyAgents' ? `
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
-                                            <i class="fas fa-save me-1"></i>Save Feedback
-                                        </button>
-                                        <button type="button" class="btn btn-warning" onclick="saveDevFeedbackAndMarkFixed()">
-                                            <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
-                                        </button>
-                                        ${ticket.dev_feedback ? `
-                                            <button type="button" class="btn btn-outline-danger" onclick="clearDevFeedback()">
-                                                <i class="fas fa-trash me-1"></i>Clear Feedback
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
+                                <div class="message-content">
+                                    ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        `).join('') 
+                        : '<div class="p-3 text-muted text-center">No messages available</div>'
+                    }
                 </div>
             </div>
         `;
         
         document.getElementById('ticketDetailsContent').innerHTML = details;
         const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
-        
-        // Add event listener to ensure proper cleanup when modal is hidden
-        const modalElement = document.getElementById('ticketDetailsModal');
-        modalElement.addEventListener('hidden.bs.modal', function () {
-            // Ensure backdrop is completely removed
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => backdrop.remove());
-            
-            // Restore body scroll and remove modal classes
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-            
-            // Remove blur effect
-            const mainContent = document.querySelector('.container');
-            if (mainContent) {
-                mainContent.style.filter = 'none';
-            }
-        }, { once: true });
-        
-        // Add blur effect to background when showing modal
-        modalElement.addEventListener('shown.bs.modal', function () {
-            const mainContent = document.querySelector('.container');
-            if (mainContent) {
-                mainContent.style.filter = 'blur(12px)';
-                mainContent.style.transition = 'filter 0.3s ease';
-            }
-        }, { once: true });
-        
         modal.show();
     } else {
-        showAlert('Failed to load ticket details: ' + result.data.message, 'danger');
+        showAlert('Failed to load session details: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
     }
 }
 
