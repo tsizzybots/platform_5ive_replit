@@ -37,7 +37,7 @@ class ChatSessionSchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
     
     # QA Fields
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']), load_default='unchecked')
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']), load_default='unchecked')
     qa_status_updated_by = fields.String(allow_none=True)
     qa_status_updated_at = fields.DateTime(dump_only=True)
     qa_notes = fields.String(allow_none=True)
@@ -57,7 +57,7 @@ class ChatSessionUpdateSchema(Schema):
     last_message_time = fields.DateTime()
     
     # QA Fields
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
     qa_status_updated_by = fields.String(allow_none=True)
     qa_notes = fields.String(allow_none=True)
     
@@ -66,14 +66,14 @@ class ChatSessionUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class ChatSessionQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
+    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
     ai_engaged = fields.Boolean()
     completed = fields.Raw()  # Allow both boolean and string values for completion status
     contact_id = fields.String()
     session_id = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 

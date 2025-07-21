@@ -1313,7 +1313,7 @@ async function performBulkArchive() {
             showAlert('Failed to archive selected sessions.', 'danger');
         }
         
-        // Remove archived sessions with smooth animation (like delete function)  
+        // Remove archived sessions with smooth animation immediately
         for (const ticketId of archivedIds) {
             const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
             if (row) {
@@ -2281,8 +2281,16 @@ function renderChart(data) {
         {
             label: 'Complete',
             data: data.map(item => item.completed || 0),
-            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+            backgroundColor: 'rgba(40, 167, 69, 0.6)', 
             borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 2,
+            fill: false
+        },
+        {
+            label: 'Incomplete',
+            data: data.map(item => item.incomplete || 0),
+            backgroundColor: 'rgba(220, 53, 69, 0.6)',
+            borderColor: 'rgba(220, 53, 69, 1)', 
             borderWidth: 2,
             fill: false
         },

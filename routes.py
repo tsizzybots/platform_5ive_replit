@@ -328,13 +328,13 @@ def get_messenger_sessions():
                         session['qa_status'] = 'unchecked'
                 
                 # Only include non-archived sessions unless specifically requested
-                qa_status_filter = query_params.get('qa_status')
-                if qa_status_filter == 'archived' or session.get('qa_status') != 'archived':
+                requested_qa_status = query_params.get('qa_status')
+                if requested_qa_status == 'archived' or session.get('qa_status') != 'archived':
                     filtered_sessions.append(session)
             
             sessions = filtered_sessions
             # Adjust total count for filtered sessions
-            if qa_status_filter != 'archived':
+            if requested_qa_status != 'archived':
                 total = len(sessions)
         
         # Calculate pagination info
