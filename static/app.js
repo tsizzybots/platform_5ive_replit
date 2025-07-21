@@ -1217,9 +1217,9 @@ async function viewTicketDetails(id) {
                 <div class="col-md-6">
                     <p><strong>Started:</strong> ${formatDate(session.conversation_start)}</p>
                     <p><strong>Last Message:</strong> ${formatDate(session.last_message_time)}</p>
-                    <p><strong>Status:</strong> ${getStatusBadge(session.status)}</p>
+                    <p><strong>Status:</strong> ${session.completed ? '<span class="badge bg-success">Completed</span>' : '<span class="badge bg-danger">Incomplete</span>'}</p>
                     <p><strong>AI Engaged:</strong> ${session.ai_engaged ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</p>
-                    <p><strong>QA Status:</strong> ${getQAStatusBadge(session.qa_status)}</p>
+                    <p><strong>QA Status:</strong> <span class="session-qa-status">${getQAStatusBadge(session.qa_status)}</span></p>
 
                 </div>
             </div>
@@ -1365,14 +1365,16 @@ async function updateSessionQA() {
         if (result.ok) {
             showAlert('QA status updated successfully', 'success');
             
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            if (modal) {
-                modal.hide();
-            }
+            // Refresh both the tickets table and stats immediately
+            Promise.all([loadTickets(currentPage), loadStats()]);
             
-            // Refresh the tickets table
-            loadTickets(currentPage);
+            // Close the modal after a brief delay to allow user to see the success message
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            }, 1000);
         } else {
             showAlert('Failed to update QA status: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
@@ -1415,14 +1417,16 @@ async function saveDevFeedback() {
         if (result.ok) {
             showAlert('Developer feedback saved successfully', 'success');
             
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            if (modal) {
-                modal.hide();
-            }
+            // Refresh both the tickets table and stats immediately
+            Promise.all([loadTickets(currentPage), loadStats()]);
             
-            // Refresh the tickets table
-            loadTickets(currentPage);
+            // Close the modal after a brief delay
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            }, 1000);
         } else {
             showAlert('Failed to save developer feedback: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
@@ -1467,14 +1471,16 @@ async function saveDevFeedbackAndMarkFixed() {
         if (result.ok) {
             showAlert('Developer feedback saved and status marked as fixed', 'success');
             
-            // Close the modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
-            if (modal) {
-                modal.hide();
-            }
+            // Refresh both the tickets table and stats immediately
+            Promise.all([loadTickets(currentPage), loadStats()]);
             
-            // Refresh the tickets table
-            loadTickets(currentPage);
+            // Close the modal after a brief delay
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('ticketDetailsModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            }, 1000);
         } else {
             showAlert('Failed to save developer feedback: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
         }
