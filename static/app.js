@@ -213,10 +213,10 @@ async function sendTestMessage() {
         if (!testAISessionId && aiResponse.sessionId) {
             testAISessionId = aiResponse.sessionId;
             
-            // Immediately add the new session to the table with animation
+            // Immediately trigger session addition with minimal delay
             setTimeout(() => {
                 addNewSessionToTable(aiResponse.sessionId);
-            }, 800); // Small delay to ensure session is created in database
+            }, 300); // Reduced delay for faster response
         }
 
         // Extract the AI response message - handle different possible response formats
@@ -1096,10 +1096,10 @@ function toggleTicketSelection(ticketId) {
     
     if (checkbox.checked) {
         selectedTickets.add(ticketId.toString());
-        row.classList.add('table-info'); // Light blue highlighting
+        row.classList.add('selected-row'); // Use custom subtle border highlighting
     } else {
         selectedTickets.delete(ticketId.toString());
-        row.classList.remove('table-info');
+        row.classList.remove('selected-row');
     }
     
     updateBulkStatusControls();
@@ -1118,11 +1118,11 @@ function toggleSelectAll() {
         if (selectAllCheckbox.checked) {
             checkbox.checked = true;
             selectedTickets.add(ticketId);
-            if (row) row.classList.add('table-info');
+            if (row) row.classList.add('selected-row'); // Use custom subtle border highlighting
         } else {
             checkbox.checked = false;
             selectedTickets.delete(ticketId);
-            if (row) row.classList.remove('table-info');
+            if (row) row.classList.remove('selected-row');
         }
     });
     
@@ -1927,7 +1927,6 @@ function escapeHtml(text) {
 async function addNewSessionToTable(sessionId) {
     try {
         // Check if this session already exists in the table
-        const existingRow = document.querySelector(`tr[data-session-id]`);
         const existingSessionIds = Array.from(document.querySelectorAll('tr[data-session-id]')).map(row => {
             const sessionIdCell = row.children[2]; // Session ID column
             return sessionIdCell ? sessionIdCell.textContent.trim() : '';
@@ -1938,19 +1937,41 @@ async function addNewSessionToTable(sessionId) {
             return;
         }
         
-        // Immediately refresh stats
-        await loadStats();
+        // Try multiple attempts to get the new session data
+        let attempts = 0;
+        const maxAttempts = 5;
         
-        // Get the current sessions to find the new one
-        const result = await apiRequest('/api/messenger-sessions');
-        if (result.ok && result.data.data.length > 0) {
-            // Find the session with the matching sessionId
-            const newSession = result.data.data.find(session => session.session_id === sessionId);
-            if (newSession && !existingSessionIds.includes(sessionId)) {
-                // Add the new session to the top of the table with animation
-                addSessionRowWithAnimation(newSession);
+        const tryGetSession = async () => {
+            attempts++;
+            const result = await apiRequest('/api/messenger-sessions');
+            
+            if (result.ok && result.data.data.length > 0) {
+                const newSession = result.data.data.find(session => session.session_id === sessionId);
+                
+                if (newSession) {
+                    // Session found, add it with animation
+                    await loadStats();
+                    addSessionRowWithAnimation(newSession);
+                    return true;
+                } else if (attempts < maxAttempts) {
+                    // Session not found yet, try again in 200ms
+                    setTimeout(tryGetSession, 200);
+                    return false;
+                }
             }
-        }
+            
+            // Fallback if we can't find the specific session
+            if (attempts >= maxAttempts) {
+                console.log('Could not find new session, refreshing entire table');
+                await loadStats();
+                await loadTickets();
+            }
+            
+            return false;
+        };
+        
+        await tryGetSession();
+        
     } catch (error) {
         console.error('Error adding new session to table:', error);
         // Fallback: just refresh the entire table
