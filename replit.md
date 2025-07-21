@@ -102,6 +102,13 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: Improved delete functionality and session management
+  - Delete sessions now uses Bootstrap modal instead of browser confirm dialog
+  - Delete functionality properly removes testing sessions from Supabase database
+  - Added smooth row removal animation when sessions are deleted
+  - Auto-refresh stats after deletion without full table reload
+  - Automatic session addition: new Test AI sessions appear in table with green highlight animation
+  - Fixed Test AI chat styling with proper white text and bold sender names on dark backgrounds
 - July 21, 2025: Added Test AI functionality with draggable, resizable modal window
   - New "Test AI" button in header next to logout button
   - Draggable and resizable chat interface that floats over the page

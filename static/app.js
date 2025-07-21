@@ -209,9 +209,12 @@ async function sendTestMessage() {
 
         console.log('Parsed AI response:', aiResponse);
 
-        // Save session ID for future messages
+        // Save session ID for future messages and add to table if new
         if (!testAISessionId && aiResponse.sessionId) {
             testAISessionId = aiResponse.sessionId;
+            
+            // Add the new session to the table with animation
+            addNewSessionToTable(aiResponse.sessionId);
         }
 
         // Extract the AI response message - handle different possible response formats
@@ -963,7 +966,7 @@ function displayTickets(tickets, pagination) {
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             
             html += `
-                <tr id="ticket-row-${ticket.id}" class="ticket-row">
+                <tr id="ticket-row-${ticket.id}" data-session-id="${ticket.id}" class="ticket-row">
                     <td class="checkbox-column">
                         <input type="checkbox" class="form-check-input ticket-checkbox" value="${ticket.id}" onchange="toggleTicketSelection(${ticket.id})">
                     </td>
@@ -1776,28 +1779,9 @@ async function clearDevFeedback() {
 let ticketToDelete = null;
 
 async function deleteTicket(id) {
-    // Only allow deletion for testing sessions - check if user confirmed this is a testing session
-    if (!confirm('This will only delete testing sessions. Are you sure you want to delete this session?')) {
-        return;
-    }
-    
-    try {
-        const result = await apiRequest(`/api/messenger-sessions/${id}`, 'DELETE');
-        
-        if (result.ok) {
-            // Show success message
-            showToast('Testing session deleted successfully!', 'success');
-            
-            // Refresh the data
-            loadStats();
-            loadTickets();
-        } else {
-            showToast(result.data.message || 'Failed to delete session', 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting session:', error);
-        showToast('Error deleting session', 'error');
-    }
+    ticketToDelete = id;
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
 }
 
 // Handle confirm delete button click
@@ -1806,19 +1790,36 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener('click', async function() {
             if (ticketToDelete) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
-                modal.hide();
-                
-                const result = await apiRequest(`/api/inquiries/${ticketToDelete}`, {
-                    method: 'DELETE'
-                });
-
-                if (result.ok) {
-                    loadStats();
-                    loadTickets();
-                    showAlert('Ticket deleted successfully!', 'success');
-                } else {
-                    showAlert('Failed to delete ticket: ' + result.data.message, 'danger');
+                try {
+                    const result = await apiRequest(`/api/messenger-sessions/${ticketToDelete}`, 'DELETE');
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                    modal.hide();
+                    
+                    if (result.ok) {
+                        // Show success message
+                        showToast('Testing session deleted successfully!', 'success');
+                        
+                        // Remove the row from the table with animation
+                        const row = document.querySelector(`tr[data-session-id="${ticketToDelete}"]`);
+                        if (row) {
+                            row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(-20px)';
+                            
+                            setTimeout(() => {
+                                row.remove();
+                            }, 300);
+                        }
+                        
+                        // Refresh stats but don't reload the entire table
+                        loadStats();
+                    } else {
+                        showToast(result.data.message || 'Failed to delete session', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting session:', error);
+                    showToast('Error deleting session', 'error');
                 }
                 
                 ticketToDelete = null;
@@ -1888,6 +1889,72 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Add new testing session to the table with animation
+async function addNewSessionToTable(sessionId) {
+    try {
+        // Wait a moment for the session to be fully created in Supabase
+        setTimeout(async () => {
+            // Reload the stats and table to show the new session
+            await loadStats();
+            await loadTickets();
+            
+            // Find the new row and animate it
+            const newRow = document.querySelector(`tr[id*="ticket-row"]`);
+            if (newRow) {
+                newRow.style.backgroundColor = '#d4edda';
+                newRow.style.transition = 'background-color 2s ease';
+                
+                setTimeout(() => {
+                    newRow.style.backgroundColor = '';
+                }, 2000);
+            }
+        }, 1500); // Wait 1.5 seconds for session to be created
+    } catch (error) {
+        console.error('Error adding new session to table:', error);
+    }
+}
+
+// Toast notification function  
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+    
+    const toastElement = document.createElement('div');
+    toastElement.id = toastId;
+    toastElement.className = `toast align-items-center text-white ${bgClass} border-0`;
+    toastElement.setAttribute('role', 'alert');
+    toastElement.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toastElement);
+    
+    // Show toast
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remove toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
 }
 
 function showAlert(message, type) {
