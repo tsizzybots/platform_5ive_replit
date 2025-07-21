@@ -260,7 +260,7 @@ function displayStats(stats) {
     if (currentMode === 'messenger') {
         // Messenger session stats
         const totalSessions = stats.total_sessions || 0;
-        const aiEngagedSessions = stats.ai_engaged || 0;
+        const passedSessions = stats.passed || 0;
         const completedSessions = stats.completed || 0;
         const uncheckedSessions = stats.unchecked || 0;
         
@@ -275,11 +275,11 @@ function displayStats(stats) {
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where AI agent was engaged in conversation">
+                <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions that have passed QA review">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
-                        <h3 class="card-title">${aiEngagedSessions}</h3>
-                        <p class="card-text mb-0">AI Engaged</p>
+                        <h3 class="card-title">${passedSessions}</h3>
+                        <p class="card-text mb-0">Passed</p>
                     </div>
                 </div>
             </div>
@@ -1295,35 +1295,35 @@ async function viewTicketDetails(id) {
                                     </button>
                                 </div>
                                 
-                                <!-- Developer Feedback Section - only visible to developers -->
-                                <div id="devFeedbackSection" style="display: none;">
-                                    <div class="accordion mt-3" id="devFeedbackAccordion">
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="devFeedbackHeading">
-                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devFeedbackCollapse" aria-expanded="false" aria-controls="devFeedbackCollapse">
-                                                    <i class="fas fa-code me-2"></i> Developer Feedback
-                                                </button>
-                                            </h2>
-                                            <div id="devFeedbackCollapse" class="accordion-collapse collapse" aria-labelledby="devFeedbackHeading" data-bs-parent="#devFeedbackAccordion">
-                                                <div class="accordion-body">
-                                                    <div class="mb-3">
-                                                        <label for="dev_feedback_text" class="form-label">Developer Feedback</label>
-                                                        <textarea class="form-control" id="dev_feedback_text" rows="4" 
-                                                                  placeholder="Add developer response to QA notes...">${session.dev_feedback || ''}</textarea>
-                                                    </div>
-                                                    
-                                                    <div class="d-flex gap-2">
-                                                        <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
-                                                            <i class="fas fa-save me-1"></i>Save Feedback
-                                                        </button>
-                                                        <button type="button" class="btn btn-warning" onclick="saveDevFeedbackAndMarkFixed()">
-                                                            <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Developer Feedback Section - separate accordion, visible to all -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="devFeedbackHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devFeedbackCollapse" aria-expanded="false" aria-controls="devFeedbackCollapse">
+                                <i class="fas fa-code me-2"></i> Developer Feedback
+                            </button>
+                        </h2>
+                        <div id="devFeedbackCollapse" class="accordion-collapse collapse" aria-labelledby="devFeedbackHeading" data-bs-parent="#qaAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="dev_feedback_text" class="form-label">Developer Response</label>
+                                    <textarea class="form-control" id="dev_feedback_text" rows="4" 
+                                              placeholder="Add developer response to QA notes..."
+                                              ${currentUser?.role !== 'developer' ? 'readonly' : ''}>${session.dev_feedback || ''}</textarea>
+                                    ${session.dev_feedback_by ? `<small class="form-text text-muted">Last updated by: ${session.dev_feedback_by} ${session.dev_feedback_at ? 'on ' + formatDate(session.dev_feedback_at) : ''}</small>` : ''}
+                                </div>
+                                
+                                <!-- Action buttons - only visible to developers -->
+                                <div id="devFeedbackButtons" class="d-flex gap-2" style="display: ${currentUser?.role === 'developer' ? 'flex' : 'none'};">
+                                    <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
+                                        <i class="fas fa-save me-1"></i>Save Feedback
+                                    </button>
+                                    <button type="button" class="btn btn-warning" onclick="saveDevFeedbackAndMarkFixed()">
+                                        <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1333,14 +1333,6 @@ async function viewTicketDetails(id) {
         `;
         
         document.getElementById('ticketDetailsContent').innerHTML = details;
-        
-        // Show/hide developer feedback section based on user role
-        if (currentUser && currentUser.role === 'developer') {
-            const devSection = document.getElementById('devFeedbackSection');
-            if (devSection) {
-                devSection.style.display = 'block';
-            }
-        }
         
         const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
         modal.show();

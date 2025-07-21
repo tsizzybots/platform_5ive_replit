@@ -408,7 +408,7 @@ def get_messenger_session_stats():
             'status': 'success',
             'data': {
                 'total_sessions': total_sessions,
-                'ai_engaged': ai_engaged_sessions,
+                'passed': qa_result.passed or 0,
                 'completed': completed_sessions,
                 'unchecked': qa_result.unchecked or 0
             }
