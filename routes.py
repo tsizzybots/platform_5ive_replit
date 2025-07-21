@@ -302,6 +302,23 @@ def get_messenger_sessions():
         else:
             sessions = result.get('sessions', [])
             total = result.get('total', 0)
+            
+            # Merge QA data from PostgreSQL for each session
+            for session in sessions:
+                session_id_str = session.get('session_id')
+                if session_id_str:
+                    qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+                    if qa_session:
+                        session['qa_status'] = qa_session.qa_status
+                        session['qa_notes'] = qa_session.qa_notes
+                        session['qa_status_updated_by'] = qa_session.qa_status_updated_by
+                        session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+                        session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
+                        session['dev_feedback'] = qa_session.dev_feedback
+                        session['dev_feedback_by'] = qa_session.dev_feedback_by
+                        session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
+                    else:
+                        session['qa_status'] = 'unchecked'
         
         # Calculate pagination info
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
@@ -510,6 +527,31 @@ def update_messenger_session_qa(session_id):
         
         qa_session.updated_at = sydney_now
         db.session.commit()
+        
+        # Send webhook notification for QA issues
+        if qa_session.qa_status == 'issue':
+            try:
+                import requests
+                webhook_url = "https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue"
+                webhook_payload = {
+                    "session_id": qa_session.session_id,
+                    "customer_name": qa_session.customer_name,
+                    "contact_id": qa_session.contact_id,
+                    "qa_status": qa_session.qa_status,
+                    "qa_notes": qa_session.qa_notes,
+                    "qa_reviewer": qa_session.qa_status_updated_by,
+                    "timestamp": qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+                }
+                
+                response = requests.post(webhook_url, json=webhook_payload, timeout=10)
+                if response.status_code == 200:
+                    logger.info(f"Successfully sent QA issue notification for session {session_id}")
+                else:
+                    logger.warning(f"Webhook notification failed with status {response.status_code} for session {session_id}")
+                    
+            except Exception as webhook_error:
+                logger.error(f"Failed to send webhook notification for session {session_id}: {str(webhook_error)}")
+                # Don't fail the main request if webhook fails
         
         logger.info(f"Updated QA for messenger session {session_id} by {current_user.username}")
         
