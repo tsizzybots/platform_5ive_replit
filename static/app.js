@@ -77,8 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dateFromInput) dateFromInput.value = '';
     if (dateToInput) dateToInput.value = '';
     
-    // Set up mode switching
-    setupModeSwitching();
+    // Removed mode switching - messenger sessions only
     
     // Load data based on current mode
     loadStats();

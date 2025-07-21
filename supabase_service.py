@@ -34,7 +34,7 @@ class SupabaseService:
     
     def get_sessions(self, limit: int = 20, offset: int = 0, filters: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Retrieve messenger sessions from Supabase
+        Retrieve messenger sessions from Supabase by grouping messages by session_id
         
         Args:
             limit: Number of sessions to retrieve
@@ -48,35 +48,76 @@ class SupabaseService:
             return {"sessions": [], "total": 0, "error": "Supabase client not initialized"}
         
         try:
-            query = self.client.table('chat_sessions_for_dashboard').select('*')
+            # Get distinct session_ids first to handle pagination properly
+            session_query = self.client.table('Chat Sessions Dashboard').select('session_id').distinct()
             
-            # Apply filters if provided
+            # Apply date filters if provided
             if filters:
-                if 'status' in filters:
-                    query = query.eq('status', filters['status'])
-                if 'ai_engaged' in filters:
-                    query = query.eq('ai_engaged', filters['ai_engaged'])
-                if 'contact_id' in filters:
-                    query = query.eq('contact_id', filters['contact_id'])
-                if 'qa_status' in filters:
-                    query = query.eq('qa_status', filters['qa_status'])
                 if 'date_from' in filters:
-                    query = query.gte('conversation_start', filters['date_from'])
+                    session_query = session_query.gte('dateTime', filters['date_from'])
                 if 'date_to' in filters:
-                    query = query.lte('conversation_start', filters['date_to'])
+                    session_query = session_query.lte('dateTime', filters['date_to'])
             
-            # Order by conversation start (newest first) and apply pagination
-            query = query.order('conversation_start', desc=True)
-            query = query.range(offset, offset + limit - 1)
+            # Order by the latest message in each session
+            session_query = session_query.order('dateTime', desc=True)
+            session_query = session_query.range(offset, offset + limit - 1)
             
-            response = query.execute()
+            session_response = session_query.execute()
+            session_ids = [row['session_id'] for row in session_response.data]
+            
+            if not session_ids:
+                return {"sessions": [], "total": 0}
+            
+            # Get all messages for these sessions
+            messages_query = self.client.table('Chat Sessions Dashboard').select('*')
+            messages_query = messages_query.in_('session_id', session_ids)
+            messages_query = messages_query.order('dateTime', desc=False)  # Messages in chronological order
+            
+            messages_response = messages_query.execute()
+            
+            # Group messages by session_id
+            sessions_dict = {}
+            for message in messages_response.data:
+                session_id = message['session_id']
+                if session_id not in sessions_dict:
+                    # Create session object from first message
+                    sessions_dict[session_id] = {
+                        'session_id': session_id,
+                        'customer_name': f"{message['firstName']} {message['lastName']}",
+                        'contact_id': message['contactID'],
+                        'conversation_start': message['dateTime'],
+                        'last_message_time': message['dateTime'],
+                        'message_count': 0,
+                        'status': 'active',  # Default status
+                        'ai_engaged': False,
+                        'messages': [],
+                        'qa_status': 'unchecked'
+                    }
+                
+                # Add message to session
+                sessions_dict[session_id]['messages'].append({
+                    'id': message['id'],
+                    'user_ai': message['userAi'],
+                    'message': message['messageStr'],
+                    'timestamp': message['dateTime']
+                })
+                sessions_dict[session_id]['message_count'] += 1
+                sessions_dict[session_id]['last_message_time'] = message['dateTime']
+                
+                # Check if AI was engaged
+                if message['userAi'] == 'ai':
+                    sessions_dict[session_id]['ai_engaged'] = True
+            
+            # Convert to list and sort by last message time
+            sessions_list = list(sessions_dict.values())
+            sessions_list.sort(key=lambda x: x['last_message_time'], reverse=True)
             
             # Get total count for pagination
-            count_response = self.client.table('chat_sessions_for_dashboard').select('id', count='exact').execute()
-            total = count_response.count if hasattr(count_response, 'count') else 0
+            count_response = self.client.table('Chat Sessions Dashboard').select('session_id', count='exact').distinct().execute()
+            total = count_response.count if hasattr(count_response, 'count') else len(sessions_list)
             
             return {
-                "sessions": response.data,
+                "sessions": sessions_list,
                 "total": total,
                 "error": None
             }
@@ -99,7 +140,8 @@ class SupabaseService:
             return {"session": None, "error": "Supabase client not initialized"}
         
         try:
-            response = self.client.table('messenger_sessions').select('*').eq('session_id', session_id).execute()
+            # Get all messages for this session
+            response = self.client.table('Chat Sessions Dashboard').select('*').eq('session_id', session_id).order('dateTime', desc=False).execute()
             
             if response.data and len(response.data) > 0:
                 return {"session": response.data[0], "error": None}
