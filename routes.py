@@ -408,14 +408,17 @@ def delete_testing_session(session_id):
             }), 403
         
         # Delete all records with this session_id from Supabase
+        logger.info(f"Deleting session {session_id} with session_id: {session_id_str}")
         delete_result = supabase_service.delete_session_by_session_id(session_id_str)
         
         if not delete_result.get('success'):
-            logger.error(f"Supabase deletion error: {delete_result.get('error', 'Unknown error')}")
+            logger.error(f"Supabase deletion failed for session {session_id}: {delete_result.get('error', 'Unknown error')}")
             return jsonify({
                 'status': 'error',
-                'message': 'Failed to delete session from Supabase'
+                'message': f"Failed to delete session from Supabase: {delete_result.get('error', 'Unknown error')}"
             }), 500
+        
+        logger.info(f"Supabase deletion successful: {delete_result.get('message', 'Success')}")
         
         # Also delete any QA data from PostgreSQL
         qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()

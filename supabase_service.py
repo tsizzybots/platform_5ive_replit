@@ -272,7 +272,7 @@ class SupabaseService:
     
     def delete_session_by_session_id(self, session_id: str) -> Dict[str, Any]:
         """
-        Delete all records with the given session_id from Supabase
+        Delete all records with the given session_id from Supabase using exact API pattern
         
         Args:
             session_id: The session ID to delete all records for
@@ -284,26 +284,32 @@ class SupabaseService:
             return {"success": False, "error": "Supabase client not initialized"}
         
         try:
-            # Delete all messages with this session_id from both possible tables
-            total_deleted = 0
+            logger.info(f"Attempting to delete all records for session_id: {session_id}")
             
-            # First try the main table
-            response1 = self.client.table('chat_sessions_for_dashboard').delete().eq('session_id', session_id).execute()
-            if response1.data:
-                total_deleted += len(response1.data)
-                logger.info(f"Deleted {len(response1.data)} records from chat_sessions_for_dashboard for session {session_id}")
+            # Use the exact Supabase API pattern you provided
+            response = self.client.from_('chat_sessions_for_dashboard').delete().eq('session_id', session_id).execute()
             
-            # Also try alternative table names to be thorough
-            response2 = self.client.table('Chat Sessions Dashboard').delete().eq('session_id', session_id).execute()
-            if response2.data:
-                total_deleted += len(response2.data)
-                logger.info(f"Deleted {len(response2.data)} records from Chat Sessions Dashboard for session {session_id}")
+            if hasattr(response, 'error') and response.error:
+                logger.error(f"Supabase API error deleting session {session_id}: {response.error}")
+                return {"success": False, "error": str(response.error)}
             
-            logger.info(f"Total deleted {total_deleted} records for session {session_id}")
-            return {"success": True, "deleted_count": total_deleted, "error": None}
+            # Check if we got data back (deleted records)
+            deleted_count = len(response.data) if response.data else 0
+            logger.info(f"Successfully deleted {deleted_count} records for session {session_id}")
+            
+            # If no records were deleted, it might be because they don't exist or session_id doesn't match
+            if deleted_count == 0:
+                logger.warning(f"No records found to delete for session_id: {session_id}")
+            
+            return {
+                "success": True, 
+                "deleted_count": deleted_count, 
+                "error": None,
+                "message": f"Deleted {deleted_count} records for session {session_id}"
+            }
                 
         except Exception as e:
-            logger.error(f"Error deleting session {session_id} from Supabase: {str(e)}")
+            logger.error(f"Exception deleting session {session_id} from Supabase: {str(e)}")
             return {"success": False, "error": str(e)}
 
     def get_session_stats(self) -> Dict[str, Any]:
