@@ -122,9 +122,9 @@ def get_current_user_api():
 def create_messenger_session():
     """Create a new messenger session"""
     try:
-        data = messenger_session_schema.load(request.json)
+        data = chat_session_schema.load(request.json)
         
-        session_obj = MessengerSession(**data)
+        session_obj = ChatSession(**data)
         db.session.add(session_obj)
         db.session.commit()
         
@@ -132,7 +132,7 @@ def create_messenger_session():
         return jsonify({
             'status': 'success',
             'message': 'Messenger session created successfully',
-            'data': messenger_session_schema.dump(session_obj)
+            'data': chat_session_schema.dump(session_obj)
         }), 201
         
     except ValidationError as e:
@@ -156,7 +156,7 @@ def create_messenger_session():
 def get_messenger_session(session_id):
     """Get a specific messenger session by ID"""
     try:
-        session_obj = MessengerSession.query.get(session_id)
+        session_obj = ChatSession.query.get(session_id)
         if not session_obj:
             return jsonify({
                 'status': 'error',
@@ -165,7 +165,7 @@ def get_messenger_session(session_id):
             
         return jsonify({
             'status': 'success',
-            'data': messenger_session_schema.dump(session_obj)
+            'data': chat_session_schema.dump(session_obj)
         })
         
     except Exception as e:
@@ -181,14 +181,14 @@ def get_messenger_session(session_id):
 def update_messenger_session(session_id):
     """Update a messenger session"""
     try:
-        session_obj = MessengerSession.query.get(session_id)
+        session_obj = ChatSession.query.get(session_id)
         if not session_obj:
             return jsonify({
                 'status': 'error',
                 'message': 'Messenger session not found'
             }), 404
         
-        data = messenger_session_update_schema.load(request.json)
+        data = chat_session_update_schema.load(request.json)
         
         for key, value in data.items():
             if hasattr(session_obj, key):
@@ -202,7 +202,7 @@ def update_messenger_session(session_id):
         return jsonify({
             'status': 'success',
             'message': 'Messenger session updated successfully',
-            'data': messenger_session_schema.dump(session_obj)
+            'data': chat_session_schema.dump(session_obj)
         })
         
     except ValidationError as e:
@@ -226,34 +226,34 @@ def update_messenger_session(session_id):
 def get_messenger_sessions():
     """Get messenger sessions with filtering and pagination"""
     try:
-        query_params = messenger_session_query_schema.load(request.args)
+        query_params = chat_session_query_schema.load(request.args)
         
-        query = MessengerSession.query
+        query = ChatSession.query
         
         # Apply filters
         if 'status' in query_params:
-            query = query.filter(MessengerSession.status == query_params['status'])
+            query = query.filter(ChatSession.status == query_params['status'])
         
         if 'ai_engaged' in query_params:
-            query = query.filter(MessengerSession.ai_engaged == query_params['ai_engaged'])
+            query = query.filter(ChatSession.ai_engaged == query_params['ai_engaged'])
         
-        if 'customer_id' in query_params:
-            query = query.filter(MessengerSession.customer_id.ilike(f"%{query_params['customer_id']}%"))
+        if 'contact_id' in query_params:
+            query = query.filter(ChatSession.contact_id.ilike(f"%{query_params['contact_id']}%"))
         
         if 'session_id' in query_params:
-            query = query.filter(MessengerSession.session_id == query_params['session_id'])
+            query = query.filter(ChatSession.session_id == query_params['session_id'])
         
         if 'date_from' in query_params:
-            query = query.filter(MessengerSession.conversation_start >= query_params['date_from'])
+            query = query.filter(ChatSession.conversation_start >= query_params['date_from'])
         
         if 'date_to' in query_params:
-            query = query.filter(MessengerSession.conversation_start <= query_params['date_to'])
+            query = query.filter(ChatSession.conversation_start <= query_params['date_to'])
         
         if 'qa_status' in query_params:
-            query = query.filter(MessengerSession.qa_status == query_params['qa_status'])
+            query = query.filter(ChatSession.qa_status == query_params['qa_status'])
         
         # Order by creation date (newest first)
-        query = query.order_by(MessengerSession.created_at.desc())
+        query = query.order_by(ChatSession.created_at.desc())
         
         # Pagination
         page = query_params.get('page', 1)
@@ -265,7 +265,7 @@ def get_messenger_sessions():
         
         return jsonify({
             'status': 'success',
-            'data': messenger_session_schema.dump(paginated.items, many=True),
+            'data': chat_session_schema.dump(paginated.items, many=True),
             'pagination': {
                 'page': paginated.page,
                 'pages': paginated.pages,
@@ -315,33 +315,33 @@ def get_messenger_session_stats():
                 date_to_obj = SYDNEY_TZ.localize(date_to_obj)
         
         # Build base queries with date filters
-        active_query = MessengerSession.query.filter(MessengerSession.status != 'resolved')
-        archived_query = MessengerSession.query.filter(MessengerSession.status == 'resolved')
+        active_query = ChatSession.query.filter(ChatSession.status != 'resolved')
+        archived_query = ChatSession.query.filter(ChatSession.status == 'resolved')
         
         # Apply date filters if provided
         if date_from:
-            active_query = active_query.filter(MessengerSession.conversation_start >= date_from_obj)
-            archived_query = archived_query.filter(MessengerSession.conversation_start >= date_from_obj)
+            active_query = active_query.filter(ChatSession.conversation_start >= date_from_obj)
+            archived_query = archived_query.filter(ChatSession.conversation_start >= date_from_obj)
         
         if date_to:
-            active_query = active_query.filter(MessengerSession.conversation_start <= date_to_obj)
-            archived_query = archived_query.filter(MessengerSession.conversation_start <= date_to_obj)
+            active_query = active_query.filter(ChatSession.conversation_start <= date_to_obj)
+            archived_query = archived_query.filter(ChatSession.conversation_start <= date_to_obj)
         
         # Calculate session counts by status
-        active_sessions = active_query.filter(MessengerSession.status == 'active').count()
-        escalated_sessions = active_query.filter(MessengerSession.status == 'escalated').count()
+        active_sessions = active_query.filter(ChatSession.status == 'active').count()
+        escalated_sessions = active_query.filter(ChatSession.status == 'escalated').count()
         resolved_sessions = archived_query.count()
         
         # Calculate AI engagement stats
-        ai_engaged_sessions = active_query.filter(MessengerSession.ai_engaged == True).count()
+        ai_engaged_sessions = active_query.filter(ChatSession.ai_engaged == True).count()
         total_active_sessions = active_query.count()
         
         # QA Statistics
         qa_stats = {
-            'unchecked': MessengerSession.query.filter(MessengerSession.qa_status == 'unchecked').count(),
-            'passed': MessengerSession.query.filter(MessengerSession.qa_status == 'passed').count(),
-            'issue': MessengerSession.query.filter(MessengerSession.qa_status == 'issue').count(),
-            'fixed': MessengerSession.query.filter(MessengerSession.qa_status == 'fixed').count()
+            'unchecked': ChatSession.query.filter(ChatSession.qa_status == 'unchecked').count(),
+            'passed': ChatSession.query.filter(ChatSession.qa_status == 'passed').count(),
+            'issue': ChatSession.query.filter(ChatSession.qa_status == 'issue').count(),
+            'fixed': ChatSession.query.filter(ChatSession.qa_status == 'fixed').count()
         }
         
         # Total sessions
@@ -382,7 +382,7 @@ def get_messenger_session_stats():
 def update_messenger_session_qa(session_id):
     """Update QA status and notes for a messenger session"""
     try:
-        session_obj = MessengerSession.query.get(session_id)
+        session_obj = ChatSession.query.get(session_id)
         if not session_obj:
             return jsonify({
                 'status': 'error',
@@ -424,7 +424,7 @@ def update_messenger_session_qa(session_id):
         return jsonify({
             'status': 'success',
             'message': 'QA information updated successfully',
-            'data': messenger_session_schema.dump(session_obj)
+            'data': chat_session_schema.dump(session_obj)
         })
         
     except Exception as e:
