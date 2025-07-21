@@ -142,7 +142,7 @@ async function sendTestMessage() {
         // Show typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message ai typing-indicator';
-        typingIndicator.innerHTML = `<small class="text-muted">AI Agent</small><br><i class="fas fa-spinner fa-spin"></i> Typing...`;
+        typingIndicator.innerHTML = `<small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br><i class="fas fa-spinner fa-spin"></i> Typing...`;
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -208,7 +208,7 @@ async function sendTestMessage() {
         // Add AI response to chat
         const aiMessageDiv = document.createElement('div');
         aiMessageDiv.className = 'message ai';
-        aiMessageDiv.innerHTML = `<small class="text-muted">AI Agent</small><br>${aiMessage}`;
+        aiMessageDiv.innerHTML = `<small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br>${aiMessage}`;
         messagesContainer.appendChild(aiMessageDiv);
 
         // Scroll to bottom
@@ -226,7 +226,7 @@ async function sendTestMessage() {
         // Show detailed error message
         const errorMessage = document.createElement('div');
         errorMessage.className = 'message ai';
-        errorMessage.innerHTML = `<small class="text-muted text-danger">Error</small><br>Failed to get AI response: ${error.message}<br><small class="text-muted">Check browser console for more details.</small>`;
+        errorMessage.innerHTML = `<small style="color: rgba(255,255,255,0.7);">Error</small><br>Failed to get AI response: ${error.message}<br><small style="color: rgba(255,255,255,0.5);">Check browser console for more details.</small>`;
         messagesContainer.appendChild(errorMessage);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
