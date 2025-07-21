@@ -358,6 +358,75 @@ def get_messenger_sessions():
             'error': str(e)
         }), 500
 
+@app.route('/api/messenger-sessions/<int:session_id>', methods=['DELETE'])
+@login_required
+def delete_testing_session(session_id):
+    """Delete a testing session from Supabase - only for testing sessions"""
+    try:
+        # Get the session first to check if it's a testing session
+        result = supabase_service.get_sessions(limit=100, offset=0, filters={})
+        if result.get('error'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to retrieve session data'
+            }), 500
+        
+        sessions = result.get('sessions', [])
+        target_session = None
+        
+        # Find the session with the matching ID
+        for session in sessions:
+            if session.get('id') == session_id:
+                target_session = session
+                break
+        
+        if not target_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+        
+        session_id_str = target_session.get('session_id', '')
+        customer_name = target_session.get('customer_name', '')
+        
+        # Only allow deletion of testing sessions
+        if customer_name != 'Testing Session':
+            return jsonify({
+                'status': 'error',
+                'message': 'Can only delete testing sessions'
+            }), 403
+        
+        # Delete all records with this session_id from Supabase
+        delete_result = supabase_service.delete_session_by_session_id(session_id_str)
+        
+        if not delete_result.get('success'):
+            logger.error(f"Supabase deletion error: {delete_result.get('error', 'Unknown error')}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to delete session from Supabase'
+            }), 500
+        
+        # Also delete any QA data from PostgreSQL
+        qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+        if qa_session:
+            db.session.delete(qa_session)
+            db.session.commit()
+        
+        logger.info(f"Deleted testing session: {session_id} ({session_id_str})")
+        return jsonify({
+            'status': 'success',
+            'message': 'Testing session deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting session {session_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to delete session',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/messenger-sessions/stats', methods=['GET'])
 def get_messenger_session_stats():
     """Get comprehensive statistics for messenger sessions from Supabase"""

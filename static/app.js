@@ -76,8 +76,8 @@ function initializeTestAIModal() {
             const messagesContainer = document.getElementById('testAIMessages');
             messagesContainer.innerHTML = `
                 <div class="message ai">
-                    <small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br>
-                    Hello! I'm ready to help you test the AI system. Send me a message to get started.
+                    <div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div>
+                    <div style="color: white;">Hello! I'm ready to help you test the AI system. Send me a message to get started.</div>
                 </div>
             `;
         });
@@ -137,7 +137,7 @@ async function sendTestMessage() {
     // Add user message to chat
     const userMessage = document.createElement('div');
     userMessage.className = 'message user';
-    userMessage.innerHTML = `<small style="color: var(--bs-gray-600);">You</small><br>${message}`;
+    userMessage.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">You</div><div style="color: white;">${message}</div>`;
     messagesContainer.appendChild(userMessage);
 
     // Clear input
@@ -165,7 +165,7 @@ async function sendTestMessage() {
         // Show typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message ai typing-indicator';
-        typingIndicator.innerHTML = `<small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br><i class="fas fa-spinner fa-spin"></i> Typing...`;
+        typingIndicator.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div><div style="color: white;"><i class="fas fa-spinner fa-spin"></i> Typing...</div>`;
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -231,7 +231,7 @@ async function sendTestMessage() {
         // Add AI response to chat
         const aiMessageDiv = document.createElement('div');
         aiMessageDiv.className = 'message ai';
-        aiMessageDiv.innerHTML = `<small style="color: rgba(255,255,255,0.7);">AI Brooklyn</small><br>${aiMessage}`;
+        aiMessageDiv.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div><div style="color: white;">${aiMessage}</div>`;
         messagesContainer.appendChild(aiMessageDiv);
 
         // Scroll to bottom
@@ -1776,9 +1776,28 @@ async function clearDevFeedback() {
 let ticketToDelete = null;
 
 async function deleteTicket(id) {
-    ticketToDelete = id;
-    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    modal.show();
+    // Only allow deletion for testing sessions - check if user confirmed this is a testing session
+    if (!confirm('This will only delete testing sessions. Are you sure you want to delete this session?')) {
+        return;
+    }
+    
+    try {
+        const result = await apiRequest(`/api/messenger-sessions/${id}`, 'DELETE');
+        
+        if (result.ok) {
+            // Show success message
+            showToast('Testing session deleted successfully!', 'success');
+            
+            // Refresh the data
+            loadStats();
+            loadTickets();
+        } else {
+            showToast(result.data.message || 'Failed to delete session', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting session:', error);
+        showToast('Error deleting session', 'error');
+    }
 }
 
 // Handle confirm delete button click

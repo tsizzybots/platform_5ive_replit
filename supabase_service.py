@@ -270,6 +270,30 @@ class SupabaseService:
             logger.error(f"Error updating session {session_id} in Supabase: {str(e)}")
             return {"session": None, "error": str(e)}
     
+    def delete_session_by_session_id(self, session_id: str) -> Dict[str, Any]:
+        """
+        Delete all records with the given session_id from Supabase
+        
+        Args:
+            session_id: The session ID to delete all records for
+        
+        Returns:
+            Dict containing success status or error
+        """
+        if not self.client:
+            return {"success": False, "error": "Supabase client not initialized"}
+        
+        try:
+            # Delete all messages with this session_id
+            response = self.client.table('Chat Sessions Dashboard').delete().eq('session_id', session_id).execute()
+            
+            logger.info(f"Deleted {len(response.data) if response.data else 0} records for session {session_id}")
+            return {"success": True, "deleted_count": len(response.data) if response.data else 0, "error": None}
+                
+        except Exception as e:
+            logger.error(f"Error deleting session {session_id} from Supabase: {str(e)}")
+            return {"success": False, "error": str(e)}
+
     def get_session_stats(self) -> Dict[str, Any]:
         """
         Get analytics statistics for the dashboard
