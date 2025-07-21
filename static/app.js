@@ -36,23 +36,156 @@ async function loadCurrentUser() {
         const result = await apiRequest('/api/current-user');
         if (result.ok && result.data.status === 'success') {
             currentUser = result.data.data;
-            // Update the UI with current user
-            const usernameElement = document.getElementById('currentUsername');
-            if (usernameElement) {
-                usernameElement.textContent = currentUser.username;
-            }
-        } else {
-            const usernameElement = document.getElementById('currentUsername');
-            if (usernameElement) {
-                usernameElement.textContent = 'Unknown';
-            }
         }
     } catch (error) {
         console.log('Could not load current user:', error.message);
-        const usernameElement = document.getElementById('currentUsername');
-        if (usernameElement) {
-            usernameElement.textContent = 'Unknown';
+    }
+}
+
+// Test AI Modal functionality
+let testAISessionId = null;
+let isDragging = false;
+let dragStartX, dragStartY, initialMouseX, initialMouseY;
+
+function initializeTestAIModal() {
+    const modal = document.getElementById('testAIModal');
+    const header = modal.querySelector('.test-ai-header');
+    const closeBtn = document.getElementById('closeTestAI');
+    const openBtn = document.getElementById('testAIBtn');
+    const sendBtn = document.getElementById('sendTestAI');
+    const input = document.getElementById('testAIInput');
+
+    // Open modal
+    openBtn.addEventListener('click', function() {
+        modal.classList.add('show');
+    });
+
+    // Close modal
+    closeBtn.addEventListener('click', function() {
+        modal.classList.remove('show');
+    });
+
+    // Make modal draggable
+    header.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        const rect = modal.getBoundingClientRect();
+        dragStartX = rect.left;
+        dragStartY = rect.top;
+        initialMouseX = e.clientX;
+        initialMouseY = e.clientY;
+        
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('mouseup', stopDrag);
+        e.preventDefault();
+    });
+
+    function handleDrag(e) {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - initialMouseX;
+        const deltaY = e.clientY - initialMouseY;
+        
+        const newLeft = Math.max(0, Math.min(window.innerWidth - modal.offsetWidth, dragStartX + deltaX));
+        const newTop = Math.max(0, Math.min(window.innerHeight - modal.offsetHeight, dragStartY + deltaY));
+        
+        modal.style.left = newLeft + 'px';
+        modal.style.top = newTop + 'px';
+        modal.style.right = 'auto';
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', handleDrag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+
+    // Send message functionality
+    sendBtn.addEventListener('click', sendTestMessage);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendTestMessage();
         }
+    });
+}
+
+async function sendTestMessage() {
+    const input = document.getElementById('testAIInput');
+    const messagesContainer = document.getElementById('testAIMessages');
+    const message = input.value.trim();
+    
+    if (!message) return;
+
+    // Add user message to chat
+    const userMessage = document.createElement('div');
+    userMessage.className = 'message user';
+    userMessage.innerHTML = `<small class="text-muted">You</small><br>${message}`;
+    messagesContainer.appendChild(userMessage);
+
+    // Clear input
+    input.value = '';
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Prepare API payload
+    const payload = {
+        sessionId: testAISessionId || "0000000000",
+        action: "sendMessage",
+        chatInput: message,
+        firstName: "Testing",
+        lastName: "Session",
+        contactID: "0000000000"
+    };
+
+    try {
+        // Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'message ai typing-indicator';
+        typingIndicator.innerHTML = `<small class="text-muted">AI Agent</small><br><i class="fas fa-spinner fa-spin"></i> Typing...`;
+        messagesContainer.appendChild(typingIndicator);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Note: Webhook URL would be configured here
+        // For now, we'll simulate a response
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Remove typing indicator
+        messagesContainer.removeChild(typingIndicator);
+
+        // Simulate AI response (in production, this would come from the webhook)
+        const aiResponse = {
+            aiResponse: "I'm a test AI response. In production, this would connect to the actual AI webhook endpoint.",
+            sessionId: testAISessionId || "test_session_" + Date.now()
+        };
+
+        // Save session ID for future messages
+        if (!testAISessionId) {
+            testAISessionId = aiResponse.sessionId;
+        }
+
+        // Add AI response to chat
+        const aiMessage = document.createElement('div');
+        aiMessage.className = 'message ai';
+        aiMessage.innerHTML = `<small class="text-muted">AI Agent</small><br>${aiResponse.aiResponse}`;
+        messagesContainer.appendChild(aiMessage);
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    } catch (error) {
+        // Remove typing indicator if it exists
+        const typingIndicator = messagesContainer.querySelector('.typing-indicator');
+        if (typingIndicator) {
+            messagesContainer.removeChild(typingIndicator);
+        }
+
+        // Show error message
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message ai';
+        errorMessage.innerHTML = `<small class="text-muted text-danger">Error</small><br>Failed to get AI response. Please check webhook configuration.`;
+        messagesContainer.appendChild(errorMessage);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 }
 
@@ -60,6 +193,7 @@ async function loadCurrentUser() {
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
     addModalBlurEffects();
+    initializeTestAIModal();
     
     // Initialize date range display - start fresh each time
     const dateRangeDisplay = document.getElementById('dateRangeDisplay');

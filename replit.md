@@ -102,6 +102,23 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: Added Test AI functionality with draggable, resizable modal window
+  - New "Test AI" button in header next to logout button
+  - Draggable and resizable chat interface that floats over the page
+  - Real-time conversation testing with simulated AI responses
+  - Maintains session state for continuous conversations
+  - Can be configured to connect to actual AI webhook endpoints
+  - Background page remains fully functional when modal is open
+- July 21, 2025: Updated header layout for better user experience
+  - Removed username display from header for cleaner design
+  - Made logout button horizontal with icon positioned to the left of text
+  - Added Test AI button with robot icon for easy AI system testing
+- July 21, 2025: Implemented three-state completion system for messenger sessions
+  - Complete: Sessions where booking URL (https://shorturl.at/9u9oh) was provided
+  - In Progress: Sessions with messages within 12 hours (orange badge)
+  - Incomplete: Sessions with no activity for over 12 hours (red badge)
+  - Updated scorecard to show 6 smaller cards with all completion and QA statuses
+  - Added timezone handling for Sydney time calculations
 - July 21, 2025: Email notification system implemented using Resend API for QA issue alerts
   - Replaced n8n webhook with professional email notifications
   - Comprehensive HTML and text email templates with session details, QA notes, and next steps

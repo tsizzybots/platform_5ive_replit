@@ -1,0 +1,56 @@
+I am building an admin dashboard for a client, and I need to add a draggable, resizable modal window to the web app.  
+
+Here are the requirements for the modal:  
+- The modal floats over the page and can be moved around freely.  
+- It can be resized by the user.  
+- The background page remains usable when the modal is open.  
+- The only way to close the modal is by clicking the X button inside the modal. Clicking outside does not close it.  
+- The modal should contain:  
+  - A conversation history area that displays messages exchanged between the user and the AI agent.  
+  - An input box for the user to type a message.  
+  - A send button to trigger the interaction.  
+
+Functional Requirements:  
+1. When the user sends the first message, the modal must POST the following JSON to a webhook (URL will be provided separately):  
+```json
+{
+  "sessionId": "0000000000",
+  "action": "sendMessage",
+  "chatInput": "<user_message>",
+  "firstName": "Testing",
+  "lastName": "Session",
+  "contactID": "0000000000"
+}
+```
+
+2. The webhook will respond with JSON in this format:  
+```json
+{
+  "aiResponse": "<AI_response_text>",
+  "sessionId": "<generated_session_id>"
+}
+```
+- The AI response should be displayed in the conversation area inside the modal.  
+- The `sessionId` should be saved and reused for all subsequent messages within this modal session.  
+
+3. For every message after the first one, the modal should POST this format to the same webhook, reusing the saved `sessionId`:  
+```json
+{
+  "sessionId": "<saved_session_id>",
+  "action": "sendMessage",
+  "chatInput": "<user_message>",
+  "firstName": "Testing",
+  "lastName": "Session",
+  "contactID": "0000000000"
+}
+```
+
+4. The modal must handle the POST request, receive the webhook response, and append the AI response into the message history area in real time.  
+
+5. The design should use clean HTML, CSS, and JavaScript (or a JS library if needed for dragging/resizing), fully compatible with a web app built in Replit.  
+
+6. The webhook will not require authentication — the POST request can be sent directly from the frontend.  
+
+7. The modal should maintain a clean user experience, with scrollable history and a responsive layout.  
+
+Please generate the complete code for this modal with all the above requirements met, including the frontend POST handling and response display logic.
