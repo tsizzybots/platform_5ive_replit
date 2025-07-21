@@ -528,30 +528,95 @@ def update_messenger_session_qa(session_id):
         qa_session.updated_at = sydney_now
         db.session.commit()
         
-        # Send webhook notification for QA issues
+        # Send email notification for QA issues
         if qa_session.qa_status == 'issue':
             try:
-                import requests
-                webhook_url = "https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue"
-                webhook_payload = {
-                    "session_id": qa_session.session_id,
-                    "customer_name": qa_session.customer_name,
-                    "contact_id": qa_session.contact_id,
-                    "qa_status": qa_session.qa_status,
-                    "qa_notes": qa_session.qa_notes,
-                    "qa_reviewer": qa_session.qa_status_updated_by,
-                    "timestamp": qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+                import resend
+                
+                resend.api_key = os.environ.get("RESEND_API_KEY")
+                
+                # Email content
+                subject = f"⚠️ QA Issue Detected - Session {qa_session.session_id[:20]}..."
+                
+                html_content = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px;">
+                            🚨 QA Issue Detected
+                        </h2>
+                        
+                        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #1976d2;">Session Details</h3>
+                            <p><strong>Session ID:</strong> {qa_session.session_id}</p>
+                            <p><strong>Customer:</strong> {qa_session.customer_name or 'Unknown'}</p>
+                            <p><strong>Contact ID:</strong> {qa_session.contact_id or 'N/A'}</p>
+                            <p><strong>QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
+                            <p><strong>Detected:</strong> {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
+                        </div>
+                        
+                        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #856404;">QA Notes</h3>
+                            <p style="white-space: pre-wrap;">{qa_session.qa_notes or 'No additional notes provided.'}</p>
+                        </div>
+                        
+                        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #1976d2;">Next Steps</h3>
+                            <ul>
+                                <li>Review the conversation in the dashboard</li>
+                                <li>Investigate the AI's response quality</li>
+                                <li>Provide developer feedback if needed</li>
+                                <li>Mark as "Fixed" when resolved</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://your-dashboard-url.replit.app" 
+                               style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                                View in Dashboard
+                            </a>
+                        </div>
+                        
+                        <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                            This is an automated notification from the Stay Golden Health AI Messenger Sessions Dashboard.
+                        </p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # Plain text version
+                text_content = f"""
+QA ISSUE DETECTED
+
+Session Details:
+- Session ID: {qa_session.session_id}
+- Customer: {qa_session.customer_name or 'Unknown'}
+- Contact ID: {qa_session.contact_id or 'N/A'}
+- QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
+- Detected: {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
+
+QA Notes:
+{qa_session.qa_notes or 'No additional notes provided.'}
+
+Please review this issue in the dashboard and provide appropriate feedback.
+                """
+                
+                # Send email (you'll need to specify the recipient email addresses)
+                email_params = {
+                    "from": "qa-alerts@yourdomain.com",
+                    "to": ["team@yourdomain.com"],  # Update with actual email addresses
+                    "subject": subject,
+                    "html": html_content,
+                    "text": text_content
                 }
                 
-                response = requests.post(webhook_url, json=webhook_payload, timeout=10)
-                if response.status_code == 200:
-                    logger.info(f"Successfully sent QA issue notification for session {session_id}")
-                else:
-                    logger.warning(f"Webhook notification failed with status {response.status_code} for session {session_id}")
-                    
-            except Exception as webhook_error:
-                logger.error(f"Failed to send webhook notification for session {session_id}: {str(webhook_error)}")
-                # Don't fail the main request if webhook fails
+                response = resend.Emails.send(email_params)
+                logger.info(f"Successfully sent QA issue email notification for session {session_id}: {response}")
+                
+            except Exception as email_error:
+                logger.error(f"Failed to send email notification for session {session_id}: {str(email_error)}")
+                # Don't fail the main request if email fails
         
         logger.info(f"Updated QA for messenger session {session_id} by {current_user.username}")
         

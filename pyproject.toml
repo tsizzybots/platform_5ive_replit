@@ -20,4 +20,5 @@ dependencies = [
     "pyjwt>=2.10.1",
     "flask-dance>=7.1.0",
     "flask-login>=0.6.3",
+    "resend>=2.11.0",
 ]

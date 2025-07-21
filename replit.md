@@ -52,7 +52,7 @@ This is a Flask-based web application that manages email inquiries and provides 
 - Four-state QA workflow: unchecked → passed/issue → fixed
 - User attribution for QA actions
 - Developer feedback system
-- Webhook integration for QA issues (sends to n8n workflow)
+- Email integration for QA issues (sends via Resend API)
 
 ## Data Flow
 
@@ -68,7 +68,7 @@ This is a Flask-based web application that manages email inquiries and provides 
 ### Required Services
 - **PostgreSQL**: Primary data storage
 - **Facebook Messenger**: Source platform for customer conversations
-- **n8n Webhook**: QA issue notification system (https://n8n-g0cw.onrender.com/webhook/new-sweats-ticket-issue)
+- **Resend Email API**: QA issue notification system for automated email alerts
 
 ### Python Dependencies
 - Flask ecosystem (Flask, Flask-SQLAlchemy, Flask-CORS)
@@ -102,6 +102,11 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 21, 2025: Email notification system implemented using Resend API for QA issue alerts
+  - Replaced n8n webhook with professional email notifications
+  - Comprehensive HTML and text email templates with session details, QA notes, and next steps
+  - Automated emails sent when QA status is marked as "issue"
+  - System gracefully handles email failures without breaking QA functionality
 - July 21, 2025: Quality Assurance system fully restored with role-based permissions
   - Successfully restored QA functionality in session details modal with accordions for QA Management and Developer Feedback
   - Created three user accounts with secure passwords and role-based access:

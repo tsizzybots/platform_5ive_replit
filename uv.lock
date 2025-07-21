@@ -664,6 +664,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "pytz" },
     { name = "requests" },
+    { name = "resend" },
     { name = "sqlalchemy" },
     { name = "supabase" },
     { name = "werkzeug" },
@@ -684,6 +685,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pytz", specifier = ">=2025.2" },
     { name = "requests", specifier = ">=2.32.3" },
+    { name = "resend", specifier = ">=2.11.0" },
     { name = "sqlalchemy", specifier = ">=2.0.41" },
     { name = "supabase", specifier = ">=2.17.0" },
     { name = "werkzeug", specifier = ">=3.1.3" },
@@ -715,6 +717,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/f2/05f29bc3913aea15eb670be136045bf5c5bbf4b99ecb839da9b422bb2c85/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9", size = 55650 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36", size = 24179 },
+]
+
+[[package]]
+name = "resend"
+version = "2.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ee/a6/72a58e10bf3d4d3bf529daaa54296eae7252970eb4bfe6dd2a0bbc6c584d/resend-2.11.0.tar.gz", hash = "sha256:b85e526ccb3fa7432aead57f6cc137435c34b19d354be4cd2deba321dd9a4860", size = 15161 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/2f/ed950bdf3aa6f167d510e484ba7a9792317ec9e5a1b807ba571269b01b9a/resend-2.11.0-py2.py3-none-any.whl", hash = "sha256:fefa22ae5c5c79aca706ce018c89f9fe181148ad368fac2f1b4a899e4608f117", size = 21564 },
 ]
 
 [[package]]
