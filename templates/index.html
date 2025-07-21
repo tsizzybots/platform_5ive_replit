@@ -421,17 +421,17 @@
                                 <label class="form-label">Status</label>
                                 <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
                                     <option value="">All Statuses</option>
-                                    <option value="Engaged">Engaged</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Skipped">Skipped</option>
-                                    <option value="Archived">Archived</option>
+                                    <option value="active">Active</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="archived">Archived</option>
                                 </select>
                             </div>
                             <div class="col-auto">
-                                <label class="form-label">Inquiry Type</label>
-                                <select class="form-select form-select-sm" id="inquiryTypeFilter" style="width: auto;">
-                                    <option value="">All Types</option>
-                                    <!-- Options will be populated dynamically -->
+                                <label class="form-label">Completion Status</label>
+                                <select class="form-select form-select-sm" id="completionFilter" style="width: auto;">
+                                    <option value="">All</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="incomplete">Incomplete</option>
                                 </select>
                             </div>
                             <div class="col-auto">
@@ -445,8 +445,8 @@
                                 </select>
                             </div>
                             <div class="col-auto">
-                                <label class="form-label">Email Address</label>
-                                <input type="text" class="form-control form-control-sm" id="emailFilter" placeholder="Search by Email" style="width: 180px;" oninput="handleEmailSearch()">
+                                <label class="form-label">Contact ID</label>
+                                <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Search by Contact ID" style="width: 180px;" oninput="handleContactIdSearch()">
                             </div>
                             <div class="col">
                                 <label class="form-label">

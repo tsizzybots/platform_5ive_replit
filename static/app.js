@@ -4,7 +4,7 @@ let currentFilters = {};
 let dailyChart = null;
 let currentChartType = 'bar';
 let currentUser = null;
-let emailSearchTimeout = null;
+let contactIdSearchTimeout = null;
 let currentDateRangeLabel = sessionStorage.getItem('dateRangeLabel') || null;
 let selectedTickets = new Set();
 let currentMode = 'messenger'; // Default to messenger sessions mode
@@ -527,11 +527,17 @@ function applyFilters() {
     const status = document.getElementById('statusFilter').value;
     if (status) currentFilters.status = status;
     
-    const inquiryType = document.getElementById('inquiryTypeFilter').value;
-    if (inquiryType) currentFilters.inquiry_type = inquiryType;
+    const completionStatus = document.getElementById('completionFilter').value;
+    if (completionStatus) {
+        if (completionStatus === 'completed') {
+            currentFilters.completed = true;
+        } else if (completionStatus === 'incomplete') {
+            currentFilters.completed = false;
+        }
+    }
     
-    const email = document.getElementById('emailFilter').value;
-    if (email) currentFilters.sender_email = email;
+    const contactId = document.getElementById('contactIdFilter').value;
+    if (contactId) currentFilters.contact_id = contactId;
     
     const qaStatus = document.getElementById('qaStatusFilter').value;
     if (qaStatus) currentFilters.qa_status = qaStatus;
@@ -590,14 +596,14 @@ function applyFilters() {
 }
 
 // Real-time email search handler
-function handleEmailSearch() {
+function handleContactIdSearch() {
     // Clear previous timeout
-    if (emailSearchTimeout) {
-        clearTimeout(emailSearchTimeout);
+    if (contactIdSearchTimeout) {
+        clearTimeout(contactIdSearchTimeout);
     }
     
     // Set new timeout for 300ms delay (debouncing)
-    emailSearchTimeout = setTimeout(() => {
+    contactIdSearchTimeout = setTimeout(() => {
         applyFilters();
     }, 300);
 }
@@ -685,13 +691,12 @@ function displayTickets(tickets, pagination) {
                     <th class="checkbox-column">
                         <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
                     </th>
-                    <th style="width: 12%;">Created</th>
-                    <th style="width: 10%;">Session ID</th>
-                    <th style="width: 8%;">Contact ID</th>
-                    <th style="width: 25%;">Message Content</th>
-                    <th style="width: 8%;">Completed</th>
-                    <th style="width: 10%;">Engagement Score</th>
-                    <th style="width: 8%;">QA Status</th>
+                    <th style="width: 15%;">Created</th>
+                    <th style="width: 12%;">Session ID</th>
+                    <th style="width: 15%;">Customer</th>
+                    <th style="width: 20%;">Contact ID</th>
+                    <th style="width: 10%;">Status</th>
+                    <th style="width: 10%;">Completed</th>
                     <th style="width: 13%; padding-right: 8px;">Actions</th>
                 </tr>
             </thead>
@@ -723,10 +728,10 @@ function displayTickets(tickets, pagination) {
         if (currentMode === 'messenger') {
             // Messenger sessions row
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
-            const engagementScore = ticket.engagement_score ? ticket.engagement_score.toFixed(2) : 'N/A';
             const completedBadge = ticket.completed ? 
                 '<span class="badge bg-success">Yes</span>' : 
                 '<span class="badge bg-danger">No</span>';
+            const statusBadge = getStatusBadge(ticket.status);
             
             html += `
                 <tr id="ticket-row-${ticket.id}" class="ticket-row">
@@ -735,17 +740,10 @@ function displayTickets(tickets, pagination) {
                     </td>
                     <td class="text-nowrap">${formatDate(ticket.created_at)}</td>
                     <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
+                    <td>${escapeHtml(ticket.customer_name || 'N/A')}</td>
                     <td class="text-nowrap">${escapeHtml(ticket.contact_id || 'N/A')}</td>
-                    <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.message_content)}">
-                        ${escapeHtml(ticket.message_content || 'N/A')}
-                    </td>
+                    <td class="text-center">${statusBadge}</td>
                     <td class="text-center">${completedBadge}</td>
-                    <td class="text-center">
-                        <span class="badge ${engagementScore !== 'N/A' && parseFloat(engagementScore) > 7 ? 'bg-success' : engagementScore !== 'N/A' && parseFloat(engagementScore) > 4 ? 'bg-warning' : 'bg-secondary'}">
-                            ${engagementScore}
-                        </span>
-                    </td>
-                    <td>${qaStatusBadge}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
