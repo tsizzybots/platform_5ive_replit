@@ -382,6 +382,7 @@ def get_messenger_session_stats():
         active_sessions = sum(1 for s in sessions if s.get('status') == 'active')
         escalated_sessions = sum(1 for s in sessions if s.get('status') == 'escalated') 
         resolved_sessions = sum(1 for s in sessions if s.get('status') == 'resolved')
+        completed_sessions = sum(1 for s in sessions if s.get('completed', False))
         
         # Calculate AI engagement stats
         ai_engaged_sessions = sum(1 for s in sessions if s.get('ai_engaged', False))
@@ -395,25 +396,21 @@ def get_messenger_session_stats():
             'fixed': sum(1 for s in sessions if s.get('qa_status') == 'fixed')
         }
         
+        # Get QA stats from PostgreSQL  
+        qa_result = db.session.query(
+            func.count(MessengerSessionQA.id).label('total_qa'),
+            func.sum(case((MessengerSessionQA.qa_status == 'passed', 1), else_=0)).label('passed'),
+            func.sum(case((MessengerSessionQA.qa_status == 'unchecked', 1), else_=0)).label('unchecked'),
+            func.sum(case((MessengerSessionQA.qa_status.in_(['issue', 'fixed']), 1), else_=0)).label('issues')
+        ).first()
+        
         return jsonify({
             'status': 'success',
             'data': {
-                'totals': {
-                    'total_sessions': total_sessions,
-                    'active_sessions': active_sessions,
-                    'escalated_sessions': escalated_sessions,
-                    'resolved_sessions': resolved_sessions
-                },
-                'ai_engagement': {
-                    'ai_engaged': ai_engaged_sessions,
-                    'ai_not_engaged': ai_not_engaged_sessions,
-                    'engagement_rate': round((ai_engaged_sessions / total_sessions * 100) if total_sessions > 0 else 0, 2)
-                },
-                'qa_stats': qa_stats,
-                'date_range': {
-                    'from': date_from_obj.isoformat(),
-                    'to': date_to_obj.isoformat()
-                }
+                'total_sessions': total_sessions,
+                'ai_engaged': ai_engaged_sessions,
+                'completed': completed_sessions,
+                'unchecked': qa_result.unchecked or 0
             }
         })
         
@@ -622,5 +619,80 @@ def get_errors():
         return jsonify({
             'status': 'error',
             'message': 'Failed to retrieve errors',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/daily-stats', methods=['GET'])
+def get_messenger_session_daily_stats():
+    """Get daily statistics for messenger sessions"""
+    try:
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Default to last 7 days if no dates provided
+        if not date_from:
+            date_from_obj = datetime.now(SYDNEY_TZ) - timedelta(days=7)
+        else:
+            date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+        
+        if not date_to:
+            date_to_obj = datetime.now(SYDNEY_TZ)
+        else:
+            date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+        
+        # Get all sessions from Supabase for the date range
+        result = supabase_service.get_sessions(
+            limit=1000,
+            offset=0,
+            filters={
+                'date_from': date_from_obj.isoformat(),
+                'date_to': date_to_obj.isoformat()
+            }
+        )
+        
+        if result.get('error'):
+            sessions = []
+        else:
+            sessions = result.get('sessions', [])
+        
+        # Group sessions by date
+        daily_stats = {}
+        for session in sessions:
+            # Extract date from session creation
+            session_date = session.get('conversation_start', '')[:10]  # YYYY-MM-DD format
+            
+            if session_date not in daily_stats:
+                daily_stats[session_date] = {
+                    'date': session_date,
+                    'total': 0,
+                    'active': 0,
+                    'completed': 0,
+                    'ai_engaged': 0
+                }
+            
+            daily_stats[session_date]['total'] += 1
+            
+            if session.get('status') == 'active':
+                daily_stats[session_date]['active'] += 1
+            
+            if session.get('completed', False):
+                daily_stats[session_date]['completed'] += 1
+                
+            if session.get('ai_engaged', False):
+                daily_stats[session_date]['ai_engaged'] += 1
+        
+        # Convert to list and sort by date
+        stats_list = sorted(daily_stats.values(), key=lambda x: x['date'])
+        
+        return jsonify({
+            'status': 'success',
+            'data': stats_list
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting daily messenger session stats: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get daily statistics',
             'error': str(e)
         }), 500

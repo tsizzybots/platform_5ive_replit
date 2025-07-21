@@ -260,9 +260,9 @@ function displayStats(stats) {
     if (currentMode === 'messenger') {
         // Messenger session stats
         const totalSessions = stats.total_sessions || 0;
-        const passedSessions = stats.passed || 0;
+        const aiEngagedSessions = stats.ai_engaged || 0;
+        const completedSessions = stats.completed || 0;
         const uncheckedSessions = stats.unchecked || 0;
-        const issueSessions = stats.issues || 0;
         
         container.innerHTML = `
             <div class="col-lg-3 col-md-6 mb-3">
@@ -275,11 +275,20 @@ function displayStats(stats) {
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions that have been QA checked and marked as passed">
+                <div class="card stats-card bg-info text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where AI agent was engaged in conversation">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
-                        <h3 class="card-title">${passedSessions}</h3>
-                        <p class="card-text mb-0">Passed</p>
+                        <h3 class="card-title">${aiEngagedSessions}</h3>
+                        <p class="card-text mb-0">AI Engaged</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where booking URL was provided to complete the conversation">
+                    <div class="info-icon">i</div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title">${completedSessions}</h3>
+                        <p class="card-text mb-0">Completed</p>
                     </div>
                 </div>
             </div>
@@ -289,15 +298,6 @@ function displayStats(stats) {
                     <div class="card-body text-center">
                         <h3 class="card-title">${uncheckedSessions}</h3>
                         <p class="card-text mb-0">Unchecked</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card stats-card bg-danger text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions marked with any QA flag indicating an issue">
-                    <div class="info-icon">i</div>
-                    <div class="card-body text-center">
-                        <h3 class="card-title">${issueSessions}</h3>
-                        <p class="card-text mb-0">Issues</p>
                     </div>
                 </div>
             </div>
@@ -689,9 +689,10 @@ function displayTickets(tickets, pagination) {
                     <th style="width: 10%;">Session ID</th>
                     <th style="width: 8%;">Contact ID</th>
                     <th style="width: 25%;">Message Content</th>
+                    <th style="width: 8%;">Completed</th>
                     <th style="width: 10%;">Engagement Score</th>
                     <th style="width: 8%;">QA Status</th>
-                    <th style="width: 15%; padding-right: 8px;">Actions</th>
+                    <th style="width: 13%; padding-right: 8px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -723,6 +724,9 @@ function displayTickets(tickets, pagination) {
             // Messenger sessions row
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
             const engagementScore = ticket.engagement_score ? ticket.engagement_score.toFixed(2) : 'N/A';
+            const completedBadge = ticket.completed ? 
+                '<span class="badge bg-success">Yes</span>' : 
+                '<span class="badge bg-danger">No</span>';
             
             html += `
                 <tr id="ticket-row-${ticket.id}" class="ticket-row">
@@ -735,6 +739,7 @@ function displayTickets(tickets, pagination) {
                     <td class="text-truncate" style="max-width: 250px;" title="${escapeHtml(ticket.message_content)}">
                         ${escapeHtml(ticket.message_content || 'N/A')}
                     </td>
+                    <td class="text-center">${completedBadge}</td>
                     <td class="text-center">
                         <span class="badge ${engagementScore !== 'N/A' && parseFloat(engagementScore) > 7 ? 'bg-success' : engagementScore !== 'N/A' && parseFloat(engagementScore) > 4 ? 'bg-warning' : 'bg-secondary'}">
                             ${engagementScore}
@@ -1226,14 +1231,14 @@ async function viewTicketDetails(id) {
                 <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem;">
                     ${session.messages && session.messages.length > 0 ? 
                         session.messages.map(msg => `
-                            <div class="message p-3 border-bottom ${msg.user_ai === 'ai' ? 'bg-primary bg-opacity-10' : 'bg-light'}">
+                            <div class="message p-3 border-bottom ${msg.user_ai === 'ai' ? 'bg-dark' : 'bg-secondary bg-opacity-50'}" style="background-color: ${msg.user_ai === 'ai' ? '#1a1a1a !important' : '#2a2a2a !important'}">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong class="${msg.user_ai === 'ai' ? 'text-primary' : 'text-dark'}">
-                                        ${msg.user_ai === 'ai' ? '🤖 AI Assistant' : '👤 ' + (session.customer_name || 'Customer')}
+                                    <strong class="text-light">
+                                        ${msg.user_ai === 'ai' ? '🤖 AI Agent' : '👤 ' + (session.customer_name || 'Customer')}
                                     </strong>
                                     <small class="text-muted">${formatDate(msg.timestamp)}</small>
                                 </div>
-                                <div class="message-content">
+                                <div class="message-content text-light">
                                     ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
                                 </div>
                             </div>
@@ -1687,7 +1692,7 @@ async function loadDailyStats() {
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
         
-        const response = await apiRequest(`/api/inquiries/daily-stats?${params}`);
+        const response = await apiRequest(`/api/messenger-sessions/daily-stats?${params}`);
         console.log('Daily Stats Response:', response);
         
         if (response.data && response.data.status === 'success') {

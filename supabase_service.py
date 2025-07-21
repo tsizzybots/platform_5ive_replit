@@ -105,6 +105,14 @@ class SupabaseService:
                 if message['userAi'] == 'ai':
                     sessions_dict[session_id]['ai_engaged'] = True
             
+            # Process completion status for all sessions
+            for session_id, session_data in sessions_dict.items():
+                # Check if session contains the booking URL (completed session)
+                session_data['completed'] = any(
+                    'https://shorturl.at/9u9oh' in str(msg.get('message', ''))
+                    for msg in session_data['messages']
+                )
+            
             # Convert to list and sort by last message time (newest first)
             sessions_list = list(sessions_dict.values())
             sessions_list.sort(key=lambda x: x['last_message_time'], reverse=True)
