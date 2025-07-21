@@ -147,7 +147,7 @@ async function sendTestMessage() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         // Send to actual webhook
-        const webhookUrl = 'https://n8n-g0cw.onrender.com/webhook-test/stay-golden-health-ai-agent';
+        const webhookUrl = 'https://n8n-g0cw.onrender.com/webhook/stay-golden-health-ai-agent';
         
         console.log('Sending payload to webhook:', webhookUrl, payload);
         
