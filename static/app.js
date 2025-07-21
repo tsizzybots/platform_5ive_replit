@@ -1171,7 +1171,7 @@ function updateBulkStatusControls() {
 // Mark selected tickets as passed
 async function markSelectedAsPassed() {
     if (selectedTickets.size === 0) {
-        showAlert('Please select tickets to mark as passed.', 'warning');
+        showAlert('Please select sessions to mark as passed.', 'warning');
         return;
     }
     
@@ -1179,14 +1179,39 @@ async function markSelectedAsPassed() {
     markPassedBtn.disabled = true;
     markPassedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Marking as Passed...';
     
+    // Store the selected IDs for immediate UI updates
+    const selectedIds = Array.from(selectedTickets);
+    
+    // Update UI immediately for responsiveness
+    selectedIds.forEach(ticketId => {
+        const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+        if (row) {
+            const qaStatusBadge = row.querySelector('.qa-status-badge');
+            if (qaStatusBadge) {
+                qaStatusBadge.className = 'badge bg-success qa-status-badge';
+                qaStatusBadge.textContent = 'Passed';
+            }
+        }
+    });
+    
+    // Clear selections immediately  
+    selectedTickets.clear();
+    updateBulkStatusControls();
+    
+    // Show success message immediately
+    showAlert(`Successfully marked ${selectedIds.length} session${selectedIds.length > 1 ? 's' : ''} as passed.`, 'success');
+    
+    // Update stats immediately (optimistic update)
+    updateStatsOnly();
+    
     try {
-        let successCount = 0;
+        let actualSuccessCount = 0;
         let failureCount = 0;
         
-        // Update QA status for each selected ticket
-        for (const ticketId of selectedTickets) {
+        // Update backend asynchronously
+        for (const ticketId of selectedIds) {
             const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
-                method: 'PUT',
+                method: 'PUT',  
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -1198,30 +1223,24 @@ async function markSelectedAsPassed() {
             });
             
             if (response.ok) {
-                successCount++;
+                actualSuccessCount++;
             } else {
                 failureCount++;
-                console.error(`Failed to update ticket ${ticketId}:`, await response.text());
+                console.error(`Failed to update session ${ticketId}:`, await response.text());
             }
         }
         
-        // Clear selections
-        selectedTickets.clear();
-        
-        // Show results
-        if (successCount > 0 && failureCount === 0) {
-            showAlert(`Successfully marked ${successCount} ticket${successCount > 1 ? 's' : ''} as passed.`, 'success');
-        } else if (successCount > 0 && failureCount > 0) {
-            showAlert(`Marked ${successCount} ticket${successCount > 1 ? 's' : ''} as passed, failed to update ${failureCount}.`, 'warning');
-        } else {
-            showAlert('Failed to update selected tickets.', 'danger');
+        // Only show error if there were backend failures
+        if (failureCount > 0) {
+            showAlert(`Backend sync: ${actualSuccessCount} succeeded, ${failureCount} failed.`, 'warning');
+            // Refresh to correct any inconsistencies
+            setTimeout(() => loadTickets(currentPage), 1000);
         }
         
-        // Refresh the tickets list
-        loadTickets(currentPage);
-        
     } catch (error) {
-        showAlert('Error updating tickets: ' + error.message, 'danger');
+        showAlert('Backend sync error: ' + error.message, 'warning');
+        // Refresh to correct any inconsistencies
+        setTimeout(() => loadTickets(currentPage), 1000);
     } finally {
         markPassedBtn.disabled = false;
         markPassedBtn.innerHTML = '<i class="fas fa-check me-1"></i>Mark as Passed';
@@ -1236,8 +1255,8 @@ async function archiveSelected() {
     }
     
     // Show custom confirmation modal
-    const ticketCount = selectedTickets.size;
-    const message = `Are you sure you would like to archive ${ticketCount} ${ticketCount === 1 ? 'item' : 'items'}?`;
+    const sessionCount = selectedTickets.size;
+    const message = `Are you sure you would like to archive ${sessionCount} ${sessionCount === 1 ? 'session' : 'sessions'}?`;
     document.getElementById('bulkArchiveMessage').textContent = message;
     
     const modal = new bootstrap.Modal(document.getElementById('bulkArchiveConfirmModal'));
@@ -1254,11 +1273,14 @@ async function performBulkArchive() {
     archiveSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Archiving...';
     
     try {
+        // Store archived IDs before processing  
+        const archivedIds = Array.from(selectedTickets);
+        
         let successCount = 0;
         let failureCount = 0;
         
         // Archive each selected ticket by updating status
-        for (const ticketId of selectedTickets) {
+        for (const ticketId of archivedIds) {
             const response = await fetch(`/api/messenger-sessions/${ticketId}/qa`, {
                 method: 'PUT',
                 headers: {
@@ -1282,23 +1304,57 @@ async function performBulkArchive() {
         // Clear selections
         selectedTickets.clear();
         
-        // Show results
+        // Show results  
         if (successCount > 0 && failureCount === 0) {
-            showAlert(`Successfully archived ${successCount} ticket${successCount > 1 ? 's' : ''}.`, 'success');
+            showAlert(`Successfully archived ${successCount} session${successCount > 1 ? 's' : ''}.`, 'success');
         } else if (successCount > 0 && failureCount > 0) {
-            showAlert(`Archived ${successCount} ticket${successCount > 1 ? 's' : ''}, failed to archive ${failureCount}.`, 'warning');
+            showAlert(`Archived ${successCount} session${successCount > 1 ? 's' : ''}, failed to archive ${failureCount}.`, 'warning');
         } else {
-            showAlert('Failed to archive selected tickets.', 'danger');
+            showAlert('Failed to archive selected sessions.', 'danger');
         }
         
-        // Refresh the tickets list
-        loadTickets(currentPage);
+        // Remove archived sessions with smooth animation (like delete function)  
+        for (const ticketId of archivedIds) {
+            const row = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+            if (row) {
+                // Add fade-out animation
+                row.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+                
+                // Remove row after animation
+                setTimeout(() => {
+                    row.remove();
+                }, 300);
+            }
+        }
+        
+        // Update stats without full reload
+        setTimeout(() => {
+            updateStatsOnly();
+        }, 350);
         
     } catch (error) {
         showAlert('Error archiving tickets: ' + error.message, 'danger');
     } finally {
         archiveSelectedBtn.disabled = false;
         archiveSelectedBtn.innerHTML = '<i class="fas fa-archive me-1"></i>Archive Selected';
+    }
+}
+
+// Update only the statistics without reloading the entire page
+async function updateStatsOnly() {
+    try {
+        const response = await fetch('/api/messenger-sessions/stats', {
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateStatsDisplay(data.data);
+        }
+    } catch (error) {
+        console.error('Error updating stats:', error);
     }
 }
 
@@ -2215,8 +2271,8 @@ function renderChart(data) {
             fill: false
         },
         {
-            label: 'AI Engaged',
-            data: data.map(item => item.ai_engaged || 0),
+            label: 'Passed',
+            data: data.map(item => item.passed || 0),
             backgroundColor: 'rgba(25, 135, 84, 0.6)',
             borderColor: 'rgba(25, 135, 84, 1)',
             borderWidth: 2,
@@ -2239,8 +2295,8 @@ function renderChart(data) {
             fill: false
         },
         {
-            label: 'Active',
-            data: data.map(item => item.active || 0),
+            label: 'Unchecked',
+            data: data.map(item => item.unchecked || 0),
             backgroundColor: 'rgba(13, 202, 240, 0.6)',
             borderColor: 'rgba(13, 202, 240, 1)',
             borderWidth: 2,
