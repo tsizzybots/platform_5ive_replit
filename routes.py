@@ -189,7 +189,7 @@ def get_messenger_session(session_id):
         
         if has_booking_url:
             completion_status = 'complete'
-        elif ai_engaged and messages and messages[-1].dateTime > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+        elif ai_engaged and messages and messages[-1].dateTime > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
             completion_status = 'in_progress'
         
         # Build session data
@@ -287,33 +287,17 @@ def get_messenger_sessions():
         page = query_params.get('page', 1)
         per_page = query_params.get('per_page', 20)
         
-        # Build query to aggregate chat messages by session_id
-        subquery = db.session.query(
-            ChatSessionForDashboard.session_id,
-            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
-            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
-            func.count(ChatSessionForDashboard.id).label('message_count'),
-            func.max(case(
-                (ChatSessionForDashboard.firstName.isnot(None), ChatSessionForDashboard.firstName),
-                else_=''
-            )).label('firstName'),
-            func.max(case(
-                (ChatSessionForDashboard.lastName.isnot(None), ChatSessionForDashboard.lastName),
-                else_=''
-            )).label('lastName'),
-            func.max(case(
-                (ChatSessionForDashboard.contactID.isnot(None), ChatSessionForDashboard.contactID),
-                else_=''
-            )).label('contact_id')
-        ).group_by(ChatSessionForDashboard.session_id).subquery()
-        
-        # Main query joining with MessengerSession for metadata and QA
+        # Start with MessengerSession records and left join chat messages
         query = db.session.query(
-            subquery,
             MessengerSession.id.label('messenger_session_id'),
+            MessengerSession.session_id,
+            MessengerSession.customer_name,
+            MessengerSession.customer_id.label('contact_id'),
+            MessengerSession.conversation_start,
+            MessengerSession.last_message_time,
+            MessengerSession.message_count,
             MessengerSession.status,
             MessengerSession.ai_engaged,
-
             MessengerSession.qa_status,
             MessengerSession.qa_notes,
             MessengerSession.qa_status_updated_by,
@@ -323,23 +307,29 @@ def get_messenger_sessions():
             MessengerSession.dev_feedback_by,
             MessengerSession.dev_feedback_at,
             MessengerSession.created_at.label('created_at')
-        ).outerjoin(MessengerSession, subquery.c.session_id == MessengerSession.session_id)
+        )
         
         # Apply filters
         if 'date_from' in query_params:
-            query = query.filter(subquery.c.conversation_start >= query_params['date_from'])
+            query = query.filter(MessengerSession.conversation_start >= query_params['date_from'])
         if 'date_to' in query_params:
-            query = query.filter(subquery.c.last_message_time <= query_params['date_to'])
+            query = query.filter(MessengerSession.last_message_time <= query_params['date_to'])
         if 'contact_id' in query_params:
-            query = query.filter(subquery.c.contact_id == query_params['contact_id'])
+            query = query.filter(MessengerSession.customer_id == query_params['contact_id'])
         if 'session_id' in query_params:
-            query = query.filter(subquery.c.session_id == query_params['session_id'])
+            query = query.filter(MessengerSession.session_id == query_params['session_id'])
         if 'status' in query_params:
-            query = query.filter(MessengerSession.status == query_params['status'])
+            if query_params['status'] == 'archived':
+                query = query.filter(MessengerSession.status == 'archived')
+            elif query_params['status'] == 'active':
+                query = query.filter(or_(MessengerSession.status == 'active', MessengerSession.status.is_(None)))
+            elif query_params['status'] in ['resolved', 'escalated']:
+                query = query.filter(MessengerSession.status == query_params['status'])
+            # If status is not specified or is 'all', don't filter by status
         elif query_params.get('qa_status'):
             query = query.filter(MessengerSession.qa_status == query_params['qa_status'])
         else:
-            # Default: show active (non-archived) sessions only
+            # Default: show non-archived sessions (active and NULL status)
             query = query.filter(or_(MessengerSession.status != 'archived', MessengerSession.status.is_(None)))
         
         if 'ai_engaged' in query_params:
@@ -362,16 +352,8 @@ def get_messenger_sessions():
                 session_id=result.session_id
             ).order_by(ChatSessionForDashboard.dateTime).all()
             
-            # Build customer name
-            customer_name = ''
-            if result.firstName and result.lastName:
-                customer_name = f"{result.firstName} {result.lastName}".strip()
-            elif result.firstName:
-                customer_name = result.firstName
-            elif result.lastName:
-                customer_name = result.lastName
-            else:
-                customer_name = 'Unknown'
+            # Use customer name from MessengerSession record
+            customer_name = result.customer_name or 'Unknown'
             
             # Determine completion status based on messages
             completion_status = 'incomplete'
@@ -388,11 +370,11 @@ def get_messenger_sessions():
             # Calculate completion status
             if has_booking_url:
                 completion_status = 'complete'
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
                 completion_status = 'in_progress'
             
             session_data = {
-                'id': result.messenger_session_id or 0,
+                'id': result.messenger_session_id,
                 'session_id': result.session_id,
                 'customer_name': customer_name,
                 'contact_id': result.contact_id or '',
@@ -572,7 +554,7 @@ def get_messenger_session_stats():
             if booking_message:
                 has_booking_url = True
                 completed_sessions += 1
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
                 in_progress_sessions += 1
             else:
                 incomplete_sessions += 1
@@ -947,7 +929,7 @@ def get_messenger_session_daily_stats():
             
             if has_booking_url:
                 daily_stats[session_date]['completed'] += 1
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
                 daily_stats[session_date]['in_progress'] += 1
             
             # Always count sessions with AI messages as AI engaged
