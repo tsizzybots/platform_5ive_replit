@@ -253,8 +253,9 @@ def get_messenger_session(session_id):
         
         if has_booking_url:
             completion_status = 'complete'
-        elif ai_engaged and messages and messages[-1].dateTime > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
-            completion_status = 'in_progress'
+        elif ai_engaged and messages:
+            # Use stored completion_status from database
+            completion_status = messenger_session.completion_status or 'incomplete'
         
         # Build session data
         session_data = {
