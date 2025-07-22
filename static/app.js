@@ -2036,14 +2036,23 @@ document.addEventListener('DOMContentLoaded', function() {
 function getStatusBadge(status, isArchived = false) {
     // If the item is archived, always show "Archived" status
     if (isArchived || (status && status.toLowerCase() === 'archived')) {
-        return '<span class="badge bg-info">Archived</span>';
+        return '<span class="badge bg-secondary">Archived</span>';
     }
     
     const statusLower = status ? status.toLowerCase() : '';
+    
+    // Handle both messenger session statuses and email inquiry statuses
     const badges = {
+        // Messenger session statuses
+        'active': '<span class="badge bg-success">Active</span>',
+        'archived': '<span class="badge bg-secondary">Archived</span>',
+        
+        // Email inquiry statuses (legacy)
         'engaged': '<span class="badge bg-success">Engaged</span>',
         'marketing': '<span class="badge bg-warning">Marketing</span>',
-        'skipped': '<span class="badge bg-secondary">Skipped</span>'
+        'skipped': '<span class="badge bg-secondary">Skipped</span>',
+        'resolved': '<span class="badge bg-info">Resolved</span>',
+        'escalated': '<span class="badge bg-danger">Escalated</span>'
     };
     return badges[statusLower] || '<span class="badge bg-light text-dark">Unknown</span>';
 }
