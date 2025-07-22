@@ -48,14 +48,29 @@ def ensure_messenger_session_exists(session_id):
         last_message_time = messages[-1].dateTime
         message_count = len(messages)
         
+        # Convert timezone-aware datetimes to UTC naive for storage
+        if conversation_start and conversation_start.tzinfo is not None:
+            conversation_start = conversation_start.astimezone(pytz.UTC).replace(tzinfo=None)
+        if last_message_time and last_message_time.tzinfo is not None:
+            last_message_time = last_message_time.astimezone(pytz.UTC).replace(tzinfo=None)
+        
         # Check if AI engaged and completion status
         ai_engaged = any(msg.userAi == 'ai' for msg in messages)
         has_booking_url = any(msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr for msg in messages)
         
         if has_booking_url:
             completion_status = 'complete'
-        elif ai_engaged and last_message_time > (datetime.utcnow() - timedelta(hours=12)):
-            completion_status = 'in_progress'
+        elif ai_engaged:
+            # Convert timezone-aware datetime to UTC for comparison
+            if last_message_time.tzinfo is not None:
+                last_message_utc = last_message_time.astimezone(pytz.UTC).replace(tzinfo=None)
+            else:
+                last_message_utc = last_message_time
+            
+            if last_message_utc > (datetime.utcnow() - timedelta(hours=12)):
+                completion_status = 'in_progress'
+            else:
+                completion_status = 'incomplete'
         else:
             completion_status = 'incomplete'
         
@@ -464,6 +479,9 @@ def get_messenger_sessions():
         
         # Get total count before pagination
         total = query.count()
+        
+        # Order by newest first (created_at descending)
+        query = query.order_by(MessengerSession.created_at.desc())
         
         # Apply pagination
         query = query.offset((page - 1) * per_page).limit(per_page)
