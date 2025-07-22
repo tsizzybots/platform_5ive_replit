@@ -313,37 +313,63 @@ def get_messenger_sessions():
             # Merge QA data from PostgreSQL and enforce data consistency
             filtered_sessions = []
             requested_qa_status = query_params.get('qa_status')
+            requested_status = query_params.get('status')
             
             for session in sessions:
                 session_id_str = session.get('session_id')
                 if session_id_str:
-                    # MUST exist in PostgreSQL to be shown
+                    # Find or create PostgreSQL record to maintain data consistency
                     qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-                    if qa_session:
-                        # Merge PostgreSQL QA data
-                        session['qa_status'] = qa_session.qa_status
-                        session['qa_notes'] = qa_session.qa_notes
-                        session['qa_status_updated_by'] = qa_session.qa_status_updated_by
-                        session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
-                        session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
-                        session['dev_feedback'] = qa_session.dev_feedback
-                        session['dev_feedback_by'] = qa_session.dev_feedback_by
-                        session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
-                        
-                        # Apply status filtering (archived vs active)
-                        requested_status = query_params.get('status')
-                        if requested_status:
-                            if requested_status == qa_session.status:
-                                filtered_sessions.append(session)
-                        elif requested_qa_status:
-                            # Apply QA status filtering
-                            if requested_qa_status == qa_session.qa_status:
-                                filtered_sessions.append(session)
-                        else:
-                            # Show non-archived sessions by default
-                            if qa_session.status != 'archived':
-                                filtered_sessions.append(session)
-                    # If no PostgreSQL record exists, skip this session (data consistency requirement)
+                    if not qa_session:
+                        # Auto-create PostgreSQL record for Supabase sessions to maintain consistency
+                        try:
+                            qa_session = MessengerSession(
+                                session_id=session_id_str,
+                                customer_name=session.get('customer_name', 'Unknown'),
+                                customer_id=session.get('contact_id', 'unknown'),
+                                conversation_start=datetime.fromisoformat(session.get('conversation_start', '').replace('Z', '+00:00')) if session.get('conversation_start') else datetime.utcnow(),
+                                last_message_time=datetime.fromisoformat(session.get('last_message_time', '').replace('Z', '+00:00')) if session.get('last_message_time') else datetime.utcnow(),
+                                message_count=session.get('message_count', 0),
+                                status='active',  # Default status
+                                ai_engaged=session.get('ai_engaged', False),
+                                created_at=datetime.utcnow(),
+                                updated_at=datetime.utcnow()
+                            )
+                            db.session.add(qa_session)
+                            db.session.commit()
+                            logger.info(f"Auto-created PostgreSQL record for session {session_id_str}")
+                        except Exception as e:
+                            logger.error(f"Failed to create PostgreSQL record for {session_id_str}: {str(e)}")
+                            db.session.rollback()
+                            continue
+                    
+                    # Merge PostgreSQL QA data
+                    session['qa_status'] = qa_session.qa_status
+                    session['qa_notes'] = qa_session.qa_notes
+                    session['qa_status_updated_by'] = qa_session.qa_status_updated_by
+                    session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+                    session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
+                    session['dev_feedback'] = qa_session.dev_feedback
+                    session['dev_feedback_by'] = qa_session.dev_feedback_by
+                    session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
+                    session['status'] = qa_session.status  # Add status from PostgreSQL
+                    session['archived'] = qa_session.archived  # Add archived flag
+                    
+                    # Apply filtering logic
+                    should_include = True
+                    
+                    if requested_status:
+                        # Filter by status (active, archived, etc.)
+                        should_include = (requested_status.lower() == qa_session.status.lower())
+                    elif requested_qa_status:
+                        # Filter by QA status (unchecked, passed, issue, fixed)
+                        should_include = (requested_qa_status.lower() == qa_session.qa_status.lower())
+                    else:
+                        # Default: show active (non-archived) sessions only
+                        should_include = (qa_session.status.lower() != 'archived')
+                    
+                    if should_include:
+                        filtered_sessions.append(session)
                 else:
                     # Skip sessions without session_id
                     continue
