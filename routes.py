@@ -359,20 +359,10 @@ def get_messenger_sessions():
                     should_include = True
                     
                     if requested_status:
-                        # Filter by status (active, archived, complete, etc.)
-                        # Handle special case where 'complete' status should match completed sessions
-                        if requested_status.lower() == 'complete':
-                            # Check multiple fields to find completed sessions
-                            is_completed = (
-                                session.get('completed', False) == True or
-                                session.get('completion_status') == 'complete' or
-                                (isinstance(session.get('completed'), str) and session.get('completed').lower() == 'true')
-                            )
-                            should_include = is_completed
-                            logger.debug(f"Complete filter for session {session_id_str}: completed={session.get('completed')}, completion_status={session.get('completion_status')}, result={is_completed}")
-                        else:
-                            should_include = (requested_status.lower() == qa_session.status.lower())
-                            logger.debug(f"Status filter for session {session_id_str}: requested={requested_status.lower()}, qa_status={qa_session.status.lower()}, result={should_include}")
+                        # Filter by completion status (complete, in_progress, incomplete) - this matches the Status column in UI
+                        completion_status = session.get('completion_status', 'incomplete')
+                        should_include = (requested_status.lower() == completion_status.lower())
+                        logger.debug(f"Status filter for session {session_id_str}: requested={requested_status.lower()}, completion_status={completion_status.lower()}, result={should_include}")
                     elif requested_qa_status:
                         # Filter by QA status (unchecked, passed, issue, fixed)
                         should_include = (requested_qa_status.lower() == qa_session.qa_status.lower())
