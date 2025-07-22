@@ -359,8 +359,12 @@ def get_messenger_sessions():
                     should_include = True
                     
                     if requested_status:
-                        # Filter by status (active, archived, etc.)
-                        should_include = (requested_status.lower() == qa_session.status.lower())
+                        # Filter by status (active, archived, complete, etc.)
+                        # Handle special case where 'complete' status should match completed sessions
+                        if requested_status.lower() == 'complete':
+                            should_include = session.get('completed', False) or session.get('completion_status') == 'complete'
+                        else:
+                            should_include = (requested_status.lower() == qa_session.status.lower())
                     elif requested_qa_status:
                         # Filter by QA status (unchecked, passed, issue, fixed)
                         should_include = (requested_qa_status.lower() == qa_session.qa_status.lower())
