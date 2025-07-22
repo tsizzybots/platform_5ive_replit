@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, ChatSession, MessengerSession, MessengerSessionQA
+from models import Error, User, MessengerSession, MessengerSessionQA
 from schemas import (error_schema, error_query_schema, chat_session_schema, 
                     chat_session_update_schema, chat_session_query_schema)
 from supabase_service import supabase_service
@@ -359,10 +359,9 @@ def get_messenger_sessions():
                     should_include = True
                     
                     if requested_status:
-                        # Filter by completion status (complete, in_progress, incomplete) - this matches the Status column in UI
-                        completion_status = session.get('completion_status', 'incomplete')
-                        should_include = (requested_status.lower() == completion_status.lower())
-                        logger.debug(f"Status filter for session {session_id_str}: requested={requested_status.lower()}, completion_status={completion_status.lower()}, result={should_include}")
+                        # Filter by PostgreSQL status (active, archived) - this is separate from UI completion status  
+                        should_include = (requested_status.lower() == qa_session.status.lower())
+                        logger.debug(f"Status filter for session {session_id_str}: requested={requested_status.lower()}, postgres_status={qa_session.status.lower()}, result={should_include}")
                     elif requested_qa_status:
                         # Filter by QA status (unchecked, passed, issue, fixed)
                         should_include = (requested_qa_status.lower() == qa_session.qa_status.lower())

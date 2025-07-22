@@ -102,6 +102,12 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: Fixed critical database architecture issue with status filtering system
+  - Removed incorrect `chat_sessions_for_dashboard` table from Replit PostgreSQL (should only exist in Supabase)
+  - Corrected data separation: Session data in Supabase, QA/tracking data in PostgreSQL  
+  - Fixed status filtering to use PostgreSQL `status` field ("active", "archived") instead of Supabase `completion_status`
+  - Updated schema validation to only allow actual PostgreSQL status values
+  - Status filter now works correctly with proper database field separation
 - July 21, 2025: Enhanced Test AI chat modal with superior z-index and instant completion detection
   - Fixed Test AI modal interaction issues by increasing z-index to 10000 and ensuring pointer events work even when session details modals are open
   - Added instant completion detection that triggers when booking URL (https://shorturl.at/9u9oh) is provided in Test AI chat

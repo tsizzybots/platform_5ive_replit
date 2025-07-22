@@ -66,15 +66,14 @@ class ChatSessionUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class ChatSessionQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived', 'complete']))
+    status = fields.String(validate=validate.OneOf(['active', 'archived']))  # Only PostgreSQL status values
     ai_engaged = fields.Boolean()
     completed = fields.Raw()  # Allow both boolean and string values for completion status
     contact_id = fields.String()
     session_id = fields.String()
     date_from = fields.DateTime()
     date_to = fields.DateTime()
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
-    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
+    qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))
     page = fields.Integer(validate=validate.Range(min=1), load_default=1)
     per_page = fields.Integer(validate=validate.Range(min=1, max=100), load_default=20)
 
