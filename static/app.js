@@ -1637,7 +1637,6 @@ async function viewTicketDetails(id) {
                     <p><strong>Started:</strong> ${formatDate(session.conversation_start)}</p>
                     <p><strong>Last Message:</strong> ${formatDate(session.last_message_time)}</p>
                     <p><strong>Status:</strong> ${session.completed ? '<span class="badge bg-success">Completed</span>' : '<span class="badge bg-danger">Incomplete</span>'}</p>
-                    <p><strong>AI Engaged:</strong> ${session.ai_engaged ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</p>
                     <p><strong>QA Status:</strong> <span class="session-qa-status">${getQAStatusBadge(session.qa_status)}</span></p>
 
                 </div>
