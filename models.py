@@ -78,6 +78,7 @@ class MessengerSession(db.Model):
     message_count = db.Column(db.Integer, nullable=False, default=1)
     session_summary = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='active')
+    completion_status = db.Column(db.String(50), nullable=False, default='incomplete')
     ai_engaged = db.Column(db.Boolean, nullable=False, default=False)
     ai_response = db.Column(db.Text, nullable=True)
 

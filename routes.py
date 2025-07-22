@@ -297,6 +297,7 @@ def get_messenger_sessions():
             MessengerSession.last_message_time,
             MessengerSession.message_count,
             MessengerSession.status,
+            MessengerSession.completion_status,
             MessengerSession.ai_engaged,
             MessengerSession.qa_status,
             MessengerSession.qa_notes,
@@ -318,14 +319,21 @@ def get_messenger_sessions():
             query = query.filter(MessengerSession.customer_id == query_params['contact_id'])
         if 'session_id' in query_params:
             query = query.filter(MessengerSession.session_id == query_params['session_id'])
+        # Handle completion status filter (independent of archive status)
+        if 'completion_status' in query_params and query_params['completion_status'] != 'all':
+            query = query.filter(MessengerSession.completion_status == query_params['completion_status'])
+        
+        # Handle archive status filter (independent of completion status)
         if 'status' in query_params:
-            if query_params['status'] == 'archived':
+            if query_params['status'] == 'all':
+                # Show all sessions including archived - no status filter
+                pass
+            elif query_params['status'] == 'archived':
                 query = query.filter(MessengerSession.status == 'archived')
             elif query_params['status'] == 'active':
                 query = query.filter(or_(MessengerSession.status == 'active', MessengerSession.status.is_(None)))
             elif query_params['status'] in ['resolved', 'escalated']:
                 query = query.filter(MessengerSession.status == query_params['status'])
-            # If status is not specified or is 'all', don't filter by status
         elif query_params.get('qa_status'):
             query = query.filter(MessengerSession.qa_status == query_params['qa_status'])
         else:
@@ -355,23 +363,15 @@ def get_messenger_sessions():
             # Use customer name from MessengerSession record
             customer_name = result.customer_name or 'Unknown'
             
-            # Determine completion status based on messages
-            completion_status = 'incomplete'
-            ai_engaged = False
-            has_booking_url = False
+            # Get completion status from database (now stored as field)
+            completion_status = result.completion_status or 'incomplete'
             
+            # Check if session has booking URL for legacy completed field
+            has_booking_url = False
             for msg in messages:
-                if msg.userAi == 'ai':
-                    ai_engaged = True
                 if msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr:
                     has_booking_url = True
                     break
-            
-            # Calculate completion status
-            if has_booking_url:
-                completion_status = 'complete'
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
-                completion_status = 'in_progress'
             
             session_data = {
                 'id': result.messenger_session_id,
@@ -382,7 +382,7 @@ def get_messenger_sessions():
                 'last_message_time': result.last_message_time.isoformat() if result.last_message_time else None,
                 'message_count': result.message_count or 0,
                 'completion_status': completion_status,
-                'completed': has_booking_url,
+                'completed': has_booking_url or completion_status == 'complete',
                 'ai_engaged': result.ai_engaged if result.ai_engaged is not None else ai_engaged,
                 'archived': result.status == 'archived',
                 'status': result.status or 'active',

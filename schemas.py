@@ -29,6 +29,7 @@ class ChatSessionSchema(Schema):
     message_count = fields.Integer(load_default=1, validate=validate.Range(min=1))
     session_summary = fields.String(allow_none=True)
     status = fields.String(load_default='active', validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
+    completion_status = fields.String(load_default='incomplete', validate=validate.OneOf(['complete', 'in_progress', 'incomplete']))
     ai_engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
 
@@ -49,6 +50,7 @@ class ChatSessionSchema(Schema):
 
 class ChatSessionUpdateSchema(Schema):
     status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
+    completion_status = fields.String(validate=validate.OneOf(['complete', 'in_progress', 'incomplete']))
     ai_engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
     session_summary = fields.String(allow_none=True)
@@ -65,9 +67,10 @@ class ChatSessionUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class ChatSessionQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))  # PostgreSQL status values
+    status = fields.String(validate=validate.OneOf(['all', 'active', 'resolved', 'escalated', 'archived']))  # Archive status
+    completion_status = fields.String(validate=validate.OneOf(['all', 'complete', 'in_progress', 'incomplete']))  # Completion status
     ai_engaged = fields.Boolean()
-    completed = fields.Raw()  # Allow both boolean and string values for completion status
+    completed = fields.Raw()  # Legacy field for backwards compatibility
     contact_id = fields.String()
     session_id = fields.String()
     date_from = fields.DateTime()
