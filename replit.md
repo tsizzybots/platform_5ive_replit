@@ -102,6 +102,17 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **EMAIL NOTIFICATION SYSTEM FIXED** - Resolved field name mismatch preventing QA issue email alerts
+  - **BUG FIX**: Fixed `contact_id` vs `customer_id` field name mismatch in email notification template
+  - **EMAIL INTEGRATION**: Confirmed Resend API integration working with test email sent successfully (ID: cba3a780-31f1-43ef-95ac-aa9768789acc)
+  - **QA WORKFLOW**: Email notifications now properly sent to team@izzyagents.ai when QA status marked as "issue"
+  - **ERROR HANDLING**: Email failures are logged but don't break QA update functionality
+  - **TESTING**: Manual email test confirmed from noreply@izzyagents.ai to team@izzyagents.ai working
+- July 22, 2025: **TIMEZONE ERROR RESOLUTION** - Fixed all timezone comparison issues across dashboard APIs
+  - **SESSION DETAILS FIX**: Resolved timezone comparison error in session details retrieval endpoint
+  - **CHART COLORS**: Updated Activity Statistics chart colors to perfectly match scorecard colors
+  - **API STABILITY**: All stats, daily stats, and session details APIs now working without timezone errors
+  - **DATA INTEGRITY**: Session details modal now displays complete conversation data correctly
 - July 22, 2025: **DUAL STATUS SYSTEM IMPLEMENTATION** - Added independent completion_status field for better session management
   - **NEW FEATURE**: Added `completion_status` field to MessengerSession model with values: 'complete', 'in_progress', 'incomplete'
   - **SEPARATION OF CONCERNS**: Completion status (ticket progress) now independent from archive status (ticket visibility)

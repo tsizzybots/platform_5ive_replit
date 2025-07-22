@@ -747,7 +747,7 @@ def update_messenger_session_qa(session_id):
                             <h3 style="margin-top: 0; color: #1976d2;">Session Details</h3>
                             <p><strong>Session ID:</strong> {qa_session.session_id}</p>
                             <p><strong>Customer:</strong> {qa_session.customer_name or 'Unknown'}</p>
-                            <p><strong>Contact ID:</strong> {qa_session.contact_id or 'N/A'}</p>
+                            <p><strong>Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
                             <p><strong>QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
                             <p><strong>Detected:</strong> {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
                         </div>
@@ -789,7 +789,7 @@ QA ISSUE DETECTED
 Session Details:
 - Session ID: {qa_session.session_id}
 - Customer: {qa_session.customer_name or 'Unknown'}
-- Contact ID: {qa_session.contact_id or 'N/A'}
+- Contact ID: {qa_session.customer_id or 'N/A'}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
 - Detected: {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
 
