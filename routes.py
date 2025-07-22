@@ -220,7 +220,7 @@ def get_messenger_session(session_id):
         }), 500
 
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['PUT'])
-@require_api_key
+@login_required
 def update_messenger_session(session_id):
     """Update a messenger session"""
     try:
@@ -764,7 +764,14 @@ Please review this issue in the dashboard and provide appropriate feedback.
         return jsonify({
             'status': 'success',
             'message': 'QA information updated successfully',
-            'data': qa_session.to_dict()
+            'data': {
+                'id': qa_session.id,
+                'session_id': qa_session.session_id,
+                'qa_status': qa_session.qa_status,
+                'qa_notes': qa_session.qa_notes,
+                'qa_status_updated_by': qa_session.qa_status_updated_by,
+                'qa_status_updated_at': qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
+            }
         })
         
     except Exception as e:
