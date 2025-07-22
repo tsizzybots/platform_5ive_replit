@@ -154,57 +154,69 @@ def create_messenger_session():
 
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['GET'])
 def get_messenger_session(session_id):
-    """Get a specific messenger session by ID from Supabase"""
+    """Get a specific messenger session by ID from PostgreSQL"""
     try:
-        # Get all sessions to find the one with matching ID
-        result = supabase_service.get_sessions(
-            limit=1000,  # Large limit to get all sessions
-            offset=0,
-            filters={}
-        )
-        
-        if result.get('error'):
-            logger.error(f"Supabase error: {result['error']}")
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve session from database'
-            }), 500
-        
-        sessions = result.get('sessions', [])
-        
-        # Find the session with the matching ID
-        session_data = None
-        for session in sessions:
-            if session.get('id') == session_id:
-                session_data = session
-                break
-        
-        if not session_data:
+        # Get the messenger session metadata
+        messenger_session = MessengerSession.query.get(session_id)
+        if not messenger_session:
             return jsonify({
                 'status': 'error',
                 'message': 'Messenger session not found'
             }), 404
         
-        # Sort messages by ID (chronological order - oldest first)
-        if 'messages' in session_data:
-            session_data['messages'].sort(key=lambda x: x.get('id', 0))
+        # Get all chat messages for this session
+        messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=messenger_session.session_id
+        ).order_by(ChatSessionForDashboard.dateTime).all()
         
-        # Get QA data from PostgreSQL if it exists
-        session_id_str = session_data.get('session_id')
-        if session_id_str:
-            qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-            if qa_session:
-                # Merge QA data from PostgreSQL
-                session_data.update({
-                    'qa_status': qa_session.qa_status,
-                    'qa_notes': qa_session.qa_notes,
-                    'qa_status_updated_by': qa_session.qa_status_updated_by,
-                    'qa_status_updated_at': qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None,
-                    'qa_notes_updated_at': qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None,
-                    'dev_feedback': qa_session.dev_feedback,
-                    'dev_feedback_by': qa_session.dev_feedback_by,
-                    'dev_feedback_at': qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
-                })
+        # Build customer name from first message
+        customer_name = messenger_session.customer_name or 'Unknown'
+        if messages and not customer_name:
+            first_msg = messages[0]
+            customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+        
+        # Determine completion status
+        completion_status = 'incomplete'
+        ai_engaged = False
+        has_booking_url = False
+        
+        for msg in messages:
+            if msg.userAi == 'ai':
+                ai_engaged = True
+            if msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr:
+                has_booking_url = True
+                break
+        
+        if has_booking_url:
+            completion_status = 'complete'
+        elif ai_engaged and messages and messages[-1].dateTime > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+            completion_status = 'in_progress'
+        
+        # Build session data
+        session_data = {
+            'id': messenger_session.id,
+            'session_id': messenger_session.session_id,
+            'customer_name': customer_name,
+            'contact_id': messenger_session.customer_id,
+            'conversation_start': messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
+            'last_message_time': messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
+            'message_count': len(messages),
+            'status': messenger_session.status,
+            'ai_engaged': messenger_session.ai_engaged,
+            'archived': messenger_session.archived,
+            'completed': has_booking_url,
+            'completion_status': completion_status,
+            'qa_status': messenger_session.qa_status,
+            'qa_notes': messenger_session.qa_notes,
+            'qa_status_updated_by': messenger_session.qa_status_updated_by,
+            'qa_status_updated_at': messenger_session.qa_status_updated_at.isoformat() if messenger_session.qa_status_updated_at else None,
+            'qa_notes_updated_at': messenger_session.qa_notes_updated_at.isoformat() if messenger_session.qa_notes_updated_at else None,
+            'dev_feedback': messenger_session.dev_feedback,
+            'dev_feedback_by': messenger_session.dev_feedback_by,
+            'dev_feedback_at': messenger_session.dev_feedback_at.isoformat() if messenger_session.dev_feedback_at else None,
+            'created_at': messenger_session.created_at.isoformat() if messenger_session.created_at else None,
+            'messages': [msg.to_dict() for msg in messages]
+        }
             
         return jsonify({
             'status': 'success',
