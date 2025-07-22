@@ -101,6 +101,51 @@ def ensure_messenger_session_exists(session_id):
         db.session.rollback()
         return None
 
+def sync_messenger_session_data(session_id):
+    """Sync messenger session data with latest chat messages"""
+    try:
+        # Find the messenger session
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if not messenger_session:
+            # Create if doesn't exist
+            ensure_messenger_session_exists(session_id)
+            return
+        
+        # Get latest chat data
+        message_count = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).count()
+        
+        last_message = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).order_by(ChatSessionForDashboard.dateTime.desc()).first()
+        
+        # Check for booking URL completion
+        has_booking_url = db.session.query(ChatSessionForDashboard).filter(
+            ChatSessionForDashboard.session_id == session_id,
+            ChatSessionForDashboard.messageStr.contains('https://shorturl.at/9u9oh')
+        ).first() is not None
+        
+        completion_status = 'complete' if has_booking_url else 'in_progress'
+        
+        # Update messenger session with latest data
+        messenger_session.message_count = message_count
+        if last_message:
+            # Convert timezone-aware datetime to UTC naive for storage
+            if last_message.dateTime.tzinfo is not None:
+                messenger_session.last_message_time = last_message.dateTime.astimezone(pytz.UTC).replace(tzinfo=None)
+            else:
+                messenger_session.last_message_time = last_message.dateTime
+        messenger_session.completion_status = completion_status
+        messenger_session.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        logger.info(f"Synced messenger session data for: {session_id} - {message_count} messages, status: {completion_status}")
+        
+    except Exception as e:
+        logger.error(f"Error syncing messenger session {session_id}: {str(e)}")
+        db.session.rollback()
+
 def require_api_key(f):
     """Decorator to require API key for route access"""
     @wraps(f)
@@ -411,6 +456,10 @@ def get_messenger_sessions():
         for session_id in missing_session_ids:
             ensure_messenger_session_exists(session_id)
             logger.info(f"Auto-synced messenger session for: {session_id}")
+        
+        # Auto-sync existing sessions to ensure latest data
+        for session_id in existing_session_ids:
+            sync_messenger_session_data(session_id)
     except Exception as e:
         logger.warning(f"Auto-sync failed but continuing: {str(e)}")
     
@@ -1046,6 +1095,23 @@ def get_messenger_session_daily_stats():
         return jsonify({
             'status': 'error',
             'message': 'Failed to get daily statistics',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/messenger-sessions/<session_id>/sync', methods=['POST'])
+def sync_single_messenger_session(session_id):
+    """Manually sync a specific messenger session with latest chat data"""
+    try:
+        sync_messenger_session_data(session_id)
+        return jsonify({
+            'status': 'success',
+            'message': f'Session {session_id} synced successfully'
+        })
+    except Exception as e:
+        logger.error(f"Error syncing session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to sync session',
             'error': str(e)
         }), 500
 
