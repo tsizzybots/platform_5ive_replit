@@ -22,6 +22,70 @@ def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
 
+def ensure_messenger_session_exists(session_id):
+    """Ensure a messenger session exists for the given session_id"""
+    try:
+        # Check if messenger session already exists
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if messenger_session:
+            return messenger_session
+        
+        # Get chat messages to extract session info
+        messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).order_by(ChatSessionForDashboard.dateTime).all()
+        
+        if not messages:
+            return None
+            
+        # Extract info from first message
+        first_msg = messages[0]
+        customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+        contact_id = first_msg.contactID or 'Unknown'
+        
+        # Calculate session stats
+        conversation_start = first_msg.dateTime
+        last_message_time = messages[-1].dateTime
+        message_count = len(messages)
+        
+        # Check if AI engaged and completion status
+        ai_engaged = any(msg.userAi == 'ai' for msg in messages)
+        has_booking_url = any(msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr for msg in messages)
+        
+        if has_booking_url:
+            completion_status = 'complete'
+        elif ai_engaged and last_message_time > (datetime.utcnow() - timedelta(hours=12)):
+            completion_status = 'in_progress'
+        else:
+            completion_status = 'incomplete'
+        
+        # Create new messenger session
+        messenger_session = MessengerSession(
+            session_id=session_id,
+            customer_name=customer_name,
+            customer_id=contact_id,
+            conversation_start=conversation_start,
+            last_message_time=last_message_time,
+            message_count=message_count,
+            status='active',
+            completion_status=completion_status,
+            ai_engaged=ai_engaged,
+            qa_status='unchecked',
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.session.add(messenger_session)
+        db.session.commit()
+        
+        logger.info(f"Auto-created messenger session for session_id: {session_id}")
+        return messenger_session
+        
+    except Exception as e:
+        logger.error(f"Error ensuring messenger session exists for {session_id}: {str(e)}")
+        db.session.rollback()
+        return None
+
 def require_api_key(f):
     """Decorator to require API key for route access"""
     @wraps(f)
@@ -277,9 +341,63 @@ def update_messenger_session(session_id):
             'error': str(e)
         }), 500
 
+@app.route('/api/messenger-sessions/sync', methods=['POST'])
+@require_api_key
+def sync_messenger_sessions():
+    """Sync chat sessions to messenger sessions - create missing records"""
+    try:
+        # Get all unique session IDs from chat sessions that don't have messenger sessions
+        chat_session_ids = db.session.query(ChatSessionForDashboard.session_id).distinct().all()
+        chat_session_ids = [row[0] for row in chat_session_ids]
+        
+        existing_session_ids = db.session.query(MessengerSession.session_id).all()
+        existing_session_ids = [row[0] for row in existing_session_ids]
+        
+        missing_session_ids = [sid for sid in chat_session_ids if sid not in existing_session_ids]
+        
+        created_count = 0
+        for session_id in missing_session_ids:
+            if ensure_messenger_session_exists(session_id):
+                created_count += 1
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Sync completed. Created {created_count} messenger sessions.',
+            'data': {
+                'created_count': created_count,
+                'total_chat_sessions': len(chat_session_ids),
+                'total_messenger_sessions': len(existing_session_ids) + created_count
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error syncing messenger sessions: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to sync messenger sessions',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/messenger-sessions', methods=['GET'])
 def get_messenger_sessions():
     """Get messenger sessions with filtering and pagination - now fully from PostgreSQL"""
+    try:
+        # Auto-sync: Check for new chat sessions that don't have messenger sessions
+        chat_session_ids = db.session.query(ChatSessionForDashboard.session_id).distinct().all()
+        chat_session_ids = [row[0] for row in chat_session_ids]
+        
+        existing_session_ids = db.session.query(MessengerSession.session_id).all()
+        existing_session_ids = [row[0] for row in existing_session_ids]
+        
+        missing_session_ids = [sid for sid in chat_session_ids if sid not in existing_session_ids]
+        
+        # Auto-create missing messenger sessions
+        for session_id in missing_session_ids:
+            ensure_messenger_session_exists(session_id)
+            logger.info(f"Auto-synced messenger session for: {session_id}")
+    except Exception as e:
+        logger.warning(f"Auto-sync failed but continuing: {str(e)}")
+    
     try:
         query_params = chat_session_query_schema.load(request.args)
         
@@ -513,11 +631,11 @@ def get_messenger_session_stats():
             func.count(ChatSessionForDashboard.id).label('message_count')
         ).group_by(ChatSessionForDashboard.session_id)
         
-        # Apply date filters
+        # Apply date filters (convert timezone-aware dates to naive for comparison)
         if date_from:
-            subquery = subquery.having(func.min(ChatSessionForDashboard.dateTime) >= date_from_obj)
+            subquery = subquery.having(func.min(ChatSessionForDashboard.dateTime) >= date_from_obj.replace(tzinfo=None))
         if date_to:
-            subquery = subquery.having(func.max(ChatSessionForDashboard.dateTime) <= date_to_obj)
+            subquery = subquery.having(func.max(ChatSessionForDashboard.dateTime) <= date_to_obj.replace(tzinfo=None))
         
         subquery = subquery.subquery()
         
@@ -554,7 +672,7 @@ def get_messenger_session_stats():
             if booking_message:
                 has_booking_url = True
                 completed_sessions += 1
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)).replace(tzinfo=None):
                 in_progress_sessions += 1
             else:
                 incomplete_sessions += 1
