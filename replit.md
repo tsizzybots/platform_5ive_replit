@@ -102,6 +102,17 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **MAJOR ARCHITECTURAL CHANGE** - Complete Supabase removal and full PostgreSQL consolidation
+  - **BREAKING CHANGE**: Completely removed Supabase integration for better CRUD control and simplified architecture
+  - Created new `chat_sessions_for_dashboard` table in PostgreSQL with full message storage capabilities
+  - Added `ChatSessionForDashboard` model for individual chat messages with proper indexing
+  - Migrated all session data and chat messages to PostgreSQL for unified data management
+  - Updated all API endpoints to use PostgreSQL exclusively: GET/POST/PUT/DELETE operations
+  - Removed `supabase_service.py` and all Supabase dependencies from the codebase
+  - Enhanced session creation endpoint to handle both session metadata and individual chat messages
+  - All QA functionality, statistics, and session management now operates from single PostgreSQL database
+  - Improved performance with proper database joins and aggregations instead of cross-platform queries
+  - **Data Migration**: Successfully populated PostgreSQL with test data including completed session with booking URL
 - July 22, 2025: Fixed critical database architecture issue with status filtering system
   - Removed incorrect `chat_sessions_for_dashboard` table from Replit PostgreSQL (should only exist in Supabase)
   - Corrected data separation: Session data in Supabase, QA/tracking data in PostgreSQL  

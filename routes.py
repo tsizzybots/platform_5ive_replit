@@ -1,9 +1,9 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, MessengerSession, MessengerSessionQA
+from models import Error, User, MessengerSession, MessengerSessionQA, ChatSessionForDashboard
 from schemas import (error_schema, error_query_schema, chat_session_schema, 
                     chat_session_update_schema, chat_session_query_schema)
-from supabase_service import supabase_service
+# Supabase integration completely removed - now using PostgreSQL only
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_, func, case
 from datetime import datetime, timedelta
@@ -267,117 +267,144 @@ def update_messenger_session(session_id):
 
 @app.route('/api/messenger-sessions', methods=['GET'])
 def get_messenger_sessions():
-    """Get messenger sessions with filtering and pagination - now from Supabase"""
+    """Get messenger sessions with filtering and pagination - now fully from PostgreSQL"""
     try:
         query_params = chat_session_query_schema.load(request.args)
-        
-        # Prepare filters for Supabase
-        filters = {}
-        if 'date_from' in query_params:
-            filters['date_from'] = query_params['date_from'].isoformat()
-        if 'date_to' in query_params:
-            filters['date_to'] = query_params['date_to'].isoformat()
-        if 'contact_id' in query_params:
-            filters['contact_id'] = query_params['contact_id']
-        if 'session_id' in query_params:
-            filters['session_id'] = query_params['session_id']
-        if 'status' in query_params:
-            filters['status'] = query_params['status']
-        if 'ai_engaged' in query_params:
-            filters['ai_engaged'] = query_params['ai_engaged']
-        if 'completed' in query_params:
-            filters['completed'] = query_params['completed']
         
         # Pagination
         page = query_params.get('page', 1)
         per_page = query_params.get('per_page', 20)
-        offset = (page - 1) * per_page
         
-        # Get sessions from Supabase
-        result = supabase_service.get_sessions(
-            limit=per_page,
-            offset=offset,
-            filters=filters
-        )
+        # Build query to aggregate chat messages by session_id
+        subquery = db.session.query(
+            ChatSessionForDashboard.session_id,
+            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
+            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
+            func.count(ChatSessionForDashboard.id).label('message_count'),
+            func.max(case(
+                (ChatSessionForDashboard.firstName.isnot(None), ChatSessionForDashboard.firstName),
+                else_=''
+            )).label('firstName'),
+            func.max(case(
+                (ChatSessionForDashboard.lastName.isnot(None), ChatSessionForDashboard.lastName),
+                else_=''
+            )).label('lastName'),
+            func.max(case(
+                (ChatSessionForDashboard.contactID.isnot(None), ChatSessionForDashboard.contactID),
+                else_=''
+            )).label('contact_id')
+        ).group_by(ChatSessionForDashboard.session_id).subquery()
         
-        if result.get('error'):
-            logger.error(f"Supabase error: {result['error']}")
-            # Fallback to empty result
-            sessions = []
-            total = 0
+        # Main query joining with MessengerSession for metadata and QA
+        query = db.session.query(
+            subquery,
+            MessengerSession.id.label('id'),
+            MessengerSession.status,
+            MessengerSession.ai_engaged,
+            MessengerSession.archived,
+            MessengerSession.qa_status,
+            MessengerSession.qa_notes,
+            MessengerSession.qa_status_updated_by,
+            MessengerSession.qa_status_updated_at,
+            MessengerSession.qa_notes_updated_at,
+            MessengerSession.dev_feedback,
+            MessengerSession.dev_feedback_by,
+            MessengerSession.dev_feedback_at,
+            MessengerSession.created_at.label('created_at')
+        ).outerjoin(MessengerSession, subquery.c.session_id == MessengerSession.session_id)
+        
+        # Apply filters
+        if 'date_from' in query_params:
+            query = query.filter(subquery.c.conversation_start >= query_params['date_from'])
+        if 'date_to' in query_params:
+            query = query.filter(subquery.c.last_message_time <= query_params['date_to'])
+        if 'contact_id' in query_params:
+            query = query.filter(subquery.c.contact_id == query_params['contact_id'])
+        if 'session_id' in query_params:
+            query = query.filter(subquery.c.session_id == query_params['session_id'])
+        if 'status' in query_params:
+            query = query.filter(MessengerSession.status == query_params['status'])
+        elif query_params.get('qa_status'):
+            query = query.filter(MessengerSession.qa_status == query_params['qa_status'])
         else:
-            sessions = result.get('sessions', [])
-            total = result.get('total', 0)
+            # Default: show active (non-archived) sessions only
+            query = query.filter(or_(MessengerSession.status != 'archived', MessengerSession.status.is_(None)))
+        
+        if 'ai_engaged' in query_params:
+            query = query.filter(MessengerSession.ai_engaged == query_params['ai_engaged'])
+        
+        # Get total count before pagination
+        total = query.count()
+        
+        # Apply pagination
+        query = query.offset((page - 1) * per_page).limit(per_page)
+        
+        # Execute query
+        results = query.all()
+        
+        # Build session data
+        sessions = []
+        for result in results:
+            # Get detailed messages for this session
+            messages = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=result.session_id
+            ).order_by(ChatSessionForDashboard.dateTime).all()
             
-            # CRITICAL: Only show sessions that exist in BOTH Replit PostgreSQL AND Supabase
-            # Merge QA data from PostgreSQL and enforce data consistency
-            filtered_sessions = []
-            requested_qa_status = query_params.get('qa_status')
-            requested_status = query_params.get('status')
+            # Build customer name
+            customer_name = ''
+            if result.firstName and result.lastName:
+                customer_name = f"{result.firstName} {result.lastName}".strip()
+            elif result.firstName:
+                customer_name = result.firstName
+            elif result.lastName:
+                customer_name = result.lastName
+            else:
+                customer_name = 'Unknown'
             
-            for session in sessions:
-                session_id_str = session.get('session_id')
-                if session_id_str:
-                    # Find or create PostgreSQL record to maintain data consistency
-                    qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-                    if not qa_session:
-                        # Auto-create PostgreSQL record for Supabase sessions to maintain consistency
-                        try:
-                            qa_session = MessengerSession(
-                                session_id=session_id_str,
-                                customer_name=session.get('customer_name', 'Unknown'),
-                                customer_id=session.get('contact_id', 'unknown'),
-                                conversation_start=datetime.fromisoformat(session.get('conversation_start', '').replace('Z', '+00:00')) if session.get('conversation_start') else datetime.utcnow(),
-                                last_message_time=datetime.fromisoformat(session.get('last_message_time', '').replace('Z', '+00:00')) if session.get('last_message_time') else datetime.utcnow(),
-                                message_count=session.get('message_count', 0),
-                                status='active',  # Default status
-                                ai_engaged=session.get('ai_engaged', False),
-                                created_at=datetime.utcnow(),
-                                updated_at=datetime.utcnow()
-                            )
-                            db.session.add(qa_session)
-                            db.session.commit()
-                            logger.info(f"Auto-created PostgreSQL record for session {session_id_str}")
-                        except Exception as e:
-                            logger.error(f"Failed to create PostgreSQL record for {session_id_str}: {str(e)}")
-                            db.session.rollback()
-                            continue
-                    
-                    # Merge PostgreSQL QA data
-                    session['qa_status'] = qa_session.qa_status
-                    session['qa_notes'] = qa_session.qa_notes
-                    session['qa_status_updated_by'] = qa_session.qa_status_updated_by
-                    session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
-                    session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
-                    session['dev_feedback'] = qa_session.dev_feedback
-                    session['dev_feedback_by'] = qa_session.dev_feedback_by
-                    session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
-                    session['status'] = qa_session.status  # Add status from PostgreSQL
-                    session['archived'] = qa_session.archived  # Add archived flag
-                    
-                    # Apply filtering logic
-                    should_include = True
-                    
-                    if requested_status:
-                        # Filter by PostgreSQL status (active, archived) - this is separate from UI completion status  
-                        should_include = (requested_status.lower() == qa_session.status.lower())
-                        logger.debug(f"Status filter for session {session_id_str}: requested={requested_status.lower()}, postgres_status={qa_session.status.lower()}, result={should_include}")
-                    elif requested_qa_status:
-                        # Filter by QA status (unchecked, passed, issue, fixed)
-                        should_include = (requested_qa_status.lower() == qa_session.qa_status.lower())
-                    else:
-                        # Default: show active (non-archived) sessions only
-                        should_include = (qa_session.status.lower() != 'archived')
-                    
-                    if should_include:
-                        filtered_sessions.append(session)
-                else:
-                    # Skip sessions without session_id
-                    continue
+            # Determine completion status based on messages
+            completion_status = 'incomplete'
+            ai_engaged = False
+            has_booking_url = False
             
-            sessions = filtered_sessions
-            # Recalculate total after filtering
-            total = len(sessions)
+            for msg in messages:
+                if msg.userAi == 'ai':
+                    ai_engaged = True
+                if msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr:
+                    has_booking_url = True
+                    break
+            
+            # Calculate completion status
+            if has_booking_url:
+                completion_status = 'complete'
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+                completion_status = 'in_progress'
+            
+            session_data = {
+                'id': result.id or 0,
+                'session_id': result.session_id,
+                'customer_name': customer_name,
+                'contact_id': result.contact_id or '',
+                'conversation_start': result.conversation_start.isoformat() if result.conversation_start else None,
+                'last_message_time': result.last_message_time.isoformat() if result.last_message_time else None,
+                'message_count': result.message_count or 0,
+                'completion_status': completion_status,
+                'completed': has_booking_url,
+                'ai_engaged': result.ai_engaged if result.ai_engaged is not None else ai_engaged,
+                'archived': result.archived or False,
+                'status': result.status or 'active',
+                'qa_status': result.qa_status or 'unchecked',
+                'qa_notes': result.qa_notes,
+                'qa_status_updated_by': result.qa_status_updated_by,
+                'qa_status_updated_at': result.qa_status_updated_at.isoformat() if result.qa_status_updated_at else None,
+                'qa_notes_updated_at': result.qa_notes_updated_at.isoformat() if result.qa_notes_updated_at else None,
+                'dev_feedback': result.dev_feedback,
+                'dev_feedback_by': result.dev_feedback_by,
+                'dev_feedback_at': result.dev_feedback_at.isoformat() if result.dev_feedback_at else None,
+                'created_at': result.created_at.isoformat() if result.created_at else None,
+                'messages': [msg.to_dict() for msg in messages]
+            }
+            
+            sessions.append(session_data)
         
         # Calculate pagination info
         total_pages = (total + per_page - 1) // per_page if total > 0 else 0
@@ -414,59 +441,38 @@ def get_messenger_sessions():
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['DELETE'])
 @login_required
 def delete_testing_session(session_id):
-    """Delete a testing session from Supabase - only for testing sessions"""
+    """Delete a testing session from PostgreSQL - only for testing sessions"""
     try:
-        # Get the session first to check if it's a testing session
-        result = supabase_service.get_sessions(limit=100, offset=0, filters={})
-        if result.get('error'):
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve session data'
-            }), 500
-        
-        sessions = result.get('sessions', [])
-        target_session = None
-        
-        # Find the session with the matching ID
-        for session in sessions:
-            if session.get('id') == session_id:
-                target_session = session
-                break
-        
-        if not target_session:
+        # Find the session in PostgreSQL messenger_sessions table
+        messenger_session = MessengerSession.query.get(session_id)
+        if not messenger_session:
             return jsonify({
                 'status': 'error',
                 'message': 'Session not found'
             }), 404
         
-        session_id_str = target_session.get('session_id', '')
-        customer_name = target_session.get('customer_name', '')
+        session_id_str = messenger_session.session_id
         
-        # Only allow deletion of testing sessions
-        if customer_name != 'Testing Session':
-            return jsonify({
-                'status': 'error',
-                'message': 'Can only delete testing sessions'
-            }), 403
+        # Get customer name from chat messages to verify it's a testing session
+        first_message = ChatSessionForDashboard.query.filter_by(session_id=session_id_str).first()
+        if first_message:
+            customer_name = f"{first_message.firstName} {first_message.lastName}".strip()
+            
+            # Only allow deletion of testing sessions
+            if customer_name != 'Testing Session':
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Can only delete testing sessions'
+                }), 403
         
-        # Delete all records with this session_id from Supabase
-        logger.info(f"Deleting session {session_id} with session_id: {session_id_str}")
-        delete_result = supabase_service.delete_session_by_session_id(session_id_str)
+        # Delete all chat messages for this session
+        ChatSessionForDashboard.query.filter_by(session_id=session_id_str).delete()
         
-        if not delete_result.get('success'):
-            logger.error(f"Supabase deletion failed for session {session_id}: {delete_result.get('error', 'Unknown error')}")
-            return jsonify({
-                'status': 'error',
-                'message': f"Failed to delete session from Supabase: {delete_result.get('error', 'Unknown error')}"
-            }), 500
+        # Delete the messenger session record
+        db.session.delete(messenger_session)
         
-        logger.info(f"Supabase deletion successful: {delete_result.get('message', 'Success')}")
-        
-        # Also delete any QA data from PostgreSQL
-        qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-        if qa_session:
-            db.session.delete(qa_session)
-            db.session.commit()
+        # Commit the changes
+        db.session.commit()
         
         logger.info(f"Deleted testing session: {session_id} ({session_id_str})")
         return jsonify({
@@ -485,7 +491,7 @@ def delete_testing_session(session_id):
 
 @app.route('/api/messenger-sessions/stats', methods=['GET'])
 def get_messenger_session_stats():
-    """Get comprehensive statistics for messenger sessions from Supabase"""
+    """Get comprehensive statistics for messenger sessions from PostgreSQL"""
     try:
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
@@ -505,57 +511,74 @@ def get_messenger_session_stats():
             if date_to_obj.tzinfo is None:
                 date_to_obj = SYDNEY_TZ.localize(date_to_obj)
         
-        # Prepare filters for Supabase
-        filters = {}
+        # Build query to aggregate sessions from PostgreSQL
+        subquery = db.session.query(
+            ChatSessionForDashboard.session_id,
+            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
+            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
+            func.count(ChatSessionForDashboard.id).label('message_count')
+        ).group_by(ChatSessionForDashboard.session_id)
+        
+        # Apply date filters
         if date_from:
-            filters['date_from'] = date_from_obj.isoformat()
+            subquery = subquery.having(func.min(ChatSessionForDashboard.dateTime) >= date_from_obj)
         if date_to:
-            filters['date_to'] = date_to_obj.isoformat()
+            subquery = subquery.having(func.max(ChatSessionForDashboard.dateTime) <= date_to_obj)
         
-        # Get all sessions from Supabase (no pagination limit for stats)
-        result = supabase_service.get_sessions(
-            limit=1000,  # Large limit for stats
-            offset=0,
-            filters=filters
-        )
+        subquery = subquery.subquery()
         
-        if result.get('error'):
-            logger.error(f"Supabase error in stats: {result['error']}")
-            sessions = []
-        else:
-            sessions = result.get('sessions', [])
+        # Get all sessions with QA data
+        sessions_query = db.session.query(
+            subquery,
+            MessengerSession.qa_status,
+            MessengerSession.status
+        ).outerjoin(MessengerSession, subquery.c.session_id == MessengerSession.session_id)
         
-        # Merge QA data from PostgreSQL for each session (same as in get_messenger_sessions)
-        for session in sessions:
-            session_id_str = session.get('session_id')
-            if session_id_str:
-                qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-                if qa_session:
-                    session['qa_status'] = qa_session.qa_status
-                    session['qa_notes'] = qa_session.qa_notes
-                    session['qa_status_updated_by'] = qa_session.qa_status_updated_by
-                    session['qa_status_updated_at'] = qa_session.qa_status_updated_at.isoformat() if qa_session.qa_status_updated_at else None
-                    session['qa_notes_updated_at'] = qa_session.qa_notes_updated_at.isoformat() if qa_session.qa_notes_updated_at else None
-                    session['dev_feedback'] = qa_session.dev_feedback
-                    session['dev_feedback_by'] = qa_session.dev_feedback_by
-                    session['dev_feedback_at'] = qa_session.dev_feedback_at.isoformat() if qa_session.dev_feedback_at else None
-                else:
-                    session['qa_status'] = 'unchecked'
+        results = sessions_query.all()
         
-        # Calculate stats from merged data (Supabase + PostgreSQL QA data)
-        total_sessions = len(sessions)
+        # Calculate statistics
+        total_sessions = len(results)
+        completed_sessions = 0
+        in_progress_sessions = 0
+        incomplete_sessions = 0
+        passed_sessions = 0
+        unchecked_sessions = 0
+        issue_sessions = 0
+        fixed_sessions = 0
+        archived_sessions = 0
         
-        # Completion status statistics
-        completed_sessions = sum(1 for s in sessions if s.get('completion_status') == 'complete')
-        in_progress_sessions = sum(1 for s in sessions if s.get('completion_status') == 'in_progress')
-        incomplete_sessions = sum(1 for s in sessions if s.get('completion_status') == 'incomplete')
-        
-        # QA Statistics from merged data
-        passed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'passed')
-        unchecked_sessions = sum(1 for s in sessions if s.get('qa_status') == 'unchecked')
-        issue_sessions = sum(1 for s in sessions if s.get('qa_status') == 'issue')
-        fixed_sessions = sum(1 for s in sessions if s.get('qa_status') == 'fixed')
-        archived_sessions = sum(1 for s in sessions if s.get('qa_status') == 'archived')
+        for result in results:
+            # Calculate completion status
+            session_id = result.session_id
+            has_booking_url = False
+            
+            # Check if session has booking URL
+            booking_message = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=session_id
+            ).filter(ChatSessionForDashboard.messageStr.contains('https://shorturl.at/9u9oh')).first()
+            
+            if booking_message:
+                has_booking_url = True
+                completed_sessions += 1
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
+                in_progress_sessions += 1
+            else:
+                incomplete_sessions += 1
+            
+            # Count QA statuses
+            qa_status = result.qa_status or 'unchecked'
+            if qa_status == 'passed':
+                passed_sessions += 1
+            elif qa_status == 'issue':
+                issue_sessions += 1
+            elif qa_status == 'fixed':
+                fixed_sessions += 1
+            elif qa_status == 'unchecked':
+                unchecked_sessions += 1
+            
+            # Count archived sessions
+            if result.status == 'archived':
+                archived_sessions += 1
         
         return jsonify({
             'status': 'success',
@@ -585,33 +608,15 @@ def get_messenger_session_stats():
 def update_messenger_session_qa(session_id):
     """Update QA status and notes for a messenger session"""
     try:
-        # First get the session from Supabase to get session_id string
-        result = supabase_service.get_sessions(limit=1000, offset=0, filters={})
-        if result.get('error'):
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve session from database'
-            }), 500
-            
-        sessions = result.get('sessions', [])
-        supabase_session = None
-        for session in sessions:
-            if session.get('id') == session_id:
-                supabase_session = session
-                break
-                
-        if not supabase_session:
+        # Find the session in PostgreSQL MessengerSession table
+        messenger_session = MessengerSession.query.get(session_id)
+        if not messenger_session:
             return jsonify({
                 'status': 'error',
                 'message': 'Session not found'
             }), 404
             
-        session_id_str = supabase_session.get('session_id')
-        if not session_id_str:
-            return jsonify({
-                'status': 'error',
-                'message': 'Session ID not found'
-            }), 404
+        session_id_str = messenger_session.session_id
         
         current_user = get_current_user()
         if not current_user:
@@ -620,21 +625,8 @@ def update_messenger_session_qa(session_id):
                 'message': 'User not found'
             }), 401
         
-        # Find or create QA record in PostgreSQL
-        qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
-        if not qa_session:
-            # Create new QA record
-            qa_session = MessengerSession(
-                session_id=session_id_str,
-                customer_name=supabase_session.get('customer_name'),
-                contact_id=supabase_session.get('contact_id'),
-                conversation_start=datetime.fromisoformat(supabase_session.get('conversation_start', '').replace('Z', '+00:00')),
-                last_message_time=datetime.fromisoformat(supabase_session.get('last_message_time', '').replace('Z', '+00:00')),
-                message_count=supabase_session.get('message_count', 0),
-                status=supabase_session.get('status', 'active'),
-                ai_engaged=supabase_session.get('ai_engaged', False)
-            )
-            db.session.add(qa_session)
+        # Use the existing messenger_session record
+        qa_session = messenger_session
         
         data = request.json
         sydney_now = get_sydney_time()
@@ -879,7 +871,7 @@ def get_errors():
 
 @app.route('/api/messenger-sessions/daily-stats', methods=['GET'])
 def get_messenger_session_daily_stats():
-    """Get daily statistics for messenger sessions"""
+    """Get daily statistics for messenger sessions from PostgreSQL"""
     try:
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
@@ -895,26 +887,34 @@ def get_messenger_session_daily_stats():
         else:
             date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
         
-        # Get all sessions from Supabase for the date range
-        result = supabase_service.get_sessions(
-            limit=1000,
-            offset=0,
-            filters={
-                'date_from': date_from_obj.isoformat(),
-                'date_to': date_to_obj.isoformat()
-            }
+        # Get sessions from PostgreSQL for the date range
+        subquery = db.session.query(
+            ChatSessionForDashboard.session_id,
+            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
+            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
+            func.count(ChatSessionForDashboard.id).label('message_count')
+        ).group_by(ChatSessionForDashboard.session_id)
+        
+        # Apply date filters
+        subquery = subquery.having(
+            and_(
+                func.min(ChatSessionForDashboard.dateTime) >= date_from_obj,
+                func.max(ChatSessionForDashboard.dateTime) <= date_to_obj
+            )
         )
         
-        if result.get('error'):
-            sessions = []
-        else:
-            sessions = result.get('sessions', [])
+        sessions_query = db.session.query(
+            subquery.subquery(),
+            MessengerSession.qa_status
+        ).outerjoin(MessengerSession, subquery.subquery().c.session_id == MessengerSession.session_id)
+        
+        results = sessions_query.all()
         
         # Group sessions by date
         daily_stats = {}
-        for session in sessions:
-            # Extract date from session creation
-            session_date = session.get('conversation_start', '')[:10]  # YYYY-MM-DD format
+        for result in results:
+            # Extract date from conversation start
+            session_date = result.conversation_start.strftime('%Y-%m-%d') if result.conversation_start else date_from_obj.strftime('%Y-%m-%d')
             
             if session_date not in daily_stats:
                 daily_stats[session_date] = {
@@ -928,21 +928,18 @@ def get_messenger_session_daily_stats():
             
             daily_stats[session_date]['total'] += 1
             
-            if session.get('status') == 'active':
-                daily_stats[session_date]['active'] += 1
+            # Check for completion status (booking URL presence)
+            has_booking_url = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=result.session_id
+            ).filter(ChatSessionForDashboard.messageStr.contains('https://shorturl.at/9u9oh')).first()
             
-            # Update daily stats based on completion status
-            completion_status = session.get('completion_status', 'incomplete')
-            if completion_status == 'complete':
+            if has_booking_url:
                 daily_stats[session_date]['completed'] += 1
-            elif completion_status == 'in_progress':
-                # Add in_progress to daily stats if not exists
-                if 'in_progress' not in daily_stats[session_date]:
-                    daily_stats[session_date]['in_progress'] = 0
+            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)):
                 daily_stats[session_date]['in_progress'] += 1
-                
-            if session.get('ai_engaged', False):
-                daily_stats[session_date]['ai_engaged'] += 1
+            
+            # Always count sessions with AI messages as AI engaged
+            daily_stats[session_date]['ai_engaged'] += 1
         
         # Convert to list and sort by date
         stats_list = sorted(daily_stats.values(), key=lambda x: x['date'])
@@ -959,3 +956,4 @@ def get_messenger_session_daily_stats():
             'message': 'Failed to get daily statistics',
             'error': str(e)
         }), 500
+
