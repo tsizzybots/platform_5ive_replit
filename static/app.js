@@ -2001,23 +2001,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Now perform backend deletion in background
                 try {
-                    console.log(`🗑️ Deleting session ID ${ticketToDelete} from backend...`);
-                    const result = await apiRequest(`/api/messenger-sessions/${ticketToDelete}`, 'DELETE');
+                    console.log(`🗑️ Deleting session ID ${ticketToDelete} from PostgreSQL database...`);
                     
+                    const response = await fetch(`/api/messenger-sessions/${ticketToDelete}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    const result = await response.json();
                     console.log(`🔄 Delete result:`, result);
                     
-                    if (result.ok) {
+                    if (response.ok && result.status === 'success') {
                         // Show success message
-                        console.log(`✅ Successfully deleted session ${ticketToDelete} from Supabase`);
+                        console.log(`✅ Successfully deleted session ${ticketToDelete} from PostgreSQL database`);
                         showAlert('Testing session deleted successfully!', 'success');
                     } else {
                         // Show error message
                         console.error(`❌ Failed to delete session ${ticketToDelete}:`, result);
-                        showAlert('Failed to delete session: ' + (result.data ? result.data.message : 'Unknown error'), 'danger');
+                        showAlert('Failed to delete session: ' + (result.message || 'Unknown error'), 'danger');
+                        
+                        // Since deletion failed, reload the page to restore the session in UI
+                        setTimeout(() => {
+                            loadTickets(currentPage);
+                        }, 2000);
                     }
                 } catch (error) {
                     console.error(`💥 Error deleting session ${ticketToDelete}:`, error);
                     showAlert('Error deleting session: ' + error.message, 'danger');
+                    
+                    // Since deletion failed, reload the page to restore the session in UI
+                    setTimeout(() => {
+                        loadTickets(currentPage);
+                    }, 2000);
                 }
                 
                 // Final stats refresh to ensure accuracy
