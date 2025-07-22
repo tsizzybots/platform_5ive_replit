@@ -605,51 +605,11 @@ def delete_testing_session(session_id):
 def get_messenger_session_stats():
     """Get comprehensive statistics for messenger sessions from PostgreSQL"""
     try:
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
-        
-        # Default to last 30 days if no dates provided
-        if not date_from:
-            date_from_obj = datetime.now(SYDNEY_TZ) - timedelta(days=30)
-        else:
-            date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-            if date_from_obj.tzinfo is None:
-                date_from_obj = SYDNEY_TZ.localize(date_from_obj)
-        
-        if not date_to:
-            date_to_obj = datetime.now(SYDNEY_TZ)
-        else:
-            date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-            if date_to_obj.tzinfo is None:
-                date_to_obj = SYDNEY_TZ.localize(date_to_obj)
-        
-        # Build query to aggregate sessions from PostgreSQL
-        subquery = db.session.query(
-            ChatSessionForDashboard.session_id,
-            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
-            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
-            func.count(ChatSessionForDashboard.id).label('message_count')
-        ).group_by(ChatSessionForDashboard.session_id)
-        
-        # Apply date filters (convert timezone-aware dates to naive for comparison)
-        if date_from:
-            subquery = subquery.having(func.min(ChatSessionForDashboard.dateTime) >= date_from_obj.replace(tzinfo=None))
-        if date_to:
-            subquery = subquery.having(func.max(ChatSessionForDashboard.dateTime) <= date_to_obj.replace(tzinfo=None))
-        
-        subquery = subquery.subquery()
-        
-        # Get all sessions with QA data
-        sessions_query = db.session.query(
-            subquery,
-            MessengerSession.qa_status,
-            MessengerSession.status
-        ).outerjoin(MessengerSession, subquery.c.session_id == MessengerSession.session_id)
-        
-        results = sessions_query.all()
+        # Get all messenger sessions for statistics
+        messenger_sessions = MessengerSession.query.all()
         
         # Calculate statistics
-        total_sessions = len(results)
+        total_sessions = len(messenger_sessions)
         completed_sessions = 0
         in_progress_sessions = 0
         incomplete_sessions = 0
@@ -659,26 +619,17 @@ def get_messenger_session_stats():
         fixed_sessions = 0
         archived_sessions = 0
         
-        for result in results:
-            # Calculate completion status
-            session_id = result.session_id
-            has_booking_url = False
-            
-            # Check if session has booking URL
-            booking_message = db.session.query(ChatSessionForDashboard).filter_by(
-                session_id=session_id
-            ).filter(ChatSessionForDashboard.messageStr.contains('https://shorturl.at/9u9oh')).first()
-            
-            if booking_message:
-                has_booking_url = True
+        for session in messenger_sessions:
+            # Calculate completion status based on stored completion_status
+            if session.completion_status == 'complete':
                 completed_sessions += 1
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ) - timedelta(hours=12)).replace(tzinfo=None):
+            elif session.completion_status == 'in_progress':
                 in_progress_sessions += 1
             else:
                 incomplete_sessions += 1
             
             # Count QA statuses
-            qa_status = result.qa_status or 'unchecked'
+            qa_status = session.qa_status or 'unchecked'
             if qa_status == 'passed':
                 passed_sessions += 1
             elif qa_status == 'issue':
@@ -689,7 +640,7 @@ def get_messenger_session_stats():
                 unchecked_sessions += 1
             
             # Count archived sessions
-            if result.status == 'archived':
+            if session.status == 'archived':
                 archived_sessions += 1
         
         return jsonify({
@@ -985,80 +936,61 @@ def get_errors():
 def get_messenger_session_daily_stats():
     """Get daily statistics for messenger sessions from PostgreSQL"""
     try:
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
+        # Default to last 7 days
+        end_date = datetime.utcnow().date()
+        start_date = end_date - timedelta(days=6)  # 7 days total including today
         
-        # Default to last 7 days if no dates provided
-        if not date_from:
-            date_from_obj = datetime.now(SYDNEY_TZ) - timedelta(days=7)
-        else:
-            date_from_obj = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+        # Get all messenger sessions
+        messenger_sessions = MessengerSession.query.all()
         
-        if not date_to:
-            date_to_obj = datetime.now(SYDNEY_TZ)
-        else:
-            date_to_obj = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-        
-        # Get sessions from PostgreSQL for the date range
-        subquery = db.session.query(
-            ChatSessionForDashboard.session_id,
-            func.min(ChatSessionForDashboard.dateTime).label('conversation_start'),
-            func.max(ChatSessionForDashboard.dateTime).label('last_message_time'),
-            func.count(ChatSessionForDashboard.id).label('message_count')
-        ).group_by(ChatSessionForDashboard.session_id)
-        
-        # Apply date filters
-        subquery = subquery.having(
-            and_(
-                func.min(ChatSessionForDashboard.dateTime) >= date_from_obj,
-                func.max(ChatSessionForDashboard.dateTime) <= date_to_obj
-            )
-        )
-        
-        sessions_query = db.session.query(
-            subquery.subquery(),
-            MessengerSession.qa_status
-        ).outerjoin(MessengerSession, subquery.subquery().c.session_id == MessengerSession.session_id)
-        
-        results = sessions_query.all()
-        
-        # Group sessions by date
+        # Create a dictionary to store daily stats
         daily_stats = {}
-        for result in results:
-            # Extract date from conversation start
-            session_date = result.conversation_start.strftime('%Y-%m-%d') if result.conversation_start else date_from_obj.strftime('%Y-%m-%d')
-            
-            if session_date not in daily_stats:
-                daily_stats[session_date] = {
-                    'date': session_date,
-                    'total': 0,
-                    'active': 0,
-                    'completed': 0,
-                    'in_progress': 0,
-                    'ai_engaged': 0
-                }
-            
-            daily_stats[session_date]['total'] += 1
-            
-            # Check for completion status (booking URL presence)
-            has_booking_url = db.session.query(ChatSessionForDashboard).filter_by(
-                session_id=result.session_id
-            ).filter(ChatSessionForDashboard.messageStr.contains('https://shorturl.at/9u9oh')).first()
-            
-            if has_booking_url:
-                daily_stats[session_date]['completed'] += 1
-            elif result.last_message_time and result.last_message_time > (datetime.now(SYDNEY_TZ).replace(tzinfo=None) - timedelta(hours=12)):
-                daily_stats[session_date]['in_progress'] += 1
-            
-            # Always count sessions with AI messages as AI engaged
-            daily_stats[session_date]['ai_engaged'] += 1
+        
+        # Initialize all days with zero counts
+        current_date = start_date
+        while current_date <= end_date:
+            daily_stats[current_date.isoformat()] = {
+                'date': current_date.isoformat(),
+                'sessions': 0,
+                'completed': 0,
+                'in_progress': 0,
+                'incomplete': 0,
+                'passed': 0,
+                'unchecked': 0,
+                'issue': 0,
+                'fixed': 0
+            }
+            current_date += timedelta(days=1)
+        
+        # Count sessions by date based on conversation_start
+        for session in messenger_sessions:
+            if session.conversation_start:
+                session_date = session.conversation_start.date()
+                if start_date <= session_date <= end_date:
+                    date_key = session_date.isoformat()
+                    if date_key in daily_stats:
+                        daily_stats[date_key]['sessions'] += 1
+                        
+                        # Count completion status
+                        if session.completion_status == 'complete':
+                            daily_stats[date_key]['completed'] += 1
+                        elif session.completion_status == 'in_progress':
+                            daily_stats[date_key]['in_progress'] += 1
+                        else:
+                            daily_stats[date_key]['incomplete'] += 1
+                        
+                        # Count QA status
+                        qa_status = session.qa_status or 'unchecked'
+                        if qa_status in ['passed', 'unchecked', 'issue', 'fixed']:
+                            daily_stats[date_key][qa_status] += 1
         
         # Convert to list and sort by date
-        stats_list = sorted(daily_stats.values(), key=lambda x: x['date'])
+        daily_list = list(daily_stats.values())
+        daily_list.sort(key=lambda x: x['date'])
         
         return jsonify({
             'status': 'success',
-            'data': stats_list
+            'data': daily_list
         })
         
     except Exception as e:
@@ -1068,4 +1000,5 @@ def get_messenger_session_daily_stats():
             'message': 'Failed to get daily statistics',
             'error': str(e)
         }), 500
+
 
