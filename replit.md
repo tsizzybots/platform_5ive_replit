@@ -102,6 +102,19 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **ROLE-BASED PERMISSIONS IMPLEMENTED** - Fixed critical security issue with user role access controls
+  - **USER ROLES CONFIGURED**: Brooklyn and IzzyAgentsQA have 'qa' role, IzzyDev has 'developer' role
+  - **QA REVIEWER AUTO-POPULATION**: QA reviewer field automatically populates with logged-in user's name and is readonly for QA users
+  - **DEVELOPER PERMISSIONS**: Only users with 'developer' role can see "Save Feedback" and "Save & Mark Fixed" buttons
+  - **QA RESTRICTIONS**: QA users can only view developer feedback section (readonly), cannot edit or save developer responses
+  - **USERNAME UPDATE**: Changed IzzyAdmin to IzzyAgentsQA for better role identification
+  - **PERMISSION ENFORCEMENT**: All QA status updates automatically use current user's username as reviewer for proper attribution
+- July 22, 2025: **COMPLETION STATUS SYNCHRONIZATION FIXED** - Resolved critical data consistency issue
+  - **SYNC FUNCTION ADDED**: Created sync_messenger_session_data() function to update message counts and completion status
+  - **AUTOMATIC SYNCING**: GET endpoint now automatically syncs existing sessions to ensure latest data
+  - **MANUAL SYNC ENDPOINT**: Added /api/messenger-sessions/{session_id}/sync for immediate updates when needed
+  - **DATA INTEGRITY**: Fixed session showing 2 messages/in_progress instead of 8 messages/complete status
+  - **REAL-TIME UPDATES**: Session details and main table view now show consistent completion status
 - July 22, 2025: **SUPABASE REMOVAL COMPLETED** - Completely removed all Supabase references and dependencies
   - **PACKAGE REMOVAL**: Uninstalled Supabase package and all 22 related dependencies
   - **CODE CLEANUP**: Removed all Supabase references from models.py, routes.py, and documentation
