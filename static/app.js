@@ -2380,17 +2380,17 @@ function renderChart(data) {
     const datasets = [
         {
             label: 'Total',
-            data: data.map(item => item.total || 0),
-            backgroundColor: 'rgba(13, 110, 253, 0.6)',
-            borderColor: 'rgba(13, 110, 253, 1)',
+            data: data.map(item => item.sessions || 0),
+            backgroundColor: 'rgba(0, 123, 255, 0.6)',
+            borderColor: 'rgba(0, 123, 255, 1)',
             borderWidth: 2,
             fill: false
         },
         {
             label: 'Passed',
             data: data.map(item => item.passed || 0),
-            backgroundColor: 'rgba(25, 135, 84, 0.6)',
-            borderColor: 'rgba(25, 135, 84, 1)',
+            backgroundColor: 'rgba(32, 201, 151, 0.6)',
+            borderColor: 'rgba(32, 201, 151, 1)',
             borderWidth: 2,
             fill: false
         },
@@ -2421,8 +2421,8 @@ function renderChart(data) {
         {
             label: 'Unchecked',
             data: data.map(item => item.unchecked || 0),
-            backgroundColor: 'rgba(13, 202, 240, 0.6)',
-            borderColor: 'rgba(13, 202, 240, 1)',
+            backgroundColor: 'rgba(108, 117, 125, 0.6)',
+            borderColor: 'rgba(108, 117, 125, 1)',
             borderWidth: 2,
             fill: false
         }
