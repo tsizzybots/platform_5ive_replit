@@ -102,6 +102,13 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **EMAIL NOTIFICATION ENHANCEMENT** - Added Stay Golden Health branding and terminology updates
+  - **CLIENT BRANDING**: Added "Stay Golden Health" client name to email subject lines and headers
+  - **DASHBOARD URL**: Added proper dashboard link (https://stay-golden-health-messenger-sessions.replit.app/) to email notifications
+  - **DATE FORMAT**: Changed email date format to DD/MM/YYYY HH:mm for better readability
+  - **TERMINOLOGY UPDATE**: Changed "Customer" to "User Name" across entire application interface
+  - **UI CONSISTENCY**: Updated table headers, session details, and all frontend references to use "User Name"
+  - **EMAIL TEMPLATE**: Enhanced email template with client branding and proper dashboard access links
 - July 22, 2025: **EMAIL NOTIFICATION SYSTEM FIXED** - Resolved field name mismatch preventing QA issue email alerts
   - **BUG FIX**: Fixed `contact_id` vs `customer_id` field name mismatch in email notification template
   - **EMAIL INTEGRATION**: Confirmed Resend API integration working with test email sent successfully (ID: cba3a780-31f1-43ef-95ac-aa9768789acc)

@@ -592,7 +592,7 @@ function displayStats(stats) {
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 mb-3">
-                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where customers completed booking">
+                <div class="card stats-card bg-success text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Sessions where users completed booking">
                     <div class="info-icon">i</div>
                     <div class="card-body text-center">
                         <h3 class="card-title">${completedSessions}</h3>
@@ -1015,7 +1015,7 @@ function displayTickets(tickets, pagination) {
                     </th>
                     <th style="width: 13%;">Created</th>
                     <th style="width: 11%;">Session ID</th>
-                    <th style="width: 13%;">Customer</th>
+                    <th style="width: 13%;">User Name</th>
                     <th style="width: 18%;">Contact ID</th>
                     <th style="width: 10%;">Completion</th>
                     <th style="width: 9%;">QA Status</th>
@@ -1628,7 +1628,7 @@ async function viewTicketDetails(id) {
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>Session ID:</strong> ${escapeHtml(session.session_id || 'N/A')}</p>
-                    <p><strong>Customer:</strong> ${escapeHtml(session.customer_name || 'Unknown')}</p>
+                    <p><strong>User Name:</strong> ${escapeHtml(session.customer_name || 'Unknown')}</p>
                     <p><strong>Contact ID:</strong> ${escapeHtml(session.contact_id || 'N/A')}</p>
                     <p><strong>Messages:</strong> ${session.message_count || 0} total</p>
 

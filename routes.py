@@ -733,23 +733,23 @@ def update_messenger_session_qa(session_id):
                 resend.api_key = os.environ.get("RESEND_API_KEY")
                 
                 # Email content
-                subject = f"⚠️ QA Issue Detected - Session {qa_session.session_id[:20]}..."
+                subject = f"⚠️ Stay Golden Health - QA Issue Detected - Session {qa_session.session_id[:20]}..."
                 
                 html_content = f"""
                 <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                         <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px;">
-                            🚨 QA Issue Detected
+                            🚨 Stay Golden Health - QA Issue Detected
                         </h2>
                         
                         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
                             <h3 style="margin-top: 0; color: #1976d2;">Session Details</h3>
                             <p><strong>Session ID:</strong> {qa_session.session_id}</p>
-                            <p><strong>Customer:</strong> {qa_session.customer_name or 'Unknown'}</p>
+                            <p><strong>User Name:</strong> {qa_session.customer_name or 'Unknown'}</p>
                             <p><strong>Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
                             <p><strong>QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
-                            <p><strong>Detected:</strong> {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
+                            <p><strong>Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M') if qa_session.qa_status_updated_at else 'Unknown'}</p>
                         </div>
                         
                         <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -768,7 +768,7 @@ def update_messenger_session_qa(session_id):
                         </div>
                         
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://your-dashboard-url.replit.app" 
+                            <a href="https://stay-golden-health-messenger-sessions.replit.app/" 
                                style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
                                 View in Dashboard
                             </a>
@@ -784,17 +784,19 @@ def update_messenger_session_qa(session_id):
                 
                 # Plain text version
                 text_content = f"""
-QA ISSUE DETECTED
+STAY GOLDEN HEALTH - QA ISSUE DETECTED
 
 Session Details:
 - Session ID: {qa_session.session_id}
-- Customer: {qa_session.customer_name or 'Unknown'}
+- User Name: {qa_session.customer_name or 'Unknown'}
 - Contact ID: {qa_session.customer_id or 'N/A'}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
-- Detected: {qa_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
+- Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M') if qa_session.qa_status_updated_at else 'Unknown'}
 
 QA Notes:
 {qa_session.qa_notes or 'No additional notes provided.'}
+
+Dashboard: https://stay-golden-health-messenger-sessions.replit.app/
 
 Please review this issue in the dashboard and provide appropriate feedback.
                 """
