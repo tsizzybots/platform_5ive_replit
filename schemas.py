@@ -66,7 +66,7 @@ class ChatSessionUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class ChatSessionQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
+    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived', 'complete']))
     ai_engaged = fields.Boolean()
     completed = fields.Raw()  # Allow both boolean and string values for completion status
     contact_id = fields.String()
