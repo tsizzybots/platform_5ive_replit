@@ -28,11 +28,10 @@ class ChatSessionSchema(Schema):
     last_message_time = fields.DateTime(required=True)
     message_count = fields.Integer(load_default=1, validate=validate.Range(min=1))
     session_summary = fields.String(allow_none=True)
-    status = fields.String(load_default='active', validate=validate.OneOf(['active', 'resolved', 'escalated']))
+    status = fields.String(load_default='active', validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
     ai_engaged = fields.Boolean(load_default=False)
     ai_response = fields.String(allow_none=True)
-    archived = fields.Boolean(dump_only=True)
-    archived_at = fields.DateTime(dump_only=True)
+
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     
@@ -49,7 +48,7 @@ class ChatSessionSchema(Schema):
     dev_feedback_at = fields.DateTime(dump_only=True)
 
 class ChatSessionUpdateSchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated']))
+    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))
     ai_engaged = fields.Boolean()
     ai_response = fields.String(allow_none=True)
     session_summary = fields.String(allow_none=True)
@@ -66,7 +65,7 @@ class ChatSessionUpdateSchema(Schema):
     dev_feedback_by = fields.String(allow_none=True)
 
 class ChatSessionQuerySchema(Schema):
-    status = fields.String(validate=validate.OneOf(['active', 'archived']))  # Only PostgreSQL status values
+    status = fields.String(validate=validate.OneOf(['active', 'resolved', 'escalated', 'archived']))  # PostgreSQL status values
     ai_engaged = fields.Boolean()
     completed = fields.Raw()  # Allow both boolean and string values for completion status
     contact_id = fields.String()

@@ -102,6 +102,14 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **SYSTEM ARCHITECTURE UPDATE** - Streamlined database schema for archive functionality
+  - **BREAKING CHANGE**: Removed `archived` boolean column from `messenger_sessions` table
+  - Updated archive system to use `status='archived'` instead of `archived=true` boolean field
+  - Fixed schema validation to accept "archived" as valid status value alongside "active", "resolved", "escalated"
+  - Updated all API endpoints and frontend logic to use status-based archiving
+  - Archive operations now properly set `status='archived'` when sessions are archived
+  - Fixed filter system to correctly show archived sessions when "Archived" status filter is applied
+  - Simplified database structure: sessions identified as archived purely by status field
 - July 22, 2025: **MAJOR ARCHITECTURAL CHANGE** - Complete Supabase removal and full PostgreSQL consolidation
   - **BREAKING CHANGE**: Completely removed Supabase integration for better CRUD control and simplified architecture
   - Created new `chat_sessions_for_dashboard` table in PostgreSQL with full message storage capabilities

@@ -80,8 +80,7 @@ class MessengerSession(db.Model):
     status = db.Column(db.String(50), nullable=False, default='active')
     ai_engaged = db.Column(db.Boolean, nullable=False, default=False)
     ai_response = db.Column(db.Text, nullable=True)
-    archived = db.Column(db.Boolean, nullable=False, default=False)
-    archived_at = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
