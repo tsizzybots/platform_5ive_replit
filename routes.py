@@ -3,7 +3,7 @@ from app import app, db
 from models import Error, User, MessengerSession, MessengerSessionQA, ChatSessionForDashboard
 from schemas import (error_schema, error_query_schema, chat_session_schema, 
                     chat_session_update_schema, chat_session_query_schema)
-# Supabase integration completely removed - now using PostgreSQL only
+# Using PostgreSQL for all data storage
 from marshmallow import ValidationError
 from sqlalchemy import and_, or_, func, case
 from datetime import datetime, timedelta

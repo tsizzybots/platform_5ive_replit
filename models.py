@@ -102,7 +102,7 @@ class MessengerSessionQA(db.Model):
     __tablename__ = 'messenger_session_qa'
     
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(100), nullable=False, unique=True)  # Links to Supabase session
+    session_id = db.Column(db.String(100), nullable=False, unique=True)  # Unique session identifier
     qa_status = db.Column(db.String(50), nullable=False, default='unchecked')  # unchecked, passed, issue, fixed
     qa_status_updated_by = db.Column(db.String(255), nullable=True)
     qa_status_updated_at = db.Column(db.DateTime, nullable=True)
