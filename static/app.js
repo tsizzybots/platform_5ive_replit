@@ -1644,21 +1644,21 @@ async function viewTicketDetails(id) {
                 <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem; padding: 12px; background: var(--bs-body-bg);">
                     ${session.messages && session.messages.length > 0 ? 
                         session.messages.map(msg => `
-                            <div class="session-message mb-3 ${msg.user_ai === 'ai' ? 'ai-message' : 'user-message'}">
+                            <div class="session-message mb-3 ${msg.userAi === 'ai' ? 'ai-message' : 'user-message'}">
                                 <div class="message-bubble p-3" style="
-                                    ${msg.user_ai === 'ai' ? 
+                                    ${msg.userAi === 'ai' ? 
                                         'background: var(--bs-primary); color: white; margin-left: auto; text-align: left; max-width: 70%; border-radius: 12px;' : 
                                         'background: #2c2c2c; color: white; margin-right: auto; text-align: left; max-width: 70%; border-radius: 12px; border: 1px solid #444;'
                                     }
                                 ">
-                                    <small style="color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)'}; font-weight: 500;">
-                                        ${msg.user_ai === 'ai' ? 'AI Brooklyn' : 'Testing User'}
+                                    <small style="color: ${msg.userAi === 'ai' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)'}; font-weight: 500;">
+                                        ${msg.userAi === 'ai' ? 'AI Brooklyn' : `${msg.firstName || ''} ${msg.lastName || ''}`.trim() || 'User'}
                                     </small><br>
                                     <div class="message-content mt-1">
-                                        ${escapeHtml(msg.message).replace(/\n/g, '<br>')}
+                                        ${escapeHtml(msg.messageStr || '').replace(/\n/g, '<br>')}
                                     </div>
-                                    <small class="message-time d-block mt-2" style="font-size: 0.7em; color: ${msg.user_ai === 'ai' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.4)'};">
-                                        ${formatDate(msg.timestamp)}
+                                    <small class="message-time d-block mt-2" style="font-size: 0.7em; color: ${msg.userAi === 'ai' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.4)'};">
+                                        ${formatDate(msg.dateTime)}
                                     </small>
                                 </div>
                             </div>
