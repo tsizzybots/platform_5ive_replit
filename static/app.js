@@ -541,6 +541,17 @@ async function loadInquiryTypes() {
 
 // Load statistics with optional date filtering
 async function loadStats(dateFilters = {}) {
+    // Get current date filters from the UI if not provided
+    if (Object.keys(dateFilters).length === 0) {
+        const dateFrom = document.getElementById('dateFrom')?.value;
+        const dateTo = document.getElementById('dateTo')?.value;
+        const statusFilter = document.getElementById('statusFilter')?.value;
+        
+        if (dateFrom) dateFilters.date_from = dateFrom;
+        if (dateTo) dateFilters.date_to = dateTo;
+        if (statusFilter) dateFilters.status = statusFilter;
+    }
+    
     const params = new URLSearchParams(dateFilters);
     const url = getApiEndpoint('stats') + (params.toString() ? '?' + params.toString() : '');
     const result = await apiRequest(url);
@@ -790,7 +801,17 @@ function refreshData() {
     applyBtn.disabled = true;
     resetBtn.disabled = true;
     
-    const promises = [loadStats(), loadTickets()];
+    // Get current date filters
+    const dateFrom = document.getElementById('dateFrom')?.value;
+    const dateTo = document.getElementById('dateTo')?.value;
+    const statusFilter = document.getElementById('statusFilter')?.value;
+    
+    const dateFilters = {};
+    if (dateFrom) dateFilters.date_from = dateFrom;
+    if (dateTo) dateFilters.date_to = dateTo;
+    if (statusFilter) dateFilters.status = statusFilter;
+    
+    const promises = [loadStats(dateFilters), loadTickets()];
     
     // Reload chart if it's visible
     const chartCollapse = document.getElementById('dailyStatsChart');
@@ -895,12 +916,13 @@ function applyFilters() {
         `;
     }
     
-    // Update stats with the same date filters
-    const dateFilters = {};
-    if (currentFilters.date_from) dateFilters.date_from = currentFilters.date_from;
-    if (currentFilters.date_to) dateFilters.date_to = currentFilters.date_to;
+    // Update stats with the same filters
+    const statsFilters = {};
+    if (currentFilters.date_from) statsFilters.date_from = currentFilters.date_from;
+    if (currentFilters.date_to) statsFilters.date_to = currentFilters.date_to;
+    if (currentFilters.status) statsFilters.status = currentFilters.status;
     
-    const promises = [loadStats(dateFilters), loadTickets()];
+    const promises = [loadStats(statsFilters), loadTickets()];
     
     // Update chart if it's visible
     const chartCollapse = document.getElementById('dailyStatsChart');
@@ -1434,7 +1456,19 @@ async function performBulkArchive() {
 // Update only the statistics without reloading the entire page
 async function updateStatsOnly() {
     try {
-        const response = await fetch('/api/messenger-sessions/stats', {
+        // Get current date filters from the UI
+        const dateFrom = document.getElementById('dateFrom')?.value;
+        const dateTo = document.getElementById('dateTo')?.value;
+        const statusFilter = document.getElementById('statusFilter')?.value;
+        
+        const params = new URLSearchParams();
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        if (statusFilter) params.append('status', statusFilter);
+        
+        const url = '/api/messenger-sessions/stats' + (params.toString() ? '?' + params.toString() : '');
+        
+        const response = await fetch(url, {
             credentials: 'same-origin'
         });
         

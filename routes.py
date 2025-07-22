@@ -698,10 +698,46 @@ def delete_testing_session(session_id):
 
 @app.route('/api/messenger-sessions/stats', methods=['GET'])
 def get_messenger_session_stats():
-    """Get comprehensive statistics for messenger sessions from PostgreSQL"""
+    """Get comprehensive statistics for messenger sessions from PostgreSQL with date filtering"""
     try:
-        # Get all messenger sessions for statistics
-        messenger_sessions = MessengerSession.query.all()
+        # Parse query parameters for date filtering
+        query_params = request.args
+        
+        # Start with base query
+        query = MessengerSession.query
+        
+        # Apply date filters if provided
+        if 'date_from' in query_params and query_params['date_from']:
+            try:
+                date_from = datetime.fromisoformat(query_params['date_from'].replace('Z', '+00:00'))
+                query = query.filter(MessengerSession.conversation_start >= date_from)
+            except ValueError:
+                pass  # Ignore invalid date format
+                
+        if 'date_to' in query_params and query_params['date_to']:
+            try:
+                date_to = datetime.fromisoformat(query_params['date_to'].replace('Z', '+00:00'))
+                query = query.filter(MessengerSession.last_message_time <= date_to)
+            except ValueError:
+                pass  # Ignore invalid date format
+        
+        # Apply status filter to exclude archived sessions by default (unless specifically requested)
+        if 'status' in query_params:
+            if query_params['status'] == 'all':
+                # Show all sessions including archived - no status filter
+                pass
+            elif query_params['status'] == 'archived':
+                query = query.filter(MessengerSession.status == 'archived')
+            elif query_params['status'] == 'active':
+                query = query.filter(or_(MessengerSession.status == 'active', MessengerSession.status.is_(None)))
+            elif query_params['status'] in ['resolved', 'escalated']:
+                query = query.filter(MessengerSession.status == query_params['status'])
+        else:
+            # Default: show non-archived sessions (active and NULL status)
+            query = query.filter(or_(MessengerSession.status != 'archived', MessengerSession.status.is_(None)))
+        
+        # Get filtered messenger sessions for statistics
+        messenger_sessions = query.all()
         
         # Calculate statistics
         total_sessions = len(messenger_sessions)
