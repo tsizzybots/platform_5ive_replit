@@ -1013,13 +1013,14 @@ function displayTickets(tickets, pagination) {
                     <th class="checkbox-column">
                         <input type="checkbox" class="form-check-input ticket-checkbox" id="selectAllTickets" onchange="toggleSelectAll()">
                     </th>
-                    <th style="width: 15%;">Created</th>
-                    <th style="width: 12%;">Session ID</th>
-                    <th style="width: 15%;">Customer</th>
-                    <th style="width: 20%;">Contact ID</th>
-                    <th style="width: 10%;">QA Status</th>
-                    <th style="width: 10%;">Status</th>
-                    <th style="width: 13%; padding-right: 8px;">Actions</th>
+                    <th style="width: 13%;">Created</th>
+                    <th style="width: 11%;">Session ID</th>
+                    <th style="width: 13%;">Customer</th>
+                    <th style="width: 18%;">Contact ID</th>
+                    <th style="width: 10%;">Completion</th>
+                    <th style="width: 9%;">QA Status</th>
+                    <th style="width: 9%;">Status</th>
+                    <th style="width: 12%; padding-right: 8px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1065,6 +1066,7 @@ function displayTickets(tickets, pagination) {
                     break;
             }
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
+            const statusBadge = getStatusBadge(ticket.status, ticket.archived);
             
             html += `
                 <tr id="ticket-row-${ticket.id}" data-session-id="${ticket.id}" class="ticket-row">
@@ -1075,8 +1077,9 @@ function displayTickets(tickets, pagination) {
                     <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
                     <td>${escapeHtml(ticket.customer_name || 'N/A')}</td>
                     <td class="text-nowrap">${escapeHtml(ticket.contact_id || 'N/A')}</td>
-                    <td class="text-center">${qaStatusBadge}</td>
                     <td class="text-center">${completedBadge}</td>
+                    <td class="text-center">${qaStatusBadge}</td>
+                    <td class="text-center">${statusBadge}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
