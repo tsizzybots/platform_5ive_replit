@@ -310,7 +310,7 @@ def get_messenger_sessions():
         # Main query joining with MessengerSession for metadata and QA
         query = db.session.query(
             subquery,
-            MessengerSession.id.label('id'),
+            MessengerSession.id.label('messenger_session_id'),
             MessengerSession.status,
             MessengerSession.ai_engaged,
             MessengerSession.archived,
@@ -392,7 +392,7 @@ def get_messenger_sessions():
                 completion_status = 'in_progress'
             
             session_data = {
-                'id': result.id or 0,
+                'id': result.messenger_session_id or 0,
                 'session_id': result.session_id,
                 'customer_name': customer_name,
                 'contact_id': result.contact_id or '',
