@@ -124,7 +124,7 @@ def create_messenger_session():
     try:
         data = chat_session_schema.load(request.json)
         
-        session_obj = ChatSession(**data)
+        session_obj = MessengerSession(**data)
         db.session.add(session_obj)
         db.session.commit()
         
@@ -192,7 +192,7 @@ def get_messenger_session(session_id):
         # Get QA data from PostgreSQL if it exists
         session_id_str = session_data.get('session_id')
         if session_id_str:
-            qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+            qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
             if qa_session:
                 # Merge QA data from PostgreSQL
                 session_data.update({
@@ -224,7 +224,7 @@ def get_messenger_session(session_id):
 def update_messenger_session(session_id):
     """Update a messenger session"""
     try:
-        session_obj = ChatSession.query.get(session_id)
+        session_obj = MessengerSession.query.get(session_id)
         if not session_obj:
             return jsonify({
                 'status': 'error',
@@ -463,7 +463,7 @@ def delete_testing_session(session_id):
         logger.info(f"Supabase deletion successful: {delete_result.get('message', 'Success')}")
         
         # Also delete any QA data from PostgreSQL
-        qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+        qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
         if qa_session:
             db.session.delete(qa_session)
             db.session.commit()
@@ -529,7 +529,7 @@ def get_messenger_session_stats():
         for session in sessions:
             session_id_str = session.get('session_id')
             if session_id_str:
-                qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+                qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
                 if qa_session:
                     session['qa_status'] = qa_session.qa_status
                     session['qa_notes'] = qa_session.qa_notes
@@ -621,10 +621,10 @@ def update_messenger_session_qa(session_id):
             }), 401
         
         # Find or create QA record in PostgreSQL
-        qa_session = ChatSession.query.filter_by(session_id=session_id_str).first()
+        qa_session = MessengerSession.query.filter_by(session_id=session_id_str).first()
         if not qa_session:
             # Create new QA record
-            qa_session = ChatSession(
+            qa_session = MessengerSession(
                 session_id=session_id_str,
                 customer_name=supabase_session.get('customer_name'),
                 contact_id=supabase_session.get('contact_id'),
