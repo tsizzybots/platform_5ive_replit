@@ -596,19 +596,41 @@ def delete_testing_session(session_id):
                     'message': 'Can only delete testing sessions'
                 }), 403
         
-        # Delete all chat messages for this session
-        ChatSessionForDashboard.query.filter_by(session_id=session_id_str).delete()
+        logger.info(f"Starting deletion of testing session: {session_id} ({session_id_str})")
+        
+        # Delete all chat messages for this session (with count verification)
+        deleted_messages = ChatSessionForDashboard.query.filter_by(session_id=session_id_str).delete()
+        logger.info(f"Deleted {deleted_messages} chat messages for session {session_id_str}")
         
         # Delete the messenger session record
         db.session.delete(messenger_session)
+        logger.info(f"Marked messenger session {session_id} for deletion")
         
-        # Commit the changes
+        # Commit the changes with explicit flush first
+        db.session.flush()
         db.session.commit()
         
-        logger.info(f"Deleted testing session: {session_id} ({session_id_str})")
+        # Verify deletion was successful
+        verification_session = MessengerSession.query.get(session_id)
+        verification_messages = ChatSessionForDashboard.query.filter_by(session_id=session_id_str).count()
+        
+        if verification_session is not None or verification_messages > 0:
+            logger.error(f"Deletion verification failed for session {session_id}")
+            db.session.rollback()
+            return jsonify({
+                'status': 'error',
+                'message': 'Deletion verification failed'
+            }), 500
+        
+        logger.info(f"Successfully deleted testing session: {session_id} ({session_id_str}) - Verified removal")
         return jsonify({
             'status': 'success',
-            'message': 'Testing session deleted successfully'
+            'message': 'Testing session deleted successfully',
+            'data': {
+                'deleted_session_id': session_id,
+                'deleted_session_string_id': session_id_str,
+                'deleted_messages_count': deleted_messages
+            }
         })
         
     except Exception as e:

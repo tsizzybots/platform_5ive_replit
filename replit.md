@@ -102,6 +102,12 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **DELETE FUNCTION FIX** - Fixed session deletion issue where sessions appeared to delete but remained in database
+  - **DATABASE DELETION**: Fixed delete function to properly remove sessions and all associated chat messages from PostgreSQL
+  - **VERIFICATION SYSTEM**: Added deletion verification to ensure sessions are actually removed from database
+  - **TRANSACTION SAFETY**: Improved delete function with explicit flush and commit operations plus rollback on failure
+  - **LOGGING ENHANCEMENT**: Added detailed logging to track deletion process and verify successful removal
+  - **BUG RESOLUTION**: Sessions no longer reappear after deletion - database deletion now works correctly
 - July 22, 2025: **FINAL BRANDING UPDATE** - Completed Stay Golden Health client branding across entire application
   - **LOGIN PAGE BRANDING**: Updated login page title and subtitle to use "Stay Golden Health" instead of "Sweats Collective"
   - **TERMINOLOGY CONSISTENCY**: Changed "email AI agent dashboard" to "messenger AI agent dashboard" throughout login interface
