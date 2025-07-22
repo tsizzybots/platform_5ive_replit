@@ -709,17 +709,25 @@ def get_messenger_session_stats():
         # Apply date filters if provided
         if 'date_from' in query_params and query_params['date_from']:
             try:
-                date_from = datetime.fromisoformat(query_params['date_from'].replace('Z', '+00:00'))
+                # Handle date format properly - expect YYYY-MM-DD format from frontend
+                date_from_str = query_params['date_from']
+                if 'T' not in date_from_str:
+                    date_from_str += 'T00:00:00'
+                date_from = datetime.fromisoformat(date_from_str.replace('Z', '+00:00'))
                 query = query.filter(MessengerSession.conversation_start >= date_from)
-            except ValueError:
-                pass  # Ignore invalid date format
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid date_from format: {query_params['date_from']}, error: {e}")
                 
         if 'date_to' in query_params and query_params['date_to']:
             try:
-                date_to = datetime.fromisoformat(query_params['date_to'].replace('Z', '+00:00'))
-                query = query.filter(MessengerSession.last_message_time <= date_to)
-            except ValueError:
-                pass  # Ignore invalid date format
+                # Handle date format properly - expect YYYY-MM-DD format from frontend
+                date_to_str = query_params['date_to']
+                if 'T' not in date_to_str:
+                    date_to_str += 'T23:59:59'
+                date_to = datetime.fromisoformat(date_to_str.replace('Z', '+00:00'))
+                query = query.filter(MessengerSession.conversation_start <= date_to)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid date_to format: {query_params['date_to']}, error: {e}")
         
         # Apply status filter to exclude archived sessions by default (unless specifically requested)
         if 'status' in query_params:
@@ -1067,14 +1075,53 @@ def get_errors():
 
 @app.route('/api/messenger-sessions/daily-stats', methods=['GET'])
 def get_messenger_session_daily_stats():
-    """Get daily statistics for messenger sessions from PostgreSQL"""
+    """Get daily statistics for messenger sessions from PostgreSQL with date filtering"""
     try:
-        # Default to last 7 days
+        # Parse query parameters for date filtering
+        query_params = request.args
+        
+        # Default to last 7 days if no date range provided
         end_date = datetime.utcnow().date()
         start_date = end_date - timedelta(days=6)  # 7 days total including today
         
-        # Get all messenger sessions
-        messenger_sessions = MessengerSession.query.all()
+        # Override with provided date range if available
+        if 'date_from' in query_params and query_params['date_from']:
+            try:
+                date_from_str = query_params['date_from']
+                if 'T' not in date_from_str:
+                    date_from_str += 'T00:00:00'
+                start_date = datetime.fromisoformat(date_from_str.replace('Z', '+00:00')).date()
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid date_from format in daily stats: {query_params['date_from']}")
+                
+        if 'date_to' in query_params and query_params['date_to']:
+            try:
+                date_to_str = query_params['date_to']
+                if 'T' not in date_to_str:
+                    date_to_str += 'T23:59:59'
+                end_date = datetime.fromisoformat(date_to_str.replace('Z', '+00:00')).date()
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid date_to format in daily stats: {query_params['date_to']}")
+        
+        # Get messenger sessions filtered by date range
+        query = MessengerSession.query.filter(
+            MessengerSession.conversation_start >= datetime.combine(start_date, datetime.min.time()),
+            MessengerSession.conversation_start <= datetime.combine(end_date, datetime.max.time())
+        )
+        
+        # Apply status filter to exclude archived sessions by default (unless specifically requested)
+        if 'status' in query_params:
+            if query_params['status'] == 'all':
+                pass  # Show all sessions including archived
+            elif query_params['status'] == 'archived':
+                query = query.filter(MessengerSession.status == 'archived')
+            elif query_params['status'] == 'active':
+                query = query.filter(or_(MessengerSession.status == 'active', MessengerSession.status.is_(None)))
+        else:
+            # Default: show non-archived sessions (active and NULL status)
+            query = query.filter(or_(MessengerSession.status != 'archived', MessengerSession.status.is_(None)))
+        
+        messenger_sessions = query.all()
         
         # Create a dictionary to store daily stats
         daily_stats = {}

@@ -102,6 +102,13 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 22, 2025: **DATE RANGE FILTERING FULLY IMPLEMENTED** - Activity statistics and analytics now filter correctly by selected date range
+  - **STATISTICS FILTERING**: Updated stats API endpoint to filter sessions by conversation_start date with proper date format handling
+  - **DAILY CHART FILTERING**: Enhanced daily stats endpoint to respect date range filters and status filtering
+  - **FRONTEND INTEGRATION**: Modified loadStats() and updateStatsOnly() to automatically pass current UI date filters to backend
+  - **CONSISTENT FILTERING**: Both session list and all analytics (stats cards and daily chart) now update based on selected date range
+  - **DATE FORMAT HANDLING**: Properly handles YYYY-MM-DD format from frontend, converts to proper datetime ranges for filtering
+  - **STATUS INTEGRATION**: Date filtering works alongside status filtering (active/archived) for comprehensive data control
 - July 22, 2025: **ROLE-BASED PERMISSIONS IMPLEMENTED** - Fixed critical security issue with user role access controls
   - **USER ROLES CONFIGURED**: Brooklyn and IzzyAgentsQA have 'qa' role, IzzyDev has 'developer' role
   - **QA REVIEWER AUTO-POPULATION**: QA reviewer field automatically populates with logged-in user's name and is readonly for QA users
