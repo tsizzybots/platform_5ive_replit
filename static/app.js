@@ -1694,13 +1694,19 @@ async function viewTicketDetails(id) {
                                             <option value="issue" ${session.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
                                             <option value="fixed" ${session.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
                                         </select>
-                                        <small class="form-text text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>
+                                        ${currentUser?.role === 'developer' ? 
+                                            '<small class="form-text text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>' :
+                                            '<small class="form-text text-muted">QA status selection</small>'}
                                     </div>
                                     <div class="col-md-6">
                                         <label for="qa_reviewer" class="form-label">QA Reviewer</label>
                                         <input type="text" class="form-control" id="qa_reviewer" 
-                                               value="${session.qa_status_updated_by || currentUser?.username || ''}" 
-                                               placeholder="Enter reviewer name">
+                                               value="${currentUser?.username || session.qa_status_updated_by || ''}" 
+                                               placeholder="Enter reviewer name"
+                                               ${currentUser?.role === 'qa' || currentUser?.role === 'admin' ? 'readonly' : ''}>
+                                        ${currentUser?.role === 'qa' || currentUser?.role === 'admin' ? 
+                                            '<small class="form-text text-muted">Reviewer automatically set to your login name</small>' : 
+                                            '<small class="form-text text-muted">Enter reviewer name</small>'}
                                     </div>
                                 </div>
                                 
@@ -1722,7 +1728,7 @@ async function viewTicketDetails(id) {
                         </div>
                     </div>
                     
-                    <!-- Developer Feedback Section - separate accordion, visible to all -->
+                    <!-- Developer Feedback Section - visible to all, editable only by developers -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="devFeedbackHeading">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#devFeedbackCollapse" aria-expanded="false" aria-controls="devFeedbackCollapse">
@@ -1734,13 +1740,15 @@ async function viewTicketDetails(id) {
                                 <div class="mb-3">
                                     <label for="dev_feedback_text" class="form-label">Developer Response</label>
                                     <textarea class="form-control" id="dev_feedback_text" rows="4" 
-                                              placeholder="Add developer response to QA notes..."
+                                              placeholder="${currentUser?.role === 'developer' ? 'Add developer response to QA notes...' : 'Developer responses will appear here...'}"
                                               ${currentUser?.role !== 'developer' ? 'readonly' : ''}>${session.dev_feedback || ''}</textarea>
                                     ${session.dev_feedback_by ? `<small class="form-text text-muted">Last updated by: ${session.dev_feedback_by} ${session.dev_feedback_at ? 'on ' + formatDate(session.dev_feedback_at) : ''}</small>` : ''}
+                                    ${currentUser?.role !== 'developer' ? '<small class="form-text text-muted">Only developers can add responses here</small>' : ''}
                                 </div>
                                 
                                 <!-- Action buttons - only visible to developers -->
-                                <div id="devFeedbackButtons" class="d-flex gap-2" style="display: ${currentUser?.role === 'developer' ? 'flex' : 'none'};">
+                                ${currentUser?.role === 'developer' ? `
+                                <div id="devFeedbackButtons" class="d-flex gap-2">
                                     <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
                                         <i class="fas fa-save me-1"></i>Save Feedback
                                     </button>
@@ -1748,6 +1756,7 @@ async function viewTicketDetails(id) {
                                         <i class="fas fa-check-circle me-1"></i>Save & Mark Fixed
                                     </button>
                                 </div>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -1779,7 +1788,7 @@ async function updateSessionQA() {
     const updateData = {
         qa_status: qaStatus,
         qa_notes: qaNotes,
-        qa_reviewer: qaReviewer
+        qa_reviewer: currentUser?.username || qaReviewer // Always use current user's name
     };
     
     try {
