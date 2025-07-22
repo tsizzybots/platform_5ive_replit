@@ -570,10 +570,15 @@ def get_messenger_sessions():
         }), 500
 
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['DELETE'])
-@login_required
 def delete_testing_session(session_id):
     """Delete a testing session from PostgreSQL - only for testing sessions"""
     try:
+        # Check if user is logged in
+        if 'user_id' not in session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Authentication required'
+            }), 401
         # Find the session in PostgreSQL messenger_sessions table
         messenger_session = MessengerSession.query.get(session_id)
         if not messenger_session:
