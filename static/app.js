@@ -76,7 +76,7 @@ function initializeTestAIModal() {
             const messagesContainer = document.getElementById('testAIMessages');
             messagesContainer.innerHTML = `
                 <div class="message ai">
-                    <div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div>
+                    <div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div>
                     <div style="color: white;">Hello! I'm ready to help you test the AI system. Send me a message to get started.</div>
                 </div>
             `;
@@ -201,7 +201,7 @@ async function sendTestMessage() {
         // Show typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message ai typing-indicator';
-        typingIndicator.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div><div style="color: white;"><i class="fas fa-spinner fa-spin"></i> Typing...</div>`;
+        typingIndicator.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div><div style="color: white;"><i class="fas fa-spinner fa-spin"></i> Typing...</div>`;
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -272,7 +272,7 @@ async function sendTestMessage() {
         // Add AI response to chat
         const aiMessageDiv = document.createElement('div');
         aiMessageDiv.className = 'message ai';
-        aiMessageDiv.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">AI Brooklyn</div><div style="color: white;">${aiMessage}</div>`;
+        aiMessageDiv.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div><div style="color: white;">${aiMessage}</div>`;
         messagesContainer.appendChild(aiMessageDiv);
 
         // Scroll to bottom
