@@ -102,6 +102,10 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- July 25, 2025: **COMPLETE AI AGENT BRANDING UPDATE** - Updated all AI agent references from "AI Brooklyn" to "Stay Golden Health AI Agent"
+  - **TEST AI MODAL**: Updated initial greeting message, loading states, and all AI responses in Test AI chat
+  - **CONVERSATION THREAD**: Fixed conversation display in Messenger Sessions modal to show proper agent name
+  - **COMPREHENSIVE UPDATE**: All user-facing AI agent references now consistently use "Stay Golden Health AI Agent" branding
 - July 22, 2025: **DATE RANGE FILTERING FULLY IMPLEMENTED** - Activity statistics and analytics now filter correctly by selected date range
   - **STATISTICS FILTERING**: Updated stats API endpoint to filter sessions by conversation_start date with proper date format handling
   - **DAILY CHART FILTERING**: Enhanced daily stats endpoint to respect date range filters and status filtering
