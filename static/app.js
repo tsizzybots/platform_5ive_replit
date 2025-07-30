@@ -219,7 +219,10 @@ async function sendTestMessage() {
         // Send to actual webhook
         const webhookUrl = 'https://n8n-g0cw.onrender.com/webhook/stay-golden-health-ai-agent';
         
-        console.log('Sending payload to webhook:', webhookUrl, payload);
+        console.log('=== TEST AI WEBHOOK REQUEST ===');
+        console.log('URL:', webhookUrl);
+        console.log('User Message:', message);
+        console.log('Full Payload:', JSON.stringify(payload, null, 2));
         
         const response = await fetch(webhookUrl, {
             method: 'POST',
@@ -231,8 +234,9 @@ async function sendTestMessage() {
             mode: 'cors'
         });
 
-        console.log('Webhook response status:', response.status);
-        console.log('Webhook response headers:', [...response.headers.entries()]);
+        console.log('=== WEBHOOK RESPONSE ===');
+        console.log('Status:', response.status);
+        console.log('Headers:', [...response.headers.entries()]);
 
         // Remove typing indicator
         messagesContainer.removeChild(typingIndicator);
@@ -244,17 +248,25 @@ async function sendTestMessage() {
         }
 
         const responseText = await response.text();
-        console.log('Raw webhook response:', responseText);
+        console.log('=== WEBHOOK RESPONSE DETAILS ===');
+        console.log('Raw Response Text:', responseText);
         
         let aiResponse;
         try {
             aiResponse = JSON.parse(responseText);
+            console.log('Parsed Response Object:', JSON.stringify(aiResponse, null, 2));
+            
+            if (aiResponse.aiMessage) {
+                console.log('AI Message Content:', aiResponse.aiMessage);
+            }
+            if (aiResponse.sessionId) {
+                console.log('Session ID:', aiResponse.sessionId);
+            }
         } catch (parseError) {
             console.error('Failed to parse JSON response:', parseError);
+            console.error('Response text that failed to parse:', responseText);
             throw new Error('Invalid JSON response from webhook');
         }
-
-        console.log('Parsed AI response:', aiResponse);
 
         // Save session ID for future messages and add to table if new
         if (!testAISessionId && aiResponse.sessionId) {
