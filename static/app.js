@@ -1185,12 +1185,8 @@ function displayTickets(tickets, pagination) {
         html += `<button class="page-link" onclick="loadTickets(${pagination.page - 1})" ${!pagination.has_prev ? 'disabled' : ''}>Previous</button>`;
         html += '</li>';
         
-        // Page numbers
-        for (let i = 1; i <= pagination.pages; i++) {
-            html += `<li class="page-item ${i === pagination.page ? 'active' : ''}">`;
-            html += `<button class="page-link" onclick="loadTickets(${i})">${i}</button>`;
-            html += '</li>';
-        }
+        // Smart pagination with ellipsis
+        html += generateSmartPagination(pagination.page, pagination.pages);
         
         // Next button
         html += `<li class="page-item ${!pagination.has_next ? 'disabled' : ''}">`;
@@ -1204,6 +1200,62 @@ function displayTickets(tickets, pagination) {
     
     // Enable bulk status controls if tickets are selected
     updateBulkStatusControls();
+}
+
+// Generate smart pagination with ellipsis like: 1 2 3 4 5 6 7 ... 33
+function generateSmartPagination(currentPage, totalPages) {
+    let html = '';
+    const delta = 2; // Number of pages to show around current page
+    const rangeWithDots = [];
+    
+    // Always show first page
+    rangeWithDots.push(1);
+    
+    // Calculate range around current page
+    const rangeStart = Math.max(2, currentPage - delta);
+    const rangeEnd = Math.min(totalPages - 1, currentPage + delta);
+    
+    // Add ellipsis after first page if needed
+    if (rangeStart > 2) {
+        rangeWithDots.push('...');
+    }
+    
+    // Add pages around current page
+    for (let i = rangeStart; i <= rangeEnd; i++) {
+        rangeWithDots.push(i);
+    }
+    
+    // Add ellipsis before last page if needed
+    if (rangeEnd < totalPages - 1) {
+        rangeWithDots.push('...');
+    }
+    
+    // Always show last page (if more than 1 page)
+    if (totalPages > 1) {
+        rangeWithDots.push(totalPages);
+    }
+    
+    // Remove duplicates while preserving order
+    const uniqueRange = [];
+    for (let i = 0; i < rangeWithDots.length; i++) {
+        if (i === 0 || rangeWithDots[i] !== rangeWithDots[i - 1]) {
+            uniqueRange.push(rangeWithDots[i]);
+        }
+    }
+    
+    // Generate HTML for each page/ellipsis
+    uniqueRange.forEach(page => {
+        if (page === '...') {
+            html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+        } else {
+            const isActive = page === currentPage;
+            html += `<li class="page-item ${isActive ? 'active' : ''}">`;
+            html += `<button class="page-link" onclick="loadTickets(${page})">${page}</button>`;
+            html += '</li>';
+        }
+    });
+    
+    return html;
 }
 
 // Toggle ticket selection
