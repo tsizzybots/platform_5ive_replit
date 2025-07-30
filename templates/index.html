@@ -398,11 +398,34 @@
             height: calc(100% - 60px);
         }
         
+        .test-ai-notice {
+            padding: 16px 16px 0 16px;
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+        }
+        
+        .test-ai-notice.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .test-ai-notice .alert {
+            margin-bottom: 0;
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
         .test-ai-messages {
             flex: 1;
             overflow-y: auto;
             padding: 16px;
             border-bottom: 1px solid var(--bs-border-color);
+            transition: padding-top 0.4s ease-out;
+        }
+        
+        .test-ai-messages.notice-hidden {
+            padding-top: 0;
         }
         
         .test-ai-input-area {
@@ -892,11 +915,14 @@
             </div>
         </div>
         <div class="test-ai-body">
-            <div class="test-ai-messages" id="testAIMessages">
-                <div class="message ai">
-                    <div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div>
-                    <div style="color: white;">Hello! I'm ready to help you test the AI system. Send me a message to get started.</div>
+            <div class="test-ai-notice" id="testAINotice">
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please enter your initial message
                 </div>
+            </div>
+            <div class="test-ai-messages" id="testAIMessages">
+                <!-- Messages will appear here -->
             </div>
             <div class="test-ai-input-area">
                 <textarea class="test-ai-input" id="testAIInput" placeholder="Type your message here..." rows="2"></textarea>

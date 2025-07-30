@@ -72,14 +72,18 @@ function initializeTestAIModal() {
             // Clear session ID to start new session
             testAISessionId = null;
             
-            // Clear chat messages except initial greeting
+            // Reset notice box to visible state
+            const noticeBox = document.getElementById('testAINotice');
             const messagesContainer = document.getElementById('testAIMessages');
-            messagesContainer.innerHTML = `
-                <div class="message ai">
-                    <div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div>
-                    <div style="color: white;">Hello! I'm ready to help you test the AI system. Send me a message to get started.</div>
-                </div>
-            `;
+            
+            if (noticeBox) {
+                noticeBox.classList.remove('hidden');
+            }
+            if (messagesContainer) {
+                messagesContainer.classList.remove('notice-hidden');
+                // Clear all chat messages
+                messagesContainer.innerHTML = '';
+            }
         });
     }
 
@@ -169,6 +173,13 @@ async function sendTestMessage() {
     const message = input.value.trim();
     
     if (!message) return;
+
+    // Hide the notice box with animation after first message
+    const noticeBox = document.getElementById('testAINotice');
+    if (noticeBox && !noticeBox.classList.contains('hidden')) {
+        noticeBox.classList.add('hidden');
+        messagesContainer.classList.add('notice-hidden');
+    }
 
     // Add user message to chat
     const userMessage = document.createElement('div');
