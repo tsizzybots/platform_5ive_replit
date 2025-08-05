@@ -1750,6 +1750,15 @@ async function viewTicketDetails(id) {
 
                 </div>
             </div>
+            
+            <!-- Export Session Button - Only visible to IzzyDev users -->
+            ${(currentUser?.username === 'IzzyDev' || currentUser?.role === 'developer') ? `
+            <div class="mt-3 mb-3">
+                <button type="button" class="btn btn-success" onclick="exportSession(${session.id})">
+                    <i class="fas fa-download me-1"></i>Export Session
+                </button>
+            </div>
+            ` : ''}
             <div class="mt-3">
                 <h6><strong>Conversation Thread:</strong></h6>
                 <div class="conversation-thread" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bs-gray-600); border-radius: 0.375rem; padding: 12px; background: var(--bs-body-bg);">
@@ -2029,6 +2038,52 @@ async function saveDevFeedbackAndMarkFixed() {
         }
     } catch (error) {
         showAlert('Error saving developer feedback: ' + error.message, 'danger');
+    }
+}
+
+// Export Session
+async function exportSession(sessionId) {
+    // Check permission - only allow IzzyDev users or developers
+    if (!currentUser || (currentUser.username !== 'IzzyDev' && currentUser.role !== 'developer')) {
+        showAlert('Access denied: Only IzzyDev users can export sessions', 'danger');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/messenger-sessions/${sessionId}/export`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            
+            // Get session data for filename
+            const sessionResult = await apiRequest(`/api/messenger-sessions/${sessionId}`);
+            const sessionData = sessionResult.ok ? (sessionResult.data.data || sessionResult.data) : null;
+            const filename = sessionData ? 
+                `session_export_${sessionData.session_id}_${new Date().toISOString().split('T')[0]}.txt` :
+                `session_export_${sessionId}_${new Date().toISOString().split('T')[0]}.txt`;
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showAlert('Session exported successfully!', 'success');
+        } else {
+            const errorData = await response.json();
+            showAlert('Failed to export session: ' + (errorData.message || 'Unknown error'), 'danger');
+        }
+    } catch (error) {
+        showAlert('Error exporting session: ' + error.message, 'danger');
     }
 }
 

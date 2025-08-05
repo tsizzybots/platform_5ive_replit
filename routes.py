@@ -355,6 +355,134 @@ def get_messenger_session(session_id):
             'error': str(e)
         }), 500
 
+@app.route('/api/messenger-sessions/<int:session_id>/export', methods=['GET'])
+@login_required
+def export_messenger_session(session_id):
+    """Export messenger session data to a text file - Only for IzzyDev users"""
+    try:
+        # Check permissions - only allow IzzyDev users or developers
+        current_user = get_current_user()
+        if not current_user or (current_user.username != 'IzzyDev' and current_user.role != 'developer'):
+            return jsonify({
+                'status': 'error',
+                'message': 'Access denied: Only IzzyDev users can export sessions'
+            }), 403
+            
+        # Get the messenger session metadata
+        messenger_session = MessengerSession.query.get(session_id)
+        if not messenger_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Messenger session not found'
+            }), 404
+        
+        # Get all chat messages for this session
+        messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=messenger_session.session_id
+        ).order_by(ChatSessionForDashboard.dateTime).all()
+        
+        # Build customer name from first message
+        customer_name = messenger_session.customer_name or 'Unknown'
+        if messages and not customer_name:
+            first_msg = messages[0]
+            customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+        
+        # Build the export content
+        export_content = []
+        export_content.append("=" * 80)
+        export_content.append("AI CHAT SESSION EXPORT")
+        export_content.append("=" * 80)
+        export_content.append("")
+        
+        # Session Details
+        export_content.append("SESSION DETAILS:")
+        export_content.append("-" * 40)
+        export_content.append(f"Session ID: {messenger_session.session_id}")
+        export_content.append(f"Customer Name: {customer_name}")
+        export_content.append(f"Contact ID: {messenger_session.customer_id or 'N/A'}")
+        export_content.append(f"Started: {messenger_session.conversation_start.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.conversation_start else 'N/A'}")
+        export_content.append(f"Last Message: {messenger_session.last_message_time.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.last_message_time else 'N/A'}")
+        export_content.append(f"Total Messages: {len(messages)}")
+        export_content.append(f"Status: {messenger_session.status or 'Active'}")
+        export_content.append(f"Completion Status: {messenger_session.completion_status or 'Incomplete'}")
+        export_content.append(f"QA Status: {messenger_session.qa_status or 'Unchecked'}")
+        export_content.append("")
+        
+        # Conversation Thread
+        export_content.append("CONVERSATION THREAD:")
+        export_content.append("-" * 40)
+        export_content.append("")
+        
+        if messages:
+            for msg in messages:
+                timestamp = msg.dateTime.strftime('%Y-%m-%d %H:%M:%S UTC') if msg.dateTime else 'Unknown Time'
+                
+                if msg.userAi == 'ai':
+                    export_content.append(f"[{timestamp}] Stay Golden Health AI Agent:")
+                else:
+                    user_name = f"{msg.firstName or ''} {msg.lastName or ''}".strip() or 'User'
+                    export_content.append(f"[{timestamp}] {user_name}:")
+                
+                # Format message content with proper line breaks
+                message_text = msg.messageStr or ''
+                for line in message_text.split('\n'):
+                    export_content.append(f"  {line}")
+                export_content.append("")
+        else:
+            export_content.append("No messages available")
+            export_content.append("")
+        
+        # Session Feedback (QA Notes)
+        export_content.append("SESSION FEEDBACK (QA NOTES):")
+        export_content.append("-" * 40)
+        if messenger_session.qa_notes:
+            export_content.append(messenger_session.qa_notes)
+            if messenger_session.qa_status_updated_by:
+                export_content.append("")
+                export_content.append(f"Reviewed by: {messenger_session.qa_status_updated_by}")
+                if messenger_session.qa_status_updated_at:
+                    export_content.append(f"Review Date: {messenger_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        else:
+            export_content.append("No QA notes available")
+        export_content.append("")
+        
+        # Developer Feedback (if available)
+        if messenger_session.dev_feedback:
+            export_content.append("DEVELOPER FEEDBACK:")
+            export_content.append("-" * 40)
+            export_content.append(messenger_session.dev_feedback)
+            if messenger_session.dev_feedback_by:
+                export_content.append("")
+                export_content.append(f"Developer: {messenger_session.dev_feedback_by}")
+                if messenger_session.dev_feedback_at:
+                    export_content.append(f"Feedback Date: {messenger_session.dev_feedback_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+            export_content.append("")
+        
+        # Footer
+        export_content.append("=" * 80)
+        export_content.append("End of Session Export")
+        export_content.append("=" * 80)
+        
+        # Join all content with newlines
+        final_content = '\n'.join(export_content)
+        
+        # Create response with proper headers for file download
+        from flask import make_response
+        response = make_response(final_content)
+        response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+        response.headers['Content-Disposition'] = f'attachment; filename="session_export_{messenger_session.session_id}_{datetime.utcnow().strftime("%Y%m%d")}.txt"'
+        
+        logger.info(f"Session exported by {current_user.username}: session {session_id}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting messenger session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to export messenger session',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/messenger-sessions/<int:session_id>', methods=['PUT'])
 @login_required
 def update_messenger_session(session_id):
