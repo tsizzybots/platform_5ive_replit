@@ -2391,6 +2391,8 @@ function addSessionRowWithAnimation(session) {
     newRow.style.transform = 'translateY(-30px) scale(0.95)';
     newRow.style.transition = 'all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)';
     
+    const statusBadge = getStatusBadge(session.status, session.archived);
+    
     newRow.innerHTML = `
         <td class="checkbox-column">
             <input type="checkbox" class="form-check-input ticket-checkbox" value="${session.id}" onchange="toggleTicketSelection(${session.id})">
@@ -2399,8 +2401,9 @@ function addSessionRowWithAnimation(session) {
         <td><strong>${escapeHtml(session.session_id || 'N/A')}</strong></td>
         <td>${escapeHtml(session.customer_name || 'N/A')}</td>
         <td class="text-nowrap">${escapeHtml(session.contact_id || 'N/A')}</td>
-        <td class="text-center">${qaStatusBadge}</td>
         <td class="text-center">${completedBadge}</td>
+        <td class="text-center">${qaStatusBadge}</td>
+        <td class="text-center">${statusBadge}</td>
         <td>
             <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${session.id})" title="View Details">
