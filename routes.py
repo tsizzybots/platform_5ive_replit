@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, MessengerSession, MessengerSessionQA, ChatSessionForDashboard
+from models import Error, User, MessengerSession, ChatSessionForDashboard
 from schemas import (error_schema, error_query_schema, chat_session_schema, 
                     chat_session_update_schema, chat_session_query_schema)
 # Using PostgreSQL for all data storage

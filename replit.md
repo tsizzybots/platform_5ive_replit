@@ -54,3 +54,18 @@ Preferred communication style: Simple, everyday language.
 - `Bootstrap 5.3`: CSS framework for UI styling.
 - `Chart.js`: JavaScript library for data visualization.
 - `Font Awesome 6.0`: Icon library.
+
+## Database Architecture Update
+- **Current Active Tables**: Only 4 essential tables remain after cleanup:
+  - `chat_sessions_for_dashboard`: Individual chat messages/interactions 
+  - `messenger_sessions`: Session metadata with integrated QA functionality
+  - `users`: User authentication and role management
+  - `errors`: Error logging for automation workflows
+
+## Changelog
+- August 5, 2025: **DATABASE CLEANUP** - Removed unused database tables for cleaner architecture
+  - **REMOVED REDUNDANT TABLE**: Deleted `messenger_session_qa` table (0 records, functionality moved to `messenger_sessions`)
+  - **REMOVED LEGACY TABLE**: Deleted `n8n_chat_histories_mixandmatch_demo` table (legacy data, not referenced in code)
+  - **QA FUNCTIONALITY**: All QA features (qa_status, qa_notes, dev_feedback) integrated into main `messenger_sessions` table
+  - **VERIFIED SAFETY**: 100% confirmed tables were unused before removal through code analysis and data verification
+- August 5, 2025: **AI CHAT SESSION EXPORT FEATURE** - Added comprehensive session export functionality for IzzyDev users
