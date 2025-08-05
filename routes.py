@@ -579,14 +579,14 @@ def get_messenger_sessions():
         
         missing_session_ids = [sid for sid in chat_session_ids if sid not in existing_session_ids]
         
-        # Auto-create missing messenger sessions
-        for session_id in missing_session_ids:
-            ensure_messenger_session_exists(session_id)
-            logger.info(f"Auto-synced messenger session for: {session_id}")
+        # Auto-create missing messenger sessions - temporarily disabled due to database issues
+        # for session_id in missing_session_ids:
+        #     ensure_messenger_session_exists(session_id)
+        #     logger.info(f"Auto-synced messenger session for: {session_id}")
         
-        # Auto-sync existing sessions to ensure latest data
-        for session_id in existing_session_ids:
-            sync_messenger_session_data(session_id)
+        # Auto-sync existing sessions to ensure latest data - temporarily disabled due to database issues
+        # for session_id in existing_session_ids:
+        #     sync_messenger_session_data(session_id)
     except Exception as e:
         logger.warning(f"Auto-sync failed but continuing: {str(e)}")
     
