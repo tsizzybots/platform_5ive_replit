@@ -102,6 +102,14 @@ This is a Flask-based web application that manages email inquiries and provides 
 - CORS enabled for API access
 
 ## Changelog
+- August 5, 2025: **AI CHAT SESSION EXPORT FEATURE** - Added comprehensive session export functionality for IzzyDev users
+  - **EXPORT BUTTON**: Green "Export Session" button visible only to IzzyDev user in session details modal
+  - **ROLE-BASED ACCESS**: Strict access control limiting export functionality to IzzyDev username only
+  - **COMPREHENSIVE EXPORT**: Exports session details, complete conversation thread, QA notes, and developer feedback
+  - **TEXT FORMAT**: Downloads as formatted .txt file with clear labeling and timestamps
+  - **AI AGENT LABELING**: Conversation responses clearly labeled as "Stay Golden Health AI Agent"
+  - **SESSION FEEDBACK**: Includes QA notes section for AI prompt improvement analysis
+  - **PLACEMENT**: Export button positioned at top of session details, under QA Status and Status as requested
 - July 30, 2025: **SMART PAGINATION SYSTEM** - Implemented intelligent pagination with ellipsis (e.g., "1 2 3 4 5 6 7 ... 33") to prevent long pagination rows
   - **CLEAN LOGIN INTERFACE**: Removed "Please log in to access this page" notice from login page for cleaner user experience
   - **ELLIPSIS PAGINATION**: Shows first pages, current page range, and last page with ellipsis for gaps

@@ -1752,7 +1752,7 @@ async function viewTicketDetails(id) {
             </div>
             
             <!-- Export Session Button - Only visible to IzzyDev users -->
-            ${(currentUser?.username === 'IzzyDev' || currentUser?.role === 'developer') ? `
+            ${currentUser?.username === 'IzzyDev' ? `
             <div class="mt-3 mb-3">
                 <button type="button" class="btn btn-success" onclick="exportSession(${session.id})">
                     <i class="fas fa-download me-1"></i>Export Session
@@ -2043,8 +2043,8 @@ async function saveDevFeedbackAndMarkFixed() {
 
 // Export Session
 async function exportSession(sessionId) {
-    // Check permission - only allow IzzyDev users or developers
-    if (!currentUser || (currentUser.username !== 'IzzyDev' && currentUser.role !== 'developer')) {
+    // Check permission - only allow IzzyDev users
+    if (!currentUser || currentUser.username !== 'IzzyDev') {
         showAlert('Access denied: Only IzzyDev users can export sessions', 'danger');
         return;
     }

@@ -360,9 +360,9 @@ def get_messenger_session(session_id):
 def export_messenger_session(session_id):
     """Export messenger session data to a text file - Only for IzzyDev users"""
     try:
-        # Check permissions - only allow IzzyDev users or developers
+        # Check permissions - only allow IzzyDev users
         current_user = get_current_user()
-        if not current_user or (current_user.username != 'IzzyDev' and current_user.role != 'developer'):
+        if not current_user or current_user.username != 'IzzyDev':
             return jsonify({
                 'status': 'error',
                 'message': 'Access denied: Only IzzyDev users can export sessions'
