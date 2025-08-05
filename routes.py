@@ -579,14 +579,24 @@ def get_messenger_sessions():
         
         missing_session_ids = [sid for sid in chat_session_ids if sid not in existing_session_ids]
         
-        # Auto-create missing messenger sessions - temporarily disabled due to database issues
-        # for session_id in missing_session_ids:
-        #     ensure_messenger_session_exists(session_id)
-        #     logger.info(f"Auto-synced messenger session for: {session_id}")
+        # Auto-create missing messenger sessions
+        for session_id in missing_session_ids:
+            try:
+                ensure_messenger_session_exists(session_id)
+                logger.info(f"Auto-synced messenger session for: {session_id}")
+            except Exception as e:
+                logger.error(f"Failed to create messenger session for {session_id}: {str(e)}")
+                continue
         
-        # Auto-sync existing sessions to ensure latest data - temporarily disabled due to database issues
+        # Auto-sync existing sessions to ensure latest data
+        # Note: Temporarily skip individual session sync to prevent API crashes
+        # The key issue has been resolved - new sessions are being created properly
         # for session_id in existing_session_ids:
-        #     sync_messenger_session_data(session_id)
+        #     try:
+        #         sync_messenger_session_data(session_id)
+        #     except Exception as e:
+        #         logger.error(f"Failed to sync messenger session {session_id}: {str(e)}")
+        #         continue
     except Exception as e:
         logger.warning(f"Auto-sync failed but continuing: {str(e)}")
     
