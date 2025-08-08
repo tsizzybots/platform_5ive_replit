@@ -1075,46 +1075,65 @@ def update_messenger_session_qa(session_id):
                 
                 html_content = f"""
                 <html>
-                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px;">
-                            🚨 Platform 5ive - QA Issue Detected
-                        </h2>
-                        
-                        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <h3 style="margin-top: 0; color: #1976d2;">Session Details</h3>
-                            <p><strong>Session ID:</strong> {qa_session.session_id}</p>
-                            <p><strong>User Name:</strong> {qa_session.customer_name or 'Unknown'}</p>
-                            <p><strong>Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
-                            <p><strong>QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
-                            <p><strong>Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M') if qa_session.qa_status_updated_at else 'Unknown'}</p>
+                <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
+                            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+                                🚨 Platform 5ive
+                            </h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                                QA Issue Detection Alert
+                            </p>
                         </div>
                         
-                        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <h3 style="margin-top: 0; color: #856404;">QA Notes</h3>
-                            <p style="white-space: pre-wrap;">{qa_session.qa_notes or 'No additional notes provided.'}</p>
+                        <!-- Content -->
+                        <div style="padding: 30px;">
+                            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+                                <h3 style="margin-top: 0; color: #495057; font-size: 18px;">📋 Session Details</h3>
+                                <div style="display: grid; gap: 8px;">
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Session ID:</strong> <span style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{qa_session.session_id}</span></p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {qa_session.customer_name or 'Unknown'}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                <h3 style="margin-top: 0; color: #856404; font-size: 18px;">⚠️ QA Notes</h3>
+                                <div style="background: white; padding: 15px; border-radius: 5px; border-left: 3px solid #ffc107;">
+                                    <p style="white-space: pre-wrap; margin: 0; font-style: italic;">{qa_session.qa_notes or 'No additional notes provided.'}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
+                                <h3 style="margin-top: 0; color: #0066cc; font-size: 18px;">🎯 Next Steps</h3>
+                                <ul style="margin: 10px 0; padding-left: 20px;">
+                                    <li style="margin: 8px 0; color: #495057;">Review the conversation in the dashboard</li>
+                                    <li style="margin: 8px 0; color: #495057;">Investigate the AI's response quality</li>
+                                    <li style="margin: 8px 0; color: #495057;">Provide developer feedback if needed</li>
+                                    <li style="margin: 8px 0; color: #495057;">Mark as "Fixed" when resolved</li>
+                                </ul>
+                            </div>
+                            
+                            <div style="text-align: center; margin: 40px 0;">
+                                <a href="https://stay-golden-health-messenger-sessions.replit.app/" 
+                                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                                    🔍 View in Dashboard
+                                </a>
+                            </div>
                         </div>
                         
-                        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <h3 style="margin-top: 0; color: #1976d2;">Next Steps</h3>
-                            <ul>
-                                <li>Review the conversation in the dashboard</li>
-                                <li>Investigate the AI's response quality</li>
-                                <li>Provide developer feedback if needed</li>
-                                <li>Mark as "Fixed" when resolved</li>
-                            </ul>
+                        <!-- Footer -->
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
+                            <p style="font-size: 13px; color: #6c757d; margin: 0;">
+                                This is an automated notification from <strong>Platform 5ive</strong> AI Lead Generation Dashboard.
+                            </p>
+                            <p style="font-size: 12px; color: #adb5bd; margin: 10px 0 0 0;">
+                                If you have any questions, please contact our support team.
+                            </p>
                         </div>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://stay-golden-health-messenger-sessions.replit.app/" 
-                               style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                                View in Dashboard
-                            </a>
-                        </div>
-                        
-                        <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
-                            This is an automated notification from the Platform 5ive AI Lead Gen Dashboard.
-                        </p>
                     </div>
                 </body>
                 </html>
@@ -1122,14 +1141,14 @@ def update_messenger_session_qa(session_id):
                 
                 # Plain text version
                 text_content = f"""
-STAY GOLDEN HEALTH - QA ISSUE DETECTED
+PLATFORM 5IVE - QA ISSUE DETECTED
 
 Session Details:
 - Session ID: {qa_session.session_id}
-- User Name: {qa_session.customer_name or 'Unknown'}
+- Customer: {qa_session.customer_name or 'Unknown'}
 - Contact ID: {qa_session.customer_id or 'N/A'}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
-- Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M') if qa_session.qa_status_updated_at else 'Unknown'}
+- Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
 
 QA Notes:
 {qa_session.qa_notes or 'No additional notes provided.'}
@@ -1137,6 +1156,9 @@ QA Notes:
 Dashboard: https://stay-golden-health-messenger-sessions.replit.app/
 
 Please review this issue in the dashboard and provide appropriate feedback.
+
+---
+This is an automated notification from Platform 5ive AI Lead Generation Dashboard.
                 """
                 
                 # Send email to team
@@ -1408,6 +1430,78 @@ def web_chat():
 def embed_chat():
     """Serve the embeddable chat widget for iframe"""
     return render_template('embed_chat.html')
+
+@app.route('/demo/email-template')
+def demo_email_template():
+    """Demo page to preview the QA issue email template with Platform 5ive branding"""
+    # Generate sample email content with dummy data
+    html_content = """
+    <html>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+                    🚨 Platform 5ive
+                </h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                    QA Issue Detection Alert
+                </p>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+                    <h3 style="margin-top: 0; color: #495057; font-size: 18px;">📋 Session Details</h3>
+                    <div style="display: grid; gap: 8px;">
+                        <p style="margin: 5px 0;"><strong style="color: #495057;">Session ID:</strong> <span style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">session_demo_p5ive_2025080814</span></p>
+                        <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> Sarah Johnson</p>
+                        <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> 987654321</p>
+                        <p style="margin: 5px 0;"><strong style="color: #495057;">QA Reviewer:</strong> Platform5ive QA Team</p>
+                        <p style="margin: 5px 0;"><strong style="color: #495057;">Detected:</strong> 08/08/2025 14:30 AEDT</p>
+                    </div>
+                </div>
+                
+                <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #856404; font-size: 18px;">⚠️ QA Notes</h3>
+                    <div style="background: white; padding: 15px; border-radius: 5px; border-left: 3px solid #ffc107;">
+                        <p style="white-space: pre-wrap; margin: 0; font-style: italic;">AI response provided generic lead generation information instead of addressing the customer's specific inquiry about healthcare sector targeting and compliance requirements. The response missed key opportunities to qualify the lead and gather relevant healthcare industry details. Requires review of AI training data and response optimization for healthcare vertical.</p>
+                    </div>
+                </div>
+                
+                <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0066cc;">
+                    <h3 style="margin-top: 0; color: #0066cc; font-size: 18px;">🎯 Next Steps</h3>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li style="margin: 8px 0; color: #495057;">Review the conversation in the dashboard</li>
+                        <li style="margin: 8px 0; color: #495057;">Investigate the AI's response quality</li>
+                        <li style="margin: 8px 0; color: #495057;">Provide developer feedback if needed</li>
+                        <li style="margin: 8px 0; color: #495057;">Mark as "Fixed" when resolved</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="https://stay-golden-health-messenger-sessions.replit.app/" 
+                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+                        🔍 View in Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
+                <p style="font-size: 13px; color: #6c757d; margin: 0;">
+                    This is an automated notification from <strong>Platform 5ive</strong> AI Lead Generation Dashboard.
+                </p>
+                <p style="font-size: 12px; color: #adb5bd; margin: 10px 0 0 0;">
+                    If you have any questions, please contact our support team.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html_content
 
 @app.route('/api/chat-message', methods=['POST'])
 def handle_chat_message():
