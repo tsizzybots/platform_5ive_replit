@@ -118,10 +118,23 @@
             text-overflow: ellipsis;
         }
         
-        /* Force single-line layout for filters */
-        .row.flex-nowrap {
+        /* Filter group styling */
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: fit-content;
+        }
+        
+        .filter-group .form-label {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+        
+        /* Ensure filter controls don't overflow */
+        .filter-container {
+            max-width: 100%;
             overflow-x: auto;
-            white-space: nowrap;
         }
         
         .row.flex-nowrap .col-auto {
@@ -667,85 +680,91 @@
                     </div>
                     <div class="card-body">
                         <!-- Filters -->
-                        <div class="row mb-3 align-items-end g-2 flex-nowrap">
-                            <div class="col-auto">
-                                <label class="form-label">Status</label>
-                                <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
-                                    <option value="">All Statuses</option>
-                                    <option value="active">Active</option>
-                                    <option value="archived">Archived</option>
-                                </select>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label">Completion Status</label>
-                                <select class="form-select form-select-sm" id="completionFilter" style="width: auto;">
-                                    <option value="">All</option>
-                                    <option value="complete">Complete</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="incomplete">Incomplete</option>
-                                </select>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label">Source</label>
-                                <select class="form-select form-select-sm" id="sessionSourceFilter" style="width: auto;">
-                                    <option value="">All Sources</option>
-                                    <option value="messenger">Messenger</option>
-                                    <option value="web_chat">Web Chat</option>
-                                </select>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label">QA Status</label>
-                                <select class="form-select form-select-sm" id="qaStatusFilter" style="width: auto;">
-                                    <option value="">All QA Status</option>
-                                    <option value="unchecked">Unchecked</option>
-                                    <option value="passed">Passed</option>
-                                    <option value="issue">Issue</option>
-                                    <option value="fixed">Fixed</option>
-                                </select>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label">Contact ID</label>
-                                <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Search by Contact ID" style="width: 180px;" oninput="handleContactIdSearch()">
-                            </div>
-                            <div class="col">
-                                <label class="form-label">
-                                    Date Range: <span class="fw-bold text-success" id="dateRangeDisplay">No range selected</span>
-                                </label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown">
-                                        <i class="fas fa-calendar me-1"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
-                                    </ul>
-                                    <input type="date" class="form-control form-control-sm" id="dateFrom" placeholder="From" style="width: 120px;">
-                                    <input type="date" class="form-control form-control-sm" id="dateTo" placeholder="To" style="width: 120px;">
+                        <div class="row mb-3 g-2">
+                            <!-- First Row: Filter Controls -->
+                            <div class="col-12">
+                                <div class="d-flex flex-wrap align-items-end gap-2">
+                                    <div class="filter-group">
+                                        <label class="form-label small">Status</label>
+                                        <select class="form-select form-select-sm" id="statusFilter" style="width: 110px;">
+                                            <option value="">All</option>
+                                            <option value="active">Active</option>
+                                            <option value="archived">Archived</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="form-label small">Completion</label>
+                                        <select class="form-select form-select-sm" id="completionFilter" style="width: 120px;">
+                                            <option value="">All</option>
+                                            <option value="complete">Complete</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="incomplete">Incomplete</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="form-label small">Source</label>
+                                        <select class="form-select form-select-sm" id="sessionSourceFilter" style="width: 100px;">
+                                            <option value="">All</option>
+                                            <option value="messenger">Messenger</option>
+                                            <option value="web_chat">Web Chat</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="form-label small">QA Status</label>
+                                        <select class="form-select form-select-sm" id="qaStatusFilter" style="width: 110px;">
+                                            <option value="">All</option>
+                                            <option value="unchecked">Unchecked</option>
+                                            <option value="passed">Passed</option>
+                                            <option value="issue">Issue</option>
+                                            <option value="fixed">Fixed</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="form-label small">Contact ID</label>
+                                        <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Contact ID" style="width: 120px;" oninput="handleContactIdSearch()">
+                                    </div>
+                                    <div class="filter-group">
+                                        <label class="form-label small">Date Range</label>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 40px;">
+                                                <i class="fas fa-calendar"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
+                                            </ul>
+                                            <input type="date" class="form-control form-control-sm" id="dateFrom" style="width: 100px;">
+                                            <input type="date" class="form-control form-control-sm" id="dateTo" style="width: 100px;">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-auto">
-                                <div class="d-flex gap-2 align-items-end">
-                                    <!-- Left column: Mark as Passed and Archive Selected stacked -->
-                                    <div class="d-flex flex-column gap-1">
-                                        <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled style="height: 31px;">
+                            
+                            <!-- Second Row: Action Buttons and Status Display -->
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <small class="text-muted">
+                                            <span class="fw-bold text-success" id="dateRangeDisplay">No range selected</span>
+                                        </small>
+                                    </div>
+                                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                                        <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled>
                                             <i class="fas fa-check me-1"></i>Mark as Passed
                                         </button>
-                                        <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled style="height: 31px;">
+                                        <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
                                             <i class="fas fa-archive me-1"></i>Archive Selected
                                         </button>
-                                    </div>
-                                    <!-- Right column: Reset and Apply stacked -->
-                                    <div class="d-flex flex-column gap-1">
-                                        <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn" style="height: 31px; width: 130px;">
+                                        <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn" style="width: 90px;">
                                             <i class="fas fa-times me-1 text-white"></i>Reset
                                         </button>
-                                        <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn" style="height: 31px; width: 130px;">
+                                        <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn" style="width: 90px;">
                                             <i class="fas fa-filter me-1 text-white"></i>Apply
                                         </button>
                                     </div>
