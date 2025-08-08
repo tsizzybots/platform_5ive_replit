@@ -18,6 +18,40 @@ logger = logging.getLogger(__name__)
 # Sydney timezone
 SYDNEY_TZ = pytz.timezone('Australia/Sydney')
 
+# Health check endpoint for deployment
+@app.route('/health')
+def health_check():
+    """Health check endpoint for deployment verification"""
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 503
+
+# Root endpoint for basic status
+@app.route('/')
+def root():
+    """Root endpoint showing API status"""
+    return jsonify({
+        'message': 'AI Email Helpdesk API',
+        'status': 'running',
+        'version': '1.0',
+        'health_endpoint': '/health',
+        'timestamp': datetime.utcnow().isoformat()
+    })
+
 def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
