@@ -212,7 +212,7 @@ async function sendTestMessage() {
         // Show typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message ai typing-indicator';
-        typingIndicator.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div><div style="color: white;"><i class="fas fa-spinner fa-spin"></i> Typing...</div>`;
+        typingIndicator.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Platform 5ive AI Agent</div><div style="color: white;"><i class="fas fa-spinner fa-spin"></i> Typing...</div>`;
         messagesContainer.appendChild(typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -295,7 +295,7 @@ async function sendTestMessage() {
         // Add AI response to chat
         const aiMessageDiv = document.createElement('div');
         aiMessageDiv.className = 'message ai';
-        aiMessageDiv.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Stay Golden Health AI Agent</div><div style="color: white;">${aiMessage}</div>`;
+        aiMessageDiv.innerHTML = `<div style="font-weight: bold; color: white; margin-bottom: 6px;">Platform 5ive AI Agent</div><div style="color: white;">${aiMessage}</div>`;
         messagesContainer.appendChild(aiMessageDiv);
 
         // Scroll to bottom
@@ -1776,7 +1776,7 @@ async function viewTicketDetails(id) {
                                     }
                                 ">
                                     <small style="color: ${msg.userAi === 'ai' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)'}; font-weight: 500;">
-                                        ${msg.userAi === 'ai' ? 'Stay Golden Health AI Agent' : `${msg.firstName || ''} ${msg.lastName || ''}`.trim() || 'User'}
+                                        ${msg.userAi === 'ai' ? 'Platform 5ive AI Agent' : `${msg.firstName || ''} ${msg.lastName || ''}`.trim() || 'User'}
                                     </small><br>
                                     <div class="message-content mt-1">
                                         ${escapeHtml(msg.messageStr || '').replace(/\n/g, '<br>')}
@@ -2792,9 +2792,9 @@ function setupModeSwitching() {
 function updateDashboardTitle() {
     const dashboardText = document.getElementById('dashboardText');
     if (currentMode === 'email') {
-        dashboardText.textContent = 'Sweats Collective Email AI Agent Dashboard';
+        dashboardText.textContent = 'Platform 5ive AI Lead Gen Dashboard';
     } else {
-        dashboardText.textContent = 'Sweats Collective AI Messenger Sessions Dashboard';
+        dashboardText.textContent = 'Platform 5ive AI Lead Gen Dashboard';
     }
 }
 

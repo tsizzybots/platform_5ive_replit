@@ -418,7 +418,7 @@ def export_messenger_session(session_id):
                 timestamp = msg.dateTime.strftime('%Y-%m-%d %H:%M:%S UTC') if msg.dateTime else 'Unknown Time'
                 
                 if msg.userAi == 'ai':
-                    export_content.append(f"[{timestamp}] Stay Golden Health AI Agent:")
+                    export_content.append(f"[{timestamp}] Platform 5ive AI Agent:")
                 else:
                     user_name = f"{msg.firstName or ''} {msg.lastName or ''}".strip() or 'User'
                     export_content.append(f"[{timestamp}] {user_name}:")
@@ -1008,14 +1008,14 @@ def update_messenger_session_qa(session_id):
                 resend.api_key = os.environ.get("RESEND_API_KEY")
                 
                 # Email content
-                subject = f"⚠️ Stay Golden Health - QA Issue Detected - Session {qa_session.session_id[:20]}..."
+                subject = f"⚠️ Platform 5ive - QA Issue Detected - Session {qa_session.session_id[:20]}..."
                 
                 html_content = f"""
                 <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                         <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px;">
-                            🚨 Stay Golden Health - QA Issue Detected
+                            🚨 Platform 5ive - QA Issue Detected
                         </h2>
                         
                         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -1050,7 +1050,7 @@ def update_messenger_session_qa(session_id):
                         </div>
                         
                         <p style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
-                            This is an automated notification from the Stay Golden Health AI Messenger Sessions Dashboard.
+                            This is an automated notification from the Platform 5ive AI Lead Gen Dashboard.
                         </p>
                     </div>
                 </body>
