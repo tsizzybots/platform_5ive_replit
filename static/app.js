@@ -907,7 +907,7 @@ function applyFilters() {
     if (sessionSource) currentFilters.session_source = sessionSource;
     
     const contactId = document.getElementById('contactIdFilter').value;
-    if (contactId) currentFilters.contact_id = contactId;
+    if (contactId) currentFilters.email = contactId;
     
     const qaStatus = document.getElementById('qaStatusFilter').value;
     if (qaStatus) currentFilters.qa_status = qaStatus;
@@ -1064,8 +1064,8 @@ function displayTickets(tickets, pagination) {
                     </th>
                     <th style="width: 13%;">Created</th>
                     <th style="width: 11%;">Session ID</th>
-                    <th style="width: 13%;">User Name</th>
-                    <th style="width: 18%;">Contact ID</th>
+                    <th style="width: 13%;">Full Name</th>
+                    <th style="width: 18%;">Email</th>
                     <th style="width: 10%;">Completion</th>
                     <th style="width: 9%;">QA Status</th>
                     <th style="width: 9%;">Status</th>
@@ -1124,8 +1124,8 @@ function displayTickets(tickets, pagination) {
                     </td>
                     <td class="text-nowrap">${formatDate(ticket.created_at)}</td>
                     <td><strong>${escapeHtml(ticket.session_id || 'N/A')}</strong></td>
-                    <td>${escapeHtml(ticket.customer_name || 'N/A')}</td>
-                    <td class="text-nowrap">${escapeHtml(ticket.contact_id || 'N/A')}</td>
+                    <td>${escapeHtml(ticket.full_name || 'N/A')}</td>
+                    <td class="text-nowrap">${escapeHtml(ticket.email || 'N/A')}</td>
                     <td class="text-center">${completedBadge}</td>
                     <td class="text-center">${qaStatusBadge}</td>
                     <td class="text-center">${statusBadge}</td>
@@ -1741,19 +1741,39 @@ async function viewTicketDetails(id) {
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>Session ID:</strong> ${escapeHtml(session.session_id || 'N/A')}</p>
-                    <p><strong>User Name:</strong> ${escapeHtml(session.customer_name || 'Unknown')}</p>
-                    <p><strong>Contact ID:</strong> ${escapeHtml(session.contact_id || 'N/A')}</p>
+                    <p><strong>Full Name:</strong> ${escapeHtml(session.full_name || 'Unknown')}</p>
+                    <p><strong>Email:</strong> ${escapeHtml(session.email || 'N/A')}</p>
+                    <p><strong>Phone:</strong> ${escapeHtml(session.phone_number || 'N/A')}</p>
+                    <p><strong>Company:</strong> ${escapeHtml(session.company_name || 'N/A')}</p>
                     <p><strong>Messages:</strong> ${session.message_count || 0} total</p>
-
                 </div>
                 <div class="col-md-6">
                     <p><strong>Started:</strong> ${formatDate(session.conversation_start)}</p>
                     <p><strong>Last Message:</strong> ${formatDate(session.last_message_time)}</p>
                     <p><strong>Status:</strong> ${session.completed ? '<span class="badge bg-success">Completed</span>' : '<span class="badge bg-danger">Incomplete</span>'}</p>
                     <p><strong>QA Status:</strong> <span class="session-qa-status">${getQAStatusBadge(session.qa_status)}</span></p>
-
                 </div>
             </div>
+            
+            ${session.ai_interest_reason || session.business_challenges || session.business_goals_6_12m || session.ai_implementation_known || session.ai_budget_allocated || session.ai_implementation_timeline ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6 class="text-primary"><i class="fas fa-chart-line me-2"></i>Lead Generation Data</h6>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    ${session.ai_interest_reason ? `<p><strong>AI Interest Reason:</strong> ${escapeHtml(session.ai_interest_reason)}</p>` : ''}
+                    ${session.ai_implementation_known ? `<p><strong>AI Implementation Knowledge:</strong> ${escapeHtml(session.ai_implementation_known)}</p>` : ''}
+                    ${session.ai_budget_allocated ? `<p><strong>AI Budget Allocated:</strong> ${escapeHtml(session.ai_budget_allocated)}</p>` : ''}
+                </div>
+                <div class="col-md-6">
+                    ${session.business_challenges ? `<p><strong>Business Challenges:</strong> ${escapeHtml(session.business_challenges)}</p>` : ''}
+                    ${session.business_goals_6_12m ? `<p><strong>6-12 Month Goals:</strong> ${escapeHtml(session.business_goals_6_12m)}</p>` : ''}
+                    ${session.ai_implementation_timeline ? `<p><strong>Implementation Timeline:</strong> ${escapeHtml(session.ai_implementation_timeline)}</p>` : ''}
+                </div>
+            </div>
+            ` : ''}
             
             <!-- Export Session Button - Only visible to QA and Dev users -->
             ${currentUser?.role === 'qa' || currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? `
@@ -2403,8 +2423,8 @@ function addSessionRowWithAnimation(session) {
         </td>
         <td class="text-nowrap">${formatDate(session.created_at)}</td>
         <td><strong>${escapeHtml(session.session_id || 'N/A')}</strong></td>
-        <td>${escapeHtml(session.customer_name || 'N/A')}</td>
-        <td class="text-nowrap">${escapeHtml(session.contact_id || 'N/A')}</td>
+        <td>${escapeHtml(session.full_name || 'N/A')}</td>
+        <td class="text-nowrap">${escapeHtml(session.email || 'N/A')}</td>
         <td class="text-center">${completedBadge}</td>
         <td class="text-center">${qaStatusBadge}</td>
         <td class="text-center">${statusBadge}</td>

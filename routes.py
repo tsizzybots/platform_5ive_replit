@@ -74,7 +74,7 @@ def ensure_messenger_session_exists(session_id):
             
         # Extract info from first message
         first_msg = messages[0]
-        customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+        full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
         contact_id = first_msg.contactID or 'Unknown'
         
         # Calculate session stats
@@ -111,8 +111,7 @@ def ensure_messenger_session_exists(session_id):
         # Create new messenger session
         messenger_session = MessengerSession(
             session_id=session_id,
-            customer_name=customer_name,
-            customer_id=contact_id,
+            full_name=full_name,
             conversation_start=conversation_start,
             last_message_time=last_message_time,
             message_count=message_count,
@@ -343,10 +342,10 @@ def get_messenger_session(session_id):
         ).order_by(ChatSessionForDashboard.dateTime).all()
         
         # Build customer name from first message
-        customer_name = messenger_session.customer_name or 'Unknown'
-        if messages and not customer_name:
+        full_name = messenger_session.full_name or 'Unknown'
+        if messages and not full_name:
             first_msg = messages[0]
-            customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+            full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
         
         # Determine completion status
         completion_status = 'incomplete'
@@ -370,8 +369,8 @@ def get_messenger_session(session_id):
         session_data = {
             'id': messenger_session.id,
             'session_id': messenger_session.session_id,
-            'customer_name': customer_name,
-            'contact_id': messenger_session.customer_id,
+            'full_name': full_name,
+            'contact_id': messenger_session.email,
             'conversation_start': messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
             'last_message_time': messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
             'message_count': len(messages),
@@ -432,10 +431,10 @@ def export_messenger_session(session_id):
         ).order_by(ChatSessionForDashboard.dateTime).all()
         
         # Build customer name from first message
-        customer_name = messenger_session.customer_name or 'Unknown'
-        if messages and not customer_name:
+        full_name = messenger_session.full_name or 'Unknown'
+        if messages and not full_name:
             first_msg = messages[0]
-            customer_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
+            full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
         
         # Build the export content
         export_content = []
@@ -448,7 +447,7 @@ def export_messenger_session(session_id):
         export_content.append("SESSION DETAILS:")
         export_content.append("-" * 40)
         export_content.append(f"Session ID: {messenger_session.session_id}")
-        export_content.append(f"Customer Name: {customer_name}")
+        export_content.append(f"Customer Name: {full_name}")
         export_content.append(f"Contact ID: {messenger_session.customer_id or 'N/A'}")
         export_content.append(f"Started: {messenger_session.conversation_start.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.conversation_start else 'N/A'}")
         export_content.append(f"Last Message: {messenger_session.last_message_time.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.last_message_time else 'N/A'}")
@@ -661,8 +660,8 @@ def get_messenger_sessions():
         query = db.session.query(
             MessengerSession.id.label('messenger_session_id'),
             MessengerSession.session_id,
-            MessengerSession.customer_name,
-            MessengerSession.customer_id.label('contact_id'),
+            MessengerSession.full_name,
+            MessengerSession.email.label('contact_id'),
             MessengerSession.conversation_start,
             MessengerSession.last_message_time,
             MessengerSession.message_count,
@@ -685,8 +684,10 @@ def get_messenger_sessions():
             query = query.filter(MessengerSession.conversation_start >= query_params['date_from'])
         if 'date_to' in query_params:
             query = query.filter(MessengerSession.last_message_time <= query_params['date_to'])
-        if 'contact_id' in query_params:
-            query = query.filter(MessengerSession.customer_id == query_params['contact_id'])
+        if 'email' in query_params:
+            query = query.filter(MessengerSession.email == query_params['email'])
+        if 'contact_id' in query_params:  # Keep backward compatibility
+            query = query.filter(MessengerSession.email == query_params['contact_id'])
         if 'session_id' in query_params:
             query = query.filter(MessengerSession.session_id == query_params['session_id'])
         # Handle completion status filter (independent of archive status)
@@ -734,7 +735,7 @@ def get_messenger_sessions():
             ).order_by(ChatSessionForDashboard.dateTime).all()
             
             # Use customer name from MessengerSession record
-            customer_name = result.customer_name or 'Unknown'
+            full_name = result.full_name or 'Unknown'
             
             # Get completion status from database (now stored as field)
             completion_status = result.completion_status or 'incomplete'
@@ -749,7 +750,7 @@ def get_messenger_sessions():
             session_data = {
                 'id': result.messenger_session_id,
                 'session_id': result.session_id,
-                'customer_name': customer_name,
+                'full_name': full_name,
                 'contact_id': result.contact_id or '',
                 'conversation_start': result.conversation_start.isoformat() if result.conversation_start else None,
                 'last_message_time': result.last_message_time.isoformat() if result.last_message_time else None,
@@ -828,10 +829,10 @@ def delete_testing_session(session_id):
         # Get customer name from chat messages to verify it's a testing session
         first_message = ChatSessionForDashboard.query.filter_by(session_id=session_id_str).first()
         if first_message:
-            customer_name = f"{first_message.firstName} {first_message.lastName}".strip()
+            full_name = f"{first_message.firstName} {first_message.lastName}".strip()
             
             # Only allow deletion of testing sessions
-            if customer_name != 'Testing Session':
+            if full_name != 'Testing Session':
                 return jsonify({
                     'status': 'error',
                     'message': 'Can only delete testing sessions'
@@ -1093,7 +1094,7 @@ def update_messenger_session_qa(session_id):
                                 <h3 style="margin-top: 0; color: #495057; font-size: 18px;">📋 Session Details</h3>
                                 <div style="display: grid; gap: 8px;">
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Session ID:</strong> <span style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{qa_session.session_id}</span></p>
-                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {qa_session.customer_name or 'Unknown'}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {qa_session.full_name or 'Unknown'}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
@@ -1145,7 +1146,7 @@ PLATFORM 5IVE - QA ISSUE DETECTED
 
 Session Details:
 - Session ID: {qa_session.session_id}
-- Customer: {qa_session.customer_name or 'Unknown'}
+- Customer: {qa_session.full_name or 'Unknown'}
 - Contact ID: {qa_session.customer_id or 'N/A'}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
 - Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
@@ -1550,8 +1551,8 @@ def handle_chat_message():
             # Create new session for web chat
             messenger_session = MessengerSession(
                 session_id=session_id,
-                customer_name=f"{first_name} {last_name}".strip() if first_name or last_name else 'Web Chat User',
-                customer_id=contact_id or session_id,
+                full_name=f"{first_name} {last_name}".strip() if first_name or last_name else 'Web Chat User',
+                email=contact_id if '@' in contact_id else None,
                 conversation_start=datetime.utcnow(),
                 last_message_time=datetime.utcnow(),
                 message_count=1,
@@ -1573,10 +1574,9 @@ def handle_chat_message():
             
             # Update customer info if provided
             if first_name or last_name:
-                messenger_session.customer_name = f"{first_name} {last_name}".strip()
+                messenger_session.full_name = f"{first_name} {last_name}".strip()
             if contact_id:
-                messenger_session.customer_id = contact_id
-                messenger_session.lead_email = contact_id if '@' in contact_id else messenger_session.lead_email
+                messenger_session.email = contact_id if '@' in contact_id else messenger_session.email
                 
         db.session.commit()
         
@@ -1627,7 +1627,7 @@ def handle_webhook_delivery():
         # Update session with lead data
         messenger_session.lead_name = name
         messenger_session.lead_email = email
-        messenger_session.customer_name = name if name else messenger_session.customer_name
+        messenger_session.full_name = name if name else messenger_session.full_name
         messenger_session.customer_id = email if email else messenger_session.customer_id
         
         if completed:
@@ -1742,7 +1742,7 @@ def export_session(session_id):
         export_content.append("SESSION DETAILS:")
         export_content.append("-" * 40)
         export_content.append(f"Session ID: {messenger_session.session_id}")
-        export_content.append(f"Customer Name: {messenger_session.customer_name or 'Unknown'}")
+        export_content.append(f"Customer Name: {messenger_session.full_name or 'Unknown'}")
         export_content.append(f"Contact ID: {messenger_session.customer_id or 'Unknown'}")
         
         # Format dates in UTC

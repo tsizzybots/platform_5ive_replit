@@ -71,8 +71,6 @@ class MessengerSession(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.String(100), nullable=False, unique=True)
-    customer_name = db.Column(db.String(255), nullable=True)
-    customer_id = db.Column(db.String(255), nullable=True)
     conversation_start = db.Column(db.DateTime, nullable=False)
     last_message_time = db.Column(db.DateTime, nullable=False)
     message_count = db.Column(db.Integer, nullable=False, default=1)
@@ -88,9 +86,17 @@ class MessengerSession(db.Model):
     # Session source tracking (messenger, web_chat)
     session_source = db.Column(db.String(50), nullable=False, default='messenger')
     
-    # Lead data for web chat sessions
-    lead_email = db.Column(db.String(255), nullable=True)
-    lead_name = db.Column(db.String(255), nullable=True)
+    # Lead generation data fields
+    full_name = db.Column(db.String(255), nullable=True)
+    company_name = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=True)
+    phone_number = db.Column(db.String(50), nullable=True)
+    ai_interest_reason = db.Column(db.Text, nullable=True)
+    ai_implementation_known = db.Column(db.Text, nullable=True)
+    business_challenges = db.Column(db.Text, nullable=True)
+    business_goals_6_12m = db.Column(db.Text, nullable=True)
+    ai_budget_allocated = db.Column(db.Text, nullable=True)
+    ai_implementation_timeline = db.Column(db.Text, nullable=True)
     
     # Webhook tracking
     webhook_delivered = db.Column(db.Boolean, nullable=False, default=False)
@@ -124,8 +130,6 @@ class MessengerSession(db.Model):
         return {
             'id': self.id,
             'session_id': self.session_id,
-            'customer_name': self.customer_name,
-            'customer_id': self.customer_id,
             'conversation_start': self.conversation_start.isoformat() if self.conversation_start else None,
             'last_message_time': self.last_message_time.isoformat() if self.last_message_time else None,
             'message_count': self.message_count,
@@ -137,8 +141,17 @@ class MessengerSession(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'session_source': self.session_source,
-            'lead_email': self.lead_email,
-            'lead_name': self.lead_name,
+            # Lead generation fields
+            'full_name': self.full_name,
+            'company_name': self.company_name,
+            'email': self.email,
+            'phone_number': self.phone_number,
+            'ai_interest_reason': self.ai_interest_reason,
+            'ai_implementation_known': self.ai_implementation_known,
+            'business_challenges': self.business_challenges,
+            'business_goals_6_12m': self.business_goals_6_12m,
+            'ai_budget_allocated': self.ai_budget_allocated,
+            'ai_implementation_timeline': self.ai_implementation_timeline,
             'webhook_delivered': self.webhook_delivered,
             'webhook_delivery_at': self.webhook_delivery_at.isoformat() if self.webhook_delivery_at else None,
             'webhook_url': self.webhook_url,
