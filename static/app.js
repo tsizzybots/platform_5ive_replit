@@ -1755,10 +1755,10 @@ async function viewTicketDetails(id) {
                 </div>
             </div>
             
-            <!-- Export Session Button - Only visible to IzzyDev users -->
-            ${currentUser?.username === 'IzzyDev' ? `
+            <!-- Export Session Button - Only visible to QA and Dev users -->
+            ${currentUser?.role === 'qa' || currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? `
             <div class="mt-3 mb-3">
-                <button type="button" class="btn btn-success" onclick="exportSession(${session.id})">
+                <button type="button" class="btn btn-success" onclick="exportSession('${session.session_id}')">
                     <i class="fas fa-download me-1"></i>Export Session
                 </button>
             </div>
@@ -1815,7 +1815,7 @@ async function viewTicketDetails(id) {
                                             <option value="issue" ${session.qa_status === 'issue' ? 'selected' : ''}>Issue</option>
                                             <option value="fixed" ${session.qa_status === 'fixed' ? 'selected' : ''}>Fixed</option>
                                         </select>
-                                        ${currentUser?.role === 'developer' ? 
+                                        ${currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? 
                                             '<small class="form-text text-muted">As a developer, you can mark issues as "Fixed" after addressing them.</small>' :
                                             '<small class="form-text text-muted">QA status selection</small>'}
                                     </div>
@@ -1861,14 +1861,14 @@ async function viewTicketDetails(id) {
                                 <div class="mb-3">
                                     <label for="dev_feedback_text" class="form-label">Developer Response</label>
                                     <textarea class="form-control" id="dev_feedback_text" rows="4" 
-                                              placeholder="${currentUser?.role === 'developer' ? 'Add developer response to QA notes...' : 'Developer responses will appear here...'}"
-                                              ${currentUser?.role !== 'developer' ? 'readonly' : ''}>${session.dev_feedback || ''}</textarea>
+                                              placeholder="${currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? 'Add developer response to QA notes...' : 'Developer responses will appear here...'}"
+                                              ${currentUser?.role !== 'qa_dev' && currentUser?.role !== 'admin' ? 'readonly' : ''}>${session.dev_feedback || ''}</textarea>
                                     ${session.dev_feedback_by ? `<small class="form-text text-muted">Last updated by: ${session.dev_feedback_by} ${session.dev_feedback_at ? 'on ' + formatDate(session.dev_feedback_at) : ''}</small>` : ''}
-                                    ${currentUser?.role !== 'developer' ? '<small class="form-text text-muted">Only developers can add responses here</small>' : ''}
+                                    ${currentUser?.role !== 'qa_dev' && currentUser?.role !== 'admin' ? '<small class="form-text text-muted">Only developers can add responses here</small>' : ''}
                                 </div>
                                 
                                 <!-- Action buttons - only visible to developers -->
-                                ${currentUser?.role === 'developer' ? `
+                                ${currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? `
                                 <div id="devFeedbackButtons" class="d-flex gap-2">
                                     <button type="button" class="btn btn-info" onclick="saveDevFeedback()">
                                         <i class="fas fa-save me-1"></i>Save Feedback
@@ -1941,8 +1941,8 @@ async function updateSessionQA() {
 
 // Save Developer Feedback
 async function saveDevFeedback() {
-    // Check permission - only developers can add feedback
-    if (!currentUser || currentUser.role !== 'developer') {
+    // Check permission - only qa_dev and admin roles can add feedback
+    if (!currentUser || (currentUser.role !== 'qa_dev' && currentUser.role !== 'admin')) {
         showAlert('Access denied: Only developers can add feedback', 'danger');
         return;
     }
@@ -1993,8 +1993,8 @@ async function saveDevFeedback() {
 
 // Save Developer Feedback and Mark as Fixed
 async function saveDevFeedbackAndMarkFixed() {
-    // Check permission - only developers can mark as fixed
-    if (!currentUser || currentUser.role !== 'developer') {
+    // Check permission - only qa_dev and admin roles can mark as fixed
+    if (!currentUser || (currentUser.role !== 'qa_dev' && currentUser.role !== 'admin')) {
         showAlert('Access denied: Only developers can mark issues as fixed', 'danger');
         return;
     }
@@ -2047,14 +2047,14 @@ async function saveDevFeedbackAndMarkFixed() {
 
 // Export Session
 async function exportSession(sessionId) {
-    // Check permission - only allow IzzyDev users
-    if (!currentUser || currentUser.username !== 'IzzyDev') {
-        showAlert('Access denied: Only IzzyDev users can export sessions', 'danger');
+    // Check permission - only allow QA and Dev users
+    if (!currentUser || (currentUser.role !== 'qa' && currentUser.role !== 'qa_dev' && currentUser.role !== 'admin')) {
+        showAlert('Access denied: Only QA and developer users can export sessions', 'danger');
         return;
     }
     
     try {
-        const response = await fetch(`/api/messenger-sessions/${sessionId}/export`, {
+        const response = await fetch(`/api/sessions/${sessionId}/export`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

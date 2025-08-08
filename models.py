@@ -9,7 +9,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # 'admin' or 'agent'
+    role = db.Column(db.String(50), nullable=False)  # 'admin', 'agent', 'qa', 'qa_dev'
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     def set_password(self, password):

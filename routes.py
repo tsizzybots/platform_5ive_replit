@@ -172,6 +172,22 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def role_required(*allowed_roles):
+    """Decorator to require specific roles for route access"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login'))
+            
+            current_user = get_current_user()
+            if not current_user or current_user.role not in allowed_roles:
+                flash('Access denied. You do not have permission to access this resource.', 'error')
+                return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 def get_current_user():
     """Get the current logged-in user"""
     if 'user_id' in session:
@@ -943,7 +959,8 @@ def get_messenger_session_stats():
         }), 500
 
 @app.route('/api/messenger-sessions/<int:session_id>/qa', methods=['PUT'])
-@login_required  
+@login_required
+@role_required('qa', 'qa_dev', 'admin')
 def update_messenger_session_qa(session_id):
     """Update QA status and notes for a messenger session"""
     try:
@@ -985,17 +1002,29 @@ def update_messenger_session_qa(session_id):
         if 'qa_reviewer' in data:
             qa_session.qa_status_updated_by = data['qa_reviewer']
         
-        # Update developer feedback if provided
+        # Update developer feedback if provided (only qa_dev and admin roles)
         if 'dev_feedback' in data:
-            qa_session.dev_feedback = data['dev_feedback']
-            qa_session.dev_feedback_by = current_user.username
-            qa_session.dev_feedback_at = sydney_now
+            if current_user.role in ['qa_dev', 'admin']:
+                qa_session.dev_feedback = data['dev_feedback']
+                qa_session.dev_feedback_by = current_user.username
+                qa_session.dev_feedback_at = sydney_now
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Access denied. Only developers can update developer feedback.'
+                }), 403
         
-        # If marking as fixed
+        # If marking as fixed (only qa_dev and admin roles)
         if data.get('mark_fixed', False):
-            qa_session.qa_status = 'fixed'
-            qa_session.qa_status_updated_by = current_user.username
-            qa_session.qa_status_updated_at = sydney_now
+            if current_user.role in ['qa_dev', 'admin']:
+                qa_session.qa_status = 'fixed'
+                qa_session.qa_status_updated_by = current_user.username
+                qa_session.qa_status_updated_at = sydney_now
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Access denied. Only developers can mark issues as fixed.'
+                }), 403
         
         qa_session.updated_at = sydney_now
         db.session.commit()
@@ -1545,6 +1574,130 @@ def handle_webhook_delivery():
         return jsonify({
             'status': 'error',
             'message': 'Failed to process webhook delivery',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/sessions/<session_id>/export', methods=['GET'])
+@login_required
+@role_required('qa', 'qa_dev', 'admin')
+def export_session(session_id):
+    """Export session data as a formatted text file"""
+    try:
+        from flask import make_response
+        
+        # Get session data
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if not messenger_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+        
+        # Get chat messages
+        chat_messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).order_by(ChatSessionForDashboard.dateTime).all()
+        
+        # Format export content
+        export_content = []
+        export_content.append("=" * 80)
+        export_content.append("AI CHAT SESSION EXPORT")
+        export_content.append("=" * 80)
+        export_content.append("")
+        
+        # Session details
+        export_content.append("SESSION DETAILS:")
+        export_content.append("-" * 40)
+        export_content.append(f"Session ID: {messenger_session.session_id}")
+        export_content.append(f"Customer Name: {messenger_session.customer_name or 'Unknown'}")
+        export_content.append(f"Contact ID: {messenger_session.customer_id or 'Unknown'}")
+        
+        # Format dates in UTC
+        start_time = messenger_session.conversation_start
+        if start_time:
+            export_content.append(f"Started: {start_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        
+        last_time = messenger_session.last_message_time
+        if last_time:
+            export_content.append(f"Last Message: {last_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+        
+        export_content.append(f"Total Messages: {messenger_session.message_count}")
+        export_content.append(f"Status: {messenger_session.status}")
+        export_content.append(f"Completion Status: {messenger_session.completion_status}")
+        export_content.append(f"QA Status: {messenger_session.qa_status}")
+        export_content.append("")
+        
+        # Conversation thread
+        export_content.append("CONVERSATION THREAD:")
+        export_content.append("-" * 40)
+        export_content.append("")
+        
+        if chat_messages:
+            for message in chat_messages:
+                user_type = "AI Agent" if message.userAi == 'ai' else message.firstName or "User"
+                if message.userAi == 'ai':
+                    user_name = "IzzyBots AI Agent"  # You can customize this based on your branding
+                else:
+                    user_name = f"{message.firstName or ''} {message.lastName or ''}".strip() or "User"
+                
+                timestamp = message.dateTime.strftime('%Y-%m-%d %H:%M:%S') if message.dateTime else 'Unknown time'
+                export_content.append(f"[{timestamp}] {user_name}:")
+                export_content.append(f"  {message.messageStr or ''}")
+                export_content.append("")
+        else:
+            export_content.append("No messages found.")
+            export_content.append("")
+        
+        # QA Feedback section
+        if messenger_session.qa_notes or messenger_session.qa_status != 'unchecked':
+            export_content.append("SESSION FEEDBACK (QA NOTES):")
+            export_content.append("-" * 40)
+            
+            if messenger_session.qa_notes:
+                export_content.append(messenger_session.qa_notes)
+                export_content.append("")
+            
+            if messenger_session.qa_status_updated_by and messenger_session.qa_status_updated_at:
+                reviewer = messenger_session.qa_status_updated_by
+                review_date = messenger_session.qa_status_updated_at.strftime('%Y-%m-%d %H:%M:%S')
+                export_content.append(f"Reviewed by: {reviewer} on {review_date} UTC")
+            export_content.append("")
+        
+        # Developer feedback section (if exists)
+        if messenger_session.dev_feedback:
+            export_content.append("DEVELOPER FEEDBACK:")
+            export_content.append("-" * 40)
+            export_content.append(messenger_session.dev_feedback)
+            export_content.append("")
+            
+            if messenger_session.dev_feedback_by and messenger_session.dev_feedback_at:
+                dev_user = messenger_session.dev_feedback_by
+                dev_date = messenger_session.dev_feedback_at.strftime('%Y-%m-%d %H:%M:%S')
+                export_content.append(f"Developer feedback by: {dev_user} on {dev_date} UTC")
+            export_content.append("")
+        
+        export_content.append("=" * 80)
+        export_content.append("End of Session Export")
+        export_content.append("=" * 80)
+        
+        # Create response
+        export_text = "\n".join(export_content)
+        
+        # Create filename with current date
+        current_date = datetime.now().strftime('%b %d %Y')
+        filename = f"Chat Session Export {current_date}_{session_id}.txt"
+        
+        response = make_response(export_text)
+        response.headers['Content-Type'] = 'text/plain'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to export session',
             'error': str(e)
         }), 500
 

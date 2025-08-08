@@ -1,0 +1,42 @@
+================================================================================
+AI CHAT SESSION EXPORT
+================================================================================
+
+SESSION DETAILS:
+----------------------------------------
+Session ID: session_21zjyfi26b1ku8ku9hxf3b
+Customer Name: Testing Session
+Contact ID: 0000000000
+Started: 2025-08-07 22:05:26 UTC
+Last Message: 2025-08-07 22:05:26 UTC
+Total Messages: 2
+Status: active
+Completion Status: in_progress
+QA Status: issue
+
+CONVERSATION THREAD:
+----------------------------------------
+
+[Not available] Testing Session:
+  can I get a refund?
+
+[Not available] Rhythm & Vines AI Agent:
+  Welcome to Rhythm and Vines! 🎵 How can I help you prepare for the ultimate New Year's festival experience?  
+
+Regarding refunds, please note that ticket refunds are generally subject to the festival's refund policy, which typically has specific deadlines and conditions. For detailed information on refunds, you should visit https://www.rhythmandvines.co.nz or contact the official festival support team directly.  
+
+If your inquiry is about reselling tickets, ticket resale is available for Rhythm and Vines from August 30th! 🎉 For all of the details and to access the resale process, visit https://tixsupport.moshtix.co.nz/hc/en-us/categories/360000572836-Resale. If you have an accommodation package, contact the Premium Services team at: hello@rhythmandvines.co.nz.  
+
+What else can I help you with for R&V?
+
+SESSION FEEDBACK (QA NOTES):
+----------------------------------------
+Very long response.
+
+Shouldn't start with "Welcome to Rhythm and Vines! 🎵 How can I help you prepare for the ultimate New Year's festival experience?" when user has already asked a question
+
+Reviewed by: IzzyAgentsQA on 2025-08-07 22:06:25 UTC
+
+================================================================================
+End of Session Export
+================================================================================
