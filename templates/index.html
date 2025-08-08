@@ -561,6 +561,29 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
+        
+        /* Improved Action Buttons Grid Layout */
+        .action-buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 320px;
+        }
+        
+        .action-buttons-grid .btn {
+            min-height: 38px;
+            font-size: 0.875rem;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .action-buttons-grid .btn i {
+            margin-right: 6px;
+        }
     </style>
 </head>
 <body>
@@ -737,29 +760,21 @@
                         <!-- Action Buttons in 2x2 Grid -->
                         <div class="row mb-3">
                             <div class="col-12 d-flex justify-content-end">
-                                <div class="row g-1" style="width: 300px;">
+                                <div class="action-buttons-grid">
                                     <!-- Top Row -->
-                                    <div class="col-6">
-                                        <button class="btn btn-success btn-sm text-white w-100" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled>
-                                            <i class="fas fa-check me-1"></i>Mark as Passed
-                                        </button>
-                                    </div>
-                                    <div class="col-6">
-                                        <button class="btn btn-danger btn-sm text-white w-100" onclick="resetFilters()" id="resetFiltersBtn">
-                                            <i class="fas fa-times me-1 text-white"></i>Reset
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled>
+                                        <i class="fas fa-check"></i>Mark as Passed
+                                    </button>
+                                    <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
+                                        <i class="fas fa-archive"></i>Archive Selected
+                                    </button>
                                     <!-- Bottom Row -->
-                                    <div class="col-6">
-                                        <button class="btn btn-dark btn-sm w-100" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
-                                            <i class="fas fa-archive me-1"></i>Archive Selected
-                                        </button>
-                                    </div>
-                                    <div class="col-6">
-                                        <button class="btn btn-primary btn-sm text-white w-100" onclick="applyFilters()" id="applyFiltersBtn">
-                                            <i class="fas fa-filter me-1 text-white"></i>Apply
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn">
+                                        <i class="fas fa-times text-white"></i>Reset
+                                    </button>
+                                    <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn">
+                                        <i class="fas fa-filter text-white"></i>Apply
+                                    </button>
                                 </div>
                             </div>
                         </div>
