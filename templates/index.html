@@ -679,79 +679,88 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <!-- Filters and Action Buttons -->
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <!-- Filter Controls on Left -->
-                            <div class="d-flex align-items-end gap-2">
-                                <div>
-                                    <label class="form-label small mb-1">Status</label>
-                                    <select class="form-select form-select-sm" id="statusFilter" style="width: 100px;">
-                                        <option value="">All Statuses</option>
-                                        <option value="active">Active</option>
-                                        <option value="archived">Archived</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label small mb-1">Completion Status</label>
-                                    <select class="form-select form-select-sm" id="completionFilter" style="width: 100px;">
-                                        <option value="">All</option>
-                                        <option value="complete">Complete</option>
-                                        <option value="in_progress">In Progress</option>
-                                        <option value="incomplete">Incomplete</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label small mb-1">QA Status</label>
-                                    <select class="form-select form-select-sm" id="qaStatusFilter" style="width: 100px;">
-                                        <option value="">All QA Status</option>
-                                        <option value="unchecked">Unchecked</option>
-                                        <option value="passed">Passed</option>
-                                        <option value="issue">Issue</option>
-                                        <option value="fixed">Fixed</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label small mb-1">Contact ID</label>
-                                    <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Search by Contact ID" style="width: 140px;" oninput="handleContactIdSearch()">
-                                </div>
-                                <div>
-                                    <label class="form-label small mb-1">Date Range:</label>
-                                    <div class="d-flex align-items-center gap-1">
-                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 40px;">
-                                            <i class="fas fa-calendar"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
-                                        </ul>
-                                        <input type="date" class="form-control form-control-sm" id="dateFrom" style="width: 110px;">
-                                        <input type="date" class="form-control form-control-sm" id="dateTo" style="width: 110px;">
-                                    </div>
+                        <!-- Filters Row -->
+                        <div class="row mb-3 align-items-end g-2">
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Status</label>
+                                <select class="form-select form-select-sm" id="statusFilter" style="width: 110px;">
+                                    <option value="">All Statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="archived">Archived</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Completion Status</label>
+                                <select class="form-select form-select-sm" id="completionFilter" style="width: 110px;">
+                                    <option value="">All</option>
+                                    <option value="complete">Complete</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="incomplete">Incomplete</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">QA Status</label>
+                                <select class="form-select form-select-sm" id="qaStatusFilter" style="width: 110px;">
+                                    <option value="">All QA Status</option>
+                                    <option value="unchecked">Unchecked</option>
+                                    <option value="passed">Passed</option>
+                                    <option value="issue">Issue</option>
+                                    <option value="fixed">Fixed</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Contact ID</label>
+                                <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Search by Contact ID" style="width: 150px;" oninput="handleContactIdSearch()">
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Date Range</label>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 40px;">
+                                        <i class="fas fa-calendar"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('today')">Today</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('yesterday')">Yesterday</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisWeek')">This Week</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastWeek')">Last Week</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('thisMonth')">This Month</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="setDateRange('lastMonth')">Last Month</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
+                                    </ul>
+                                    <input type="date" class="form-control form-control-sm" id="dateFrom" style="width: 120px;">
+                                    <input type="date" class="form-control form-control-sm" id="dateTo" style="width: 120px;">
                                 </div>
                             </div>
-                            
-                            <!-- Action Buttons 2x2 Grid on Right -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 280px;">
-                                <!-- Top Row -->
-                                <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled style="padding: 6px 12px;">
-                                    <i class="fas fa-check me-1"></i>Mark as Passed
-                                </button>
-                                <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn" style="padding: 6px 12px;">
-                                    <i class="fas fa-times me-1 text-white"></i>Reset
-                                </button>
-                                <!-- Bottom Row -->
-                                <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled style="padding: 6px 12px;">
-                                    <i class="fas fa-archive me-1"></i>Archive Selected
-                                </button>
-                                <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn" style="padding: 6px 12px;">
-                                    <i class="fas fa-filter me-1 text-white"></i>Apply
-                                </button>
+                        </div>
+
+                        <!-- Action Buttons in 2x2 Grid -->
+                        <div class="row mb-3">
+                            <div class="col-12 d-flex justify-content-end">
+                                <div class="row g-1" style="width: 300px;">
+                                    <!-- Top Row -->
+                                    <div class="col-6">
+                                        <button class="btn btn-success btn-sm text-white w-100" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled>
+                                            <i class="fas fa-check me-1"></i>Mark as Passed
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-danger btn-sm text-white w-100" onclick="resetFilters()" id="resetFiltersBtn">
+                                            <i class="fas fa-times me-1 text-white"></i>Reset
+                                        </button>
+                                    </div>
+                                    <!-- Bottom Row -->
+                                    <div class="col-6">
+                                        <button class="btn btn-dark btn-sm w-100" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
+                                            <i class="fas fa-archive me-1"></i>Archive Selected
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-primary btn-sm text-white w-100" onclick="applyFilters()" id="applyFiltersBtn">
+                                            <i class="fas fa-filter me-1 text-white"></i>Apply
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
