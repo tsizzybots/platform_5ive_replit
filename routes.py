@@ -40,10 +40,10 @@ def health_check():
             'timestamp': datetime.utcnow().isoformat()
         }), 503
 
-# Root endpoint for basic status
-@app.route('/')
-def root():
-    """Root endpoint showing API status"""
+# API status endpoint - moved from root to avoid conflict
+@app.route('/api/status')
+def api_status():
+    """API status endpoint"""
     return jsonify({
         'message': 'AI Email Helpdesk API',
         'status': 'running',
