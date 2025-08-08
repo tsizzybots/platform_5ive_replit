@@ -702,8 +702,9 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <!-- Filters Row -->
+                        <!-- Filters Row with Action Buttons -->
                         <div class="row mb-3 align-items-end g-2">
+                            <!-- Filter Controls -->
                             <div class="col-auto">
                                 <label class="form-label small mb-1">Status</label>
                                 <select class="form-select form-select-sm" id="statusFilter" style="width: 110px;">
@@ -736,7 +737,7 @@
                                 <input type="text" class="form-control form-control-sm" id="contactIdFilter" placeholder="Search by Contact ID" style="width: 150px;" oninput="handleContactIdSearch()">
                             </div>
                             <div class="col-auto">
-                                <label class="form-label small mb-1">Date Range</label>
+                                <label class="form-label small mb-1">Date Range:</label>
                                 <div class="d-flex align-items-center gap-1">
                                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dateRangeDropdown" data-bs-toggle="dropdown" style="width: 40px;">
                                         <i class="fas fa-calendar"></i>
@@ -751,29 +752,27 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="#" onclick="clearDateRange()">Clear Filter</a></li>
                                     </ul>
-                                    <input type="date" class="form-control form-control-sm" id="dateFrom" style="width: 120px;">
-                                    <input type="date" class="form-control form-control-sm" id="dateTo" style="width: 120px;">
+                                    <input type="date" class="form-control form-control-sm" id="dateFrom" style="width: 130px;">
+                                    <input type="date" class="form-control form-control-sm" id="dateTo" style="width: 130px;">
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Action Buttons in 2x2 Grid -->
-                        <div class="row mb-3">
-                            <div class="col-12 d-flex justify-content-end">
-                                <div class="action-buttons-grid">
+                            
+                            <!-- Action Buttons - Right aligned -->
+                            <div class="col-auto ms-auto">
+                                <div class="d-grid gap-1" style="grid-template-columns: repeat(2, 140px); grid-template-rows: repeat(2, auto);">
                                     <!-- Top Row -->
-                                    <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled>
-                                        <i class="fas fa-check"></i>Mark as Passed
+                                    <button class="btn btn-success btn-sm text-white" id="markPassedBtn" onclick="markSelectedAsPassed()" disabled style="font-size: 0.8rem; padding: 6px 8px; white-space: nowrap;">
+                                        <i class="fas fa-check me-1"></i>Mark as Passed
                                     </button>
-                                    <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled>
-                                        <i class="fas fa-archive"></i>Archive Selected
+                                    <button class="btn btn-dark btn-sm" id="archiveSelectedBtn" onclick="archiveSelected()" disabled style="font-size: 0.8rem; padding: 6px 8px; white-space: nowrap;">
+                                        <i class="fas fa-archive me-1"></i>Archive Selected
                                     </button>
                                     <!-- Bottom Row -->
-                                    <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn">
-                                        <i class="fas fa-times text-white"></i>Reset
+                                    <button class="btn btn-danger btn-sm text-white" onclick="resetFilters()" id="resetFiltersBtn" style="font-size: 0.8rem; padding: 6px 8px; white-space: nowrap;">
+                                        <i class="fas fa-times me-1"></i>Reset
                                     </button>
-                                    <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn">
-                                        <i class="fas fa-filter text-white"></i>Apply
+                                    <button class="btn btn-primary btn-sm text-white" onclick="applyFilters()" id="applyFiltersBtn" style="font-size: 0.8rem; padding: 6px 8px; white-space: nowrap;">
+                                        <i class="fas fa-filter me-1"></i>Apply
                                     </button>
                                 </div>
                             </div>
