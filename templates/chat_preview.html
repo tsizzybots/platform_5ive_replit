@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform 5ive Chat Preview - WordPress Integration</title>
+    
+    <!-- BotUI CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/botui/build/botui.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/botui/build/botui-theme-default.css" />
+    
+    <!-- Bootstrap for modern UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom styles matching WordPress embed -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .preview-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+            margin-bottom: 0;
+        }
+        
+        .preview-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .preview-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .chat-widget-preview {
+            display: flex;
+            gap: 20px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .wordpress-simulation {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .wordpress-simulation::before {
+            content: "WordPress Website Simulation";
+            position: absolute;
+            top: -30px;
+            left: 0;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .chat-widget {
+            width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+            position: relative;
+        }
+        
+        .chat-widget::before {
+            content: "Embeddable Chat Widget";
+            position: absolute;
+            top: -30px;
+            right: 0;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+            border-bottom: none;
+        }
+        
+        .chat-header h4 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .chat-header p {
+            margin: 4px 0 0 0;
+            opacity: 0.9;
+            font-size: 0.85rem;
+        }
+        
+        #botui-app {
+            min-height: 450px;
+            max-height: 450px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .botui-container {
+            padding: 16px;
+        }
+        
+        /* BotUI customizations for Platform 5ive */
+        .botui-message {
+            margin-bottom: 12px;
+        }
+        
+        .botui-message-content {
+            border-radius: 16px;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.4;
+            max-width: 85%;
+        }
+        
+        .botui-message-content.human {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        
+        .botui-message-content.bot {
+            background: white;
+            color: #333;
+            border: 1px solid #e9ecef;
+            margin-left: 0;
+            margin-right: auto;
+        }
+        
+        .botui-actions-buttons .botui-actions-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 18px;
+            padding: 8px 16px;
+            margin: 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        
+        .botui-actions-buttons .botui-actions-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .botui-actions-text input {
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            padding: 10px 16px;
+            width: 100%;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .botui-actions-text input:focus {
+            border-color: #667eea;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            margin-left: 8px;
+        }
+        
+        .typing-dots span {
+            height: 6px;
+            width: 6px;
+            background: #667eea;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .powered-by {
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: #666;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .website-content {
+            margin-bottom: 20px;
+        }
+        
+        .website-content h3 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .website-content p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .website-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .feature-card h5 {
+            color: #333;
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+        }
+        
+        .feature-card p {
+            color: #666;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .preview-controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .preview-controls h5 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-widget-preview {
+                flex-direction: column;
+            }
+            
+            .chat-widget {
+                width: 100%;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            <h1><i class="fas fa-eye me-2"></i>Platform 5ive Chat Widget Preview</h1>
+            <p>Exact preview of how the chat widget will appear on your WordPress website</p>
+        </div>
+        
+        <div class="chat-widget-preview">
+            <!-- WordPress Website Simulation -->
+            <div class="wordpress-simulation">
+                <div class="website-content">
+                    <h3>Welcome to Platform 5ive</h3>
+                    <p>Transform your business with our cutting-edge AI solutions and innovative technology platforms. We specialize in delivering comprehensive digital transformation services that drive growth and efficiency.</p>
+                    
+                    <div class="website-features">
+                        <div class="feature-card">
+                            <h5><i class="fas fa-robot me-2"></i>AI Solutions</h5>
+                            <p>Advanced artificial intelligence tools to automate and optimize your business processes.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h5><i class="fas fa-cloud me-2"></i>Cloud Platform</h5>
+                            <p>Scalable cloud infrastructure designed for modern business requirements.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h5><i class="fas fa-chart-line me-2"></i>Analytics</h5>
+                            <p>Data-driven insights to help you make informed business decisions.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h5><i class="fas fa-shield-alt me-2"></i>Security</h5>
+                            <p>Enterprise-grade security measures to protect your valuable data.</p>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-top: 25px; font-style: italic; color: #888;">
+                        <i class="fas fa-arrow-right me-2"></i>Try our AI chat assistant on the right to learn more about our services and get personalized recommendations.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Chat Widget -->
+            <div class="chat-widget">
+                <div class="chat-header">
+                    <h4><i class="fas fa-robot me-2"></i>Platform 5ive AI Assistant</h4>
+                    <p>How can we help you today?</p>
+                </div>
+                
+                <div id="botui-app">
+                    <bot-ui></bot-ui>
+                </div>
+                
+                <div class="powered-by">
+                    Powered by Platform 5ive AI Technology
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-controls">
+            <h5><i class="fas fa-cog me-2"></i>Preview Controls</h5>
+            <div class="control-buttons">
+                <button class="btn btn-primary btn-sm" onclick="restartDemo()">
+                    <i class="fas fa-redo me-1"></i>Restart Demo
+                </button>
+                <button class="btn btn-success btn-sm" onclick="simulateCompletion()">
+                    <i class="fas fa-check me-1"></i>Skip to Completion
+                </button>
+                <button class="btn btn-info btn-sm" onclick="showIntegrationCode()">
+                    <i class="fas fa-code me-1"></i>View Integration Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@2"></script>
+    <!-- BotUI -->
+    <script src="https://unpkg.com/botui/build/botui.min.js"></script>
+    
+    <script>
+        // Initialize session with demo data
+        const sessionId = 'demo_p5ive_' + Date.now();
+        
+        // Chat state with pre-populated demo conversation
+        let chatState = {
+            sessionId: sessionId,
+            step: 'demo',
+            userData: {
+                name: '',
+                email: '',
+                interests: []
+            },
+            chatHistory: [],
+            demoMode: true
+        };
+        
+        // Initialize BotUI
+        const botui = new BotUI('botui-app');
+        
+        // Demo conversation data
+        const demoConversation = [
+            { type: 'bot', message: "👋 Hello! Welcome to Platform 5ive. I'm your AI assistant, here to help you discover how our solutions can transform your business. What's your name?" },
+            { type: 'user', message: "Hi! I'm Sarah Johnson." },
+            { type: 'bot', message: "Nice to meet you, Sarah! 😊 To provide you with the most relevant information, could you share your email address?" },
+            { type: 'user', message: "sarah.johnson@techcorp.com" },
+            { type: 'bot', message: "Perfect! Now, what brings you to Platform 5ive today? What are you most interested in?" },
+            { type: 'user', message: "Business Solutions" },
+            { type: 'bot', message: "Excellent choice, Sarah! Our business solutions are designed to help companies like TechCorp streamline operations and boost efficiency. We offer:\n\n🔹 AI-powered automation tools\n🔹 Cloud infrastructure optimization\n🔹 Advanced analytics and reporting\n🔹 Custom integration solutions\n\nBased on your company domain, I can see you're in the tech sector. Would you like to learn more about our AI automation specifically?" },
+            { type: 'user', message: "Yes, that sounds perfect!" },
+            { type: 'bot', message: "Fantastic! Our AI automation suite can reduce manual processing by up to 70% and improve accuracy significantly. I'll have one of our solution specialists reach out to you at sarah.johnson@techcorp.com within 24 hours to discuss a customized demo.\n\nIs there anything specific about AI automation you'd like them to focus on during your consultation?" },
+            { type: 'user', message: "Data processing and workflow automation would be great." },
+            { type: 'bot', message: "Perfect! I've noted your interest in data processing and workflow automation. Our specialist will prepare a tailored presentation covering:\n\n✅ Data processing acceleration\n✅ Workflow automation examples\n✅ ROI projections for your industry\n✅ Implementation timeline\n\nThanks for your time, Sarah! We're excited to help TechCorp achieve its automation goals. Have a great day! 🚀" }
+        ];
+        
+        let currentMessageIndex = 0;
+        
+        // Utility functions
+        function addToHistory(type, message) {
+            chatState.chatHistory.push({
+                type: type,
+                message: message,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        function showTyping() {
+            return new Promise(resolve => {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.innerHTML = `
+                    <span>AI is typing</span>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+                
+                const container = document.querySelector('.botui-messages-container');
+                if (container) {
+                    container.appendChild(typingDiv);
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+                setTimeout(() => {
+                    if (typingDiv.parentNode) {
+                        typingDiv.parentNode.removeChild(typingDiv);
+                    }
+                    resolve();
+                }, Math.random() * 1000 + 1000); // Random delay between 1-2 seconds
+            });
+        }
+        
+        // Demo playback functions
+        async function playDemoConversation() {
+            for (let i = 0; i < demoConversation.length; i++) {
+                const msg = demoConversation[i];
+                
+                if (msg.type === 'bot') {
+                    await showTyping();
+                    await botui.message.add({
+                        content: msg.message
+                    });
+                    addToHistory('ai', msg.message);
+                } else {
+                    // Simulate user typing and response
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    await botui.message.add({
+                        content: msg.message,
+                        human: true
+                    });
+                    addToHistory('user', msg.message);
+                }
+                
+                // Small delay between messages
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+        }
+        
+        // Control functions
+        function restartDemo() {
+            botui.message.removeAll();
+            chatState.chatHistory = [];
+            currentMessageIndex = 0;
+            playDemoConversation();
+        }
+        
+        function simulateCompletion() {
+            botui.message.removeAll();
+            chatState.chatHistory = [];
+            
+            // Show just the final messages
+            const finalMessages = demoConversation.slice(-3);
+            
+            setTimeout(async () => {
+                for (const msg of finalMessages) {
+                    if (msg.type === 'bot') {
+                        await showTyping();
+                        await botui.message.add({
+                            content: msg.message
+                        });
+                    } else {
+                        await botui.message.add({
+                            content: msg.message,
+                            human: true
+                        });
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }, 500);
+        }
+        
+        function showIntegrationCode() {
+            const codeModal = `
+                <div class="modal fade" id="integrationModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">WordPress Integration Code</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <h6>Add this iframe code to your WordPress page:</h6>
+                                <pre class="bg-light p-3 rounded"><code>&lt;iframe 
+    src="https://your-domain.replit.app/embed-chat" 
+    width="400" 
+    height="600" 
+    frameborder="0" 
+    scrolling="no"
+    style="border: 1px solid #ddd; border-radius: 12px;"&gt;
+&lt;/iframe&gt;</code></pre>
+                                
+                                <h6 class="mt-4">Or use this responsive version:</h6>
+                                <pre class="bg-light p-3 rounded"><code>&lt;div style="max-width: 400px; margin: 20px auto;"&gt;
+    &lt;iframe 
+        src="https://your-domain.replit.app/embed-chat" 
+        width="100%" 
+        height="600" 
+        frameborder="0" 
+        scrolling="no"
+        style="border: 1px solid #ddd; border-radius: 12px;"&gt;
+    &lt;/iframe&gt;
+&lt;/div&gt;</code></pre>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', codeModal);
+            const modal = new bootstrap.Modal(document.getElementById('integrationModal'));
+            modal.show();
+            
+            // Remove modal after closing
+            document.getElementById('integrationModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+        
+        // Auto-start demo when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                playDemoConversation();
+            }, 1000);
+        });
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

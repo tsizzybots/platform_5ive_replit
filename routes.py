@@ -1431,6 +1431,11 @@ def embed_chat():
     """Serve the embeddable chat widget for iframe"""
     return render_template('embed_chat.html')
 
+@app.route('/preview/chat')
+def preview_chat():
+    """Preview the chat widget exactly as it will appear on WordPress"""
+    return render_template('chat_preview.html')
+
 @app.route('/demo/email-template')
 def demo_email_template():
     """Demo page to preview the QA issue email template with Platform 5ive branding"""
