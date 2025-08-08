@@ -1,0 +1,95 @@
+Landing Page AI Lead Generation Project
+
+We are starting a new project based on an existing internal QA system previously used for reviewing Messenger (Facebook & Instagram) AI chat sessions.
+
+🟢 Project Context:
+	•	We’ve just duplicated or imported the previous Messenger-based QA project into this new Replit workspace.
+	•	All the features from the previous project should remain intact:
+	•	Internal user login
+	•	Role-based permissions
+	•	Session tagging and classification
+	•	Session history and filters
+	•	Quality review tools and notes
+
+The only difference is that this version is for AI chat sessions from a web landing page, not from social media messengers.
+
+⸻
+
+✅ Tasks to Perform
+
+1. Rename Project Metadata
+	•	Update any project title, labels, or config that references “Messenger” to instead say “Web Chat” or “Landing Page Chat”.
+
+2. Add Replit Database
+	•	Set up a Replit database for storing:
+	•	Chat session metadata
+	•	Chat transcript messages
+	•	Final lead data collected (e.g. name, email)
+	•	Completion status and timestamps
+	•	Use a similar schema to the Messenger version, but add a field like session_source = "web_chat" for filtering.
+	- ensure you use the same schema as the project we duplicated 
+
+3. Set Up Front-End Web Chat
+
+You will embed a live AI chat on a landing page. This should be hosted via Replit and styled professionally.
+	•	Use the BotUI framework as the chat frontend.
+	•	Use BoxUI (https://box-ui.com or similar CSS component library) as the layout and design system.
+	•	The front-end must:
+	•	Start the session when the user interacts
+	•	Display friendly questions and AI responses
+	•	Collect basic lead info (name, email, etc.)
+	•	Validate the email address format, and re-prompt if invalid
+	•	Post final data to a defined webhook
+
+4. Install Required Packages in Replit
+
+Install the following:
+
+npm install botui vue iframe-resizer
+
+In your index.html (or equivalent entry file), also include:
+
+<link rel="stylesheet" href="https://unpkg.com/botui/build/botui.min.css" />
+<link rel="stylesheet" href="https://unpkg.com/botui/build/botui-theme-default.css" />
+<script src="https://unpkg.com/vue"></script>
+<script src="https://unpkg.com/botui/build/botui.min.js"></script>
+
+5. Embed Support for iframe-resizer
+
+We’ll be embedding this chat app into a WordPress page using an iframe.
+	•	Add the iframe-resizer content script to your hosted Replit front-end (inside the iframe):
+
+<script src="https://unpkg.com/iframe-resizer/js/iframeResizer.contentWindow.min.js"></script>
+
+	•	Ensure the layout dynamically resizes based on chat height.
+	•	On the client WordPress site, they will install the host script:
+
+<script src="https://unpkg.com/iframe-resizer/js/iframeResizer.min.js"></script>
+<script>
+  iFrameResize({ log: false }, '#replit-chat-iframe');
+</script>
+
+6. Webhook for N8n Integration
+
+At the end of the session, send a POST request to a designated N8n webhook URL (we will define it later). Send:
+
+{
+  "name": "John Smith",
+  "email": "john@example.com",
+  "chat_transcript": [...],
+  "completed": true,
+  "source": "web_chat"
+}
+
+Store a copy of this in the Reklet DB and mark whether the webhook was delivered successfully.
+
+⸻
+
+📝 Notes for Replit Agent
+	•	You don’t need to modify QA features unless something breaks — we’re simply extending the functionality for web-based chat sessions.
+	•	Assume this is for one client only.
+	•	The internal review panel is already authenticated and permissioned — reuse existing components to display new sessions.
+
+⸻
+
+Let me know if you’d like to scaffold the directory structure, generate the front-end index.html, or include test data.
