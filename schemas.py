@@ -36,6 +36,17 @@ class ChatSessionSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     
+    # Session source and lead data
+    session_source = fields.String(load_default='messenger', validate=validate.OneOf(['messenger', 'web_chat']))
+    lead_email = fields.String(allow_none=True, validate=validate.Length(max=255))
+    lead_name = fields.String(allow_none=True, validate=validate.Length(max=255))
+    
+    # Webhook tracking
+    webhook_delivered = fields.Boolean(load_default=False)
+    webhook_delivery_at = fields.DateTime(dump_only=True)
+    webhook_url = fields.String(allow_none=True, validate=validate.Length(max=500))
+    webhook_response = fields.String(allow_none=True)
+    
     # QA Fields
     qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']), load_default='unchecked')
     qa_status_updated_by = fields.String(allow_none=True)
@@ -57,6 +68,17 @@ class ChatSessionUpdateSchema(Schema):
     message_count = fields.Integer(validate=validate.Range(min=1))
     last_message_time = fields.DateTime()
     
+    # Session source and lead data
+    session_source = fields.String(validate=validate.OneOf(['messenger', 'web_chat']))
+    lead_email = fields.String(allow_none=True, validate=validate.Length(max=255))
+    lead_name = fields.String(allow_none=True, validate=validate.Length(max=255))
+    
+    # Webhook tracking
+    webhook_delivered = fields.Boolean()
+    webhook_delivery_at = fields.DateTime()
+    webhook_url = fields.String(allow_none=True, validate=validate.Length(max=500))
+    webhook_response = fields.String(allow_none=True)
+    
     # QA Fields
     qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed', 'archived']))
     qa_status_updated_by = fields.String(allow_none=True)
@@ -73,6 +95,7 @@ class ChatSessionQuerySchema(Schema):
     completed = fields.Raw()  # Legacy field for backwards compatibility
     contact_id = fields.String()
     session_id = fields.String()
+    session_source = fields.String(validate=validate.OneOf(['all', 'messenger', 'web_chat']))
     date_from = fields.DateTime()
     date_to = fields.DateTime()
     qa_status = fields.String(validate=validate.OneOf(['unchecked', 'passed', 'issue', 'fixed']))

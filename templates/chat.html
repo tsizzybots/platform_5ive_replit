@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    
+    <!-- BotUI CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/botui/build/botui.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/botui/build/botui-theme-default.css" />
+    
+    <!-- Bootstrap for modern UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom styles -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .chat-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        #botui-app {
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .botui-container {
+            padding: 20px;
+        }
+        
+        /* BotUI customizations */
+        .botui-message {
+            margin-bottom: 15px;
+        }
+        
+        .botui-message-content {
+            border-radius: 18px;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .botui-message-content.human {
+            background: #007bff;
+            color: white;
+            margin-left: 20%;
+        }
+        
+        .botui-message-content.bot {
+            background: #f8f9fa;
+            color: #333;
+            margin-right: 20%;
+        }
+        
+        .botui-actions-buttons .botui-actions-button {
+            background: #007bff;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .botui-actions-buttons .botui-actions-button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .botui-actions-text input {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 12px 20px;
+            width: 100%;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .botui-actions-text input:focus {
+            border-color: #007bff;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            margin-left: 10px;
+        }
+        
+        .typing-dots span {
+            height: 8px;
+            width: 8px;
+            background: #007bff;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .session-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .chat-container {
+                margin: 0;
+                border-radius: 10px;
+            }
+            
+            .session-info {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="session-info" id="sessionInfo">
+        Session: <span id="sessionId">Loading...</span>
+    </div>
+    
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1><i class="fas fa-robot"></i> AI Chat Assistant</h1>
+            <p>Hi there! I'm here to help you. Let's get started!</p>
+        </div>
+        
+        <div id="botui-app">
+            <bot-ui></bot-ui>
+        </div>
+    </div>
+
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@2"></script>
+    <!-- BotUI -->
+    <script src="https://unpkg.com/botui/build/botui.min.js"></script>
+    <!-- iframe-resizer for WordPress embedding -->
+    <script src="https://unpkg.com/iframe-resizer/js/iframeResizer.contentWindow.min.js"></script>
+    
+    <script>
+        // Initialize session
+        const sessionId = 'webchat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        document.getElementById('sessionId').textContent = sessionId;
+        
+        // Chat state
+        let chatState = {
+            sessionId: sessionId,
+            step: 'greeting',
+            userData: {
+                name: '',
+                email: '',
+                interests: []
+            },
+            chatHistory: []
+        };
+        
+        // Initialize BotUI
+        const botui = new BotUI('botui-app');
+        
+        // Utility functions
+        function addToHistory(type, message) {
+            chatState.chatHistory.push({
+                type: type,
+                message: message,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        function showTyping() {
+            return new Promise(resolve => {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.innerHTML = `
+                    <span>AI is typing</span>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+                
+                const container = document.querySelector('.botui-messages-container');
+                if (container) {
+                    container.appendChild(typingDiv);
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+                setTimeout(() => {
+                    if (typingDiv.parentNode) {
+                        typingDiv.parentNode.removeChild(typingDiv);
+                    }
+                    resolve();
+                }, 1500);
+            });
+        }
+        
+        async function sendToChatAPI(sessionId, message, userType = 'user') {
+            try {
+                const response = await fetch('/api/chat-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: message,
+                        user_type: userType,
+                        firstName: chatState.userData.name.split(' ')[0] || '',
+                        lastName: chatState.userData.name.split(' ').slice(1).join(' ') || '',
+                        contactID: chatState.userData.email || '',
+                        session_source: 'web_chat'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Error sending message to API:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function sendWebhook(leadData) {
+            try {
+                const response = await fetch('/api/webhook-delivery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: chatState.sessionId,
+                        name: leadData.name,
+                        email: leadData.email,
+                        chat_transcript: chatState.chatHistory,
+                        completed: true,
+                        source: 'web_chat'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Error sending webhook:', error);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        function validateEmail(email) {
+            const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return re.test(email);
+        }
+        
+        // Chat flow functions
+        async function startChat() {
+            await showTyping();
+            
+            const welcomeMessage = "👋 Hello! Welcome to our AI-powered chat assistant. I'm here to help you learn more about our services and connect you with the right solutions.";
+            
+            botui.message.add({
+                content: welcomeMessage
+            }).then(() => {
+                addToHistory('ai', welcomeMessage);
+                sendToChatAPI(chatState.sessionId, welcomeMessage, 'ai');
+                return askName();
+            });
+        }
+        
+        async function askName() {
+            await showTyping();
+            
+            const nameQuestion = "To get started, could you please tell me your name?";
+            
+            botui.message.add({
+                content: nameQuestion
+            }).then(() => {
+                addToHistory('ai', nameQuestion);
+                sendToChatAPI(chatState.sessionId, nameQuestion, 'ai');
+                
+                return botui.action.text({
+                    action: {
+                        placeholder: 'Enter your name...'
+                    }
+                });
+            }).then((res) => {
+                const name = res.value.trim();
+                if (name.length < 2) {
+                    botui.message.add({
+                        content: "Please enter a valid name with at least 2 characters."
+                    });
+                    return askName();
+                }
+                
+                chatState.userData.name = name;
+                addToHistory('user', name);
+                sendToChatAPI(chatState.sessionId, name, 'user');
+                
+                botui.message.add({
+                    content: `Nice to meet you, ${name}! 😊`
+                }).then(() => {
+                    addToHistory('ai', `Nice to meet you, ${name}! 😊`);
+                    sendToChatAPI(chatState.sessionId, `Nice to meet you, ${name}! 😊`, 'ai');
+                    return askEmail();
+                });
+            });
+        }
+        
+        async function askEmail() {
+            await showTyping();
+            
+            const emailQuestion = "To keep you updated with relevant information, could you please share your email address?";
+            
+            botui.message.add({
+                content: emailQuestion
+            }).then(() => {
+                addToHistory('ai', emailQuestion);
+                sendToChatAPI(chatState.sessionId, emailQuestion, 'ai');
+                
+                return botui.action.text({
+                    action: {
+                        placeholder: 'Enter your email address...'
+                    }
+                });
+            }).then((res) => {
+                const email = res.value.trim().toLowerCase();
+                if (!validateEmail(email)) {
+                    botui.message.add({
+                        content: "Please enter a valid email address (e.g., yourname@email.com)."
+                    });
+                    return askEmail();
+                }
+                
+                chatState.userData.email = email;
+                addToHistory('user', email);
+                sendToChatAPI(chatState.sessionId, email, 'user');
+                
+                return askInterests();
+            });
+        }
+        
+        async function askInterests() {
+            await showTyping();
+            
+            const interestQuestion = "Great! Now, what brings you here today? What are you most interested in learning about?";
+            
+            botui.message.add({
+                content: interestQuestion
+            }).then(() => {
+                addToHistory('ai', interestQuestion);
+                sendToChatAPI(chatState.sessionId, interestQuestion, 'ai');
+                
+                return botui.action.button({
+                    action: [
+                        {
+                            text: '💼 Business Solutions',
+                            value: 'business'
+                        },
+                        {
+                            text: '🛍️ Product Information',
+                            value: 'products'
+                        },
+                        {
+                            text: '💬 General Inquiry',
+                            value: 'general'
+                        },
+                        {
+                            text: '🆘 Support',
+                            value: 'support'
+                        }
+                    ]
+                });
+            }).then((res) => {
+                const interest = res.value;
+                chatState.userData.interests.push(interest);
+                
+                let interestText = '';
+                switch(interest) {
+                    case 'business': interestText = 'Business Solutions'; break;
+                    case 'products': interestText = 'Product Information'; break;
+                    case 'general': interestText = 'General Inquiry'; break;
+                    case 'support': interestText = 'Support'; break;
+                }
+                
+                addToHistory('user', interestText);
+                sendToChatAPI(chatState.sessionId, interestText, 'user');
+                
+                return provideInformation(interest);
+            });
+        }
+        
+        async function provideInformation(interest) {
+            await showTyping();
+            
+            let response = '';
+            switch(interest) {
+                case 'business':
+                    response = `Excellent! Our business solutions are designed to help companies like yours streamline operations and increase efficiency. We offer:
+
+🔹 Custom software development
+🔹 Digital transformation consulting  
+🔹 AI-powered automation tools
+🔹 Cloud infrastructure setup
+
+Would you like me to connect you with one of our business specialists who can provide a personalized consultation?`;
+                    break;
+                    
+                case 'products':
+                    response = `Great choice! We have several innovative products that might interest you:
+
+🔹 SmartFlow - Workflow automation platform
+🔹 DataInsight - Business analytics dashboard
+🔹 CloudSync - Seamless data synchronization
+🔹 SecureVault - Enterprise security solution
+
+Each product comes with a free trial and dedicated support. Which one sounds most relevant to your needs?`;
+                    break;
+                    
+                case 'general':
+                    response = `Perfect! I'm here to help with any questions you might have. Our company specializes in providing cutting-edge technology solutions that help businesses grow and thrive in the digital age.
+
+We work with companies of all sizes, from startups to enterprise organizations. What specific area would you like to know more about?`;
+                    break;
+                    
+                case 'support':
+                    response = `I'm here to help! Our support team is available 24/7 to assist you with:
+
+🔹 Technical issues
+🔹 Account questions
+🔹 Product guidance
+🔹 Implementation support
+
+What type of support do you need today? I can either help you directly or connect you with the right specialist.`;
+                    break;
+            }
+            
+            botui.message.add({
+                content: response
+            }).then(() => {
+                addToHistory('ai', response);
+                sendToChatAPI(chatState.sessionId, response, 'ai');
+                return finalizeChat();
+            });
+        }
+        
+        async function finalizeChat() {
+            await showTyping();
+            
+            const finalMessage = `Thank you ${chatState.userData.name}! 🙏 
+
+I've captured your information and interests. Our team will review your inquiry and someone will reach out to you at ${chatState.userData.email} within 24 hours with personalized recommendations.
+
+Is there anything else I can help you with today?`;
+            
+            botui.message.add({
+                content: finalMessage
+            }).then(() => {
+                addToHistory('ai', finalMessage);
+                sendToChatAPI(chatState.sessionId, finalMessage, 'ai');
+                
+                // Send webhook with lead data
+                sendWebhook(chatState.userData);
+                
+                return botui.action.button({
+                    action: [
+                        {
+                            text: '✅ That\'s all, thank you!',
+                            value: 'complete'
+                        },
+                        {
+                            text: '❓ I have another question',
+                            value: 'continue'
+                        }
+                    ]
+                });
+            }).then((res) => {
+                if (res.value === 'complete') {
+                    completeChat();
+                } else {
+                    continueChat();
+                }
+            });
+        }
+        
+        async function completeChat() {
+            await showTyping();
+            
+            const completeMessage = `Perfect! We're excited to connect with you soon. Have a wonderful day! 🌟`;
+            
+            botui.message.add({
+                content: completeMessage
+            }).then(() => {
+                addToHistory('ai', completeMessage);
+                sendToChatAPI(chatState.sessionId, completeMessage, 'ai');
+                
+                // Mark session as complete
+                chatState.step = 'completed';
+            });
+        }
+        
+        async function continueChat() {
+            await showTyping();
+            
+            const continueMessage = "Of course! What else would you like to know?";
+            
+            botui.message.add({
+                content: continueMessage
+            }).then(() => {
+                addToHistory('ai', continueMessage);
+                sendToChatAPI(chatState.sessionId, continueMessage, 'ai');
+                
+                return botui.action.text({
+                    action: {
+                        placeholder: 'Ask your question...'
+                    }
+                });
+            }).then((res) => {
+                const question = res.value.trim();
+                addToHistory('user', question);
+                sendToChatAPI(chatState.sessionId, question, 'user');
+                
+                return handleGeneralQuestion(question);
+            });
+        }
+        
+        async function handleGeneralQuestion(question) {
+            await showTyping();
+            
+            const response = `Thank you for your question: "${question}"
+
+I've noted this additional inquiry and our team will make sure to address it when they contact you. Is there anything else you'd like to add?`;
+            
+            botui.message.add({
+                content: response
+            }).then(() => {
+                addToHistory('ai', response);
+                sendToChatAPI(chatState.sessionId, response, 'ai');
+                return finalizeChat();
+            });
+        }
+        
+        // Start the chat when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a small delay to ensure everything is loaded
+            setTimeout(() => {
+                startChat();
+            }, 500);
+        });
+        
+        // Handle iframe resizing
+        window.addEventListener('resize', function() {
+            if (window.parentIFrame) {
+                window.parentIFrame.sendMessage('resize');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -858,8 +858,9 @@ function resetFilters() {
     
     // Clear all filter inputs
     document.getElementById('statusFilter').value = '';
-    document.getElementById('inquiryTypeFilter').value = '';
-    document.getElementById('emailFilter').value = '';
+    document.getElementById('completionFilter').value = '';
+    document.getElementById('sessionSourceFilter').value = '';
+    document.getElementById('contactIdFilter').value = '';
     document.getElementById('qaStatusFilter').value = '';
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
@@ -901,6 +902,9 @@ function applyFilters() {
     if (completionStatus) {
         currentFilters.completed = completionStatus;
     }
+    
+    const sessionSource = document.getElementById('sessionSourceFilter').value;
+    if (sessionSource) currentFilters.session_source = sessionSource;
     
     const contactId = document.getElementById('contactIdFilter').value;
     if (contactId) currentFilters.contact_id = contactId;

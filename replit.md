@@ -1,7 +1,7 @@
-# Sweats Collective Email AI Dashboard
+# Web Chat Landing Page AI Lead Generation Dashboard
 
 ## Overview
-This Flask-based web application manages email inquiries and provides a dashboard for monitoring AI agent interactions with customer support tickets. The system receives tickets, logs AI agent decisions, and offers quality assurance capabilities for team oversight. Its core purpose is to streamline customer support, enhance AI agent performance through continuous feedback, and provide a comprehensive overview of AI-driven customer interactions, aiming to improve efficiency and customer satisfaction.
+This Flask-based web application manages web chat sessions from landing pages and provides a dashboard for monitoring AI agent interactions with potential leads. The system features an embeddable chat widget for lead generation, stores chat transcripts, and offers quality assurance capabilities for team oversight. Its core purpose is to streamline lead generation through AI-powered conversations, enhance conversion rates, and provide comprehensive analytics of web-based customer interactions.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -23,12 +23,15 @@ Preferred communication style: Simple, everyday language.
 - Data Persistence: Browser sessions and localStorage for frontend state management.
 
 ### Feature Specifications
-- **Messenger Session Management**: Tracks Facebook Messenger conversations, including session metadata, AI engagement, and QA fields.
+- **Web Chat Session Management**: Tracks web-based chat conversations from landing pages, including session metadata, AI engagement, lead data collection, and QA fields.
+- **Embeddable Chat Widget**: BotUI-powered chat interface that can be embedded in WordPress sites via iframe for lead generation.
+- **Lead Data Collection**: Captures visitor information (name, email) with validation and stores complete chat transcripts.
+- **Webhook Integration**: Sends completed lead data to N8n automation workflows for further processing.
 - **User Management**: Handles user authentication, role-based access (admin/agent), and session control.
 - **Error Logging**: Captures and logs automation workflow errors.
-- **API Endpoints**: Comprehensive set of RESTful APIs for managing messenger sessions, QA updates, statistics, and error logging.
-- **Quality Assurance System**: Implements a four-state QA workflow (unchecked → passed/issue → fixed) with user attribution and developer feedback. Includes email integration for QA issue notifications.
-- **Data Flow**: Sessions are created via Messenger bot, processed by an external AI agent, displayed on the dashboard, reviewed via QA, and issues can be escalated with developer feedback.
+- **API Endpoints**: Comprehensive set of RESTful APIs for managing web chat sessions, QA updates, statistics, and error logging.
+- **Quality Assurance System**: Implements a four-state QA workflow (unchecked → passed/issue → fixed) with user attribution and developer feedback.
+- **Data Flow**: Sessions are created via web chat widget, processed by AI agent, lead data sent to webhook, displayed on dashboard, and reviewed via QA system.
 
 ### System Design Choices
 - **Unified Data Storage**: Consolidated all data storage to PostgreSQL for simplified architecture and enhanced CRUD operations, eliminating redundant database systems.

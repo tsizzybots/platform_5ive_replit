@@ -66,7 +66,7 @@ class Error(db.Model):
         return f'<Error {self.id}: {self.workflow} - {self.error_message[:50]}...>'
 
 class MessengerSession(db.Model):
-    """Model for messenger sessions stored in PostgreSQL"""
+    """Model for chat sessions stored in PostgreSQL - supports both messenger and web chat"""
     __tablename__ = 'messenger_sessions'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -85,6 +85,19 @@ class MessengerSession(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Session source tracking (messenger, web_chat)
+    session_source = db.Column(db.String(50), nullable=False, default='messenger')
+    
+    # Lead data for web chat sessions
+    lead_email = db.Column(db.String(255), nullable=True)
+    lead_name = db.Column(db.String(255), nullable=True)
+    
+    # Webhook tracking
+    webhook_delivered = db.Column(db.Boolean, nullable=False, default=False)
+    webhook_delivery_at = db.Column(db.DateTime, nullable=True)
+    webhook_url = db.Column(db.String(500), nullable=True)
+    webhook_response = db.Column(db.Text, nullable=True)
+    
     # QA Status System
     qa_status = db.Column(db.String(50), nullable=False, default='unchecked')
     qa_status_updated_by = db.Column(db.String(255), nullable=True)
@@ -96,6 +109,52 @@ class MessengerSession(db.Model):
     dev_feedback = db.Column(db.Text, nullable=True)
     dev_feedback_by = db.Column(db.String(255), nullable=True)
     dev_feedback_at = db.Column(db.DateTime, nullable=True)
+    
+    # Indexes for better query performance
+    __table_args__ = (
+        Index('idx_session_source', 'session_source'),
+        Index('idx_session_status', 'status'),
+        Index('idx_session_completion', 'completion_status'),
+        Index('idx_session_created', 'created_at'),
+        Index('idx_session_qa_status', 'qa_status'),
+        Index('idx_webhook_delivered', 'webhook_delivered'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'customer_name': self.customer_name,
+            'customer_id': self.customer_id,
+            'conversation_start': self.conversation_start.isoformat() if self.conversation_start else None,
+            'last_message_time': self.last_message_time.isoformat() if self.last_message_time else None,
+            'message_count': self.message_count,
+            'session_summary': self.session_summary,
+            'status': self.status,
+            'completion_status': self.completion_status,
+            'ai_engaged': self.ai_engaged,
+            'ai_response': self.ai_response,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'session_source': self.session_source,
+            'lead_email': self.lead_email,
+            'lead_name': self.lead_name,
+            'webhook_delivered': self.webhook_delivered,
+            'webhook_delivery_at': self.webhook_delivery_at.isoformat() if self.webhook_delivery_at else None,
+            'webhook_url': self.webhook_url,
+            'webhook_response': self.webhook_response,
+            'qa_status': self.qa_status,
+            'qa_status_updated_by': self.qa_status_updated_by,
+            'qa_status_updated_at': self.qa_status_updated_at.isoformat() if self.qa_status_updated_at else None,
+            'qa_notes': self.qa_notes,
+            'qa_notes_updated_at': self.qa_notes_updated_at.isoformat() if self.qa_notes_updated_at else None,
+            'dev_feedback': self.dev_feedback,
+            'dev_feedback_by': self.dev_feedback_by,
+            'dev_feedback_at': self.dev_feedback_at.isoformat() if self.dev_feedback_at else None
+        }
+    
+    def __repr__(self):
+        return f'<MessengerSession {self.session_id}: {self.session_source} - {self.completion_status}>'
 
 
 
@@ -111,12 +170,14 @@ class ChatSessionForDashboard(db.Model):
     dateTime = db.Column(db.DateTime(timezone=True), nullable=True, default=db.func.now())
     userAi = db.Column(db.String, nullable=True)  # 'user' or 'ai'
     messageStr = db.Column(db.String, nullable=True)
+    session_source = db.Column(db.String(50), nullable=False, default='messenger')  # 'messenger' or 'web_chat'
     
     # Add indexes for frequently queried fields
     __table_args__ = (
         Index('idx_chat_session_id', 'session_id'),
         Index('idx_chat_datetime', 'dateTime'),
         Index('idx_chat_user_ai', 'userAi'),
+        Index('idx_chat_session_source', 'session_source'),
     )
     
     def to_dict(self):
@@ -128,7 +189,8 @@ class ChatSessionForDashboard(db.Model):
             'contactID': self.contactID,
             'dateTime': self.dateTime.isoformat() if self.dateTime else None,
             'userAi': self.userAi,
-            'messageStr': self.messageStr
+            'messageStr': self.messageStr,
+            'session_source': self.session_source
         }
     
     def __repr__(self):

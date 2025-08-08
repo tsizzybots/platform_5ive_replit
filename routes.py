@@ -1335,4 +1335,217 @@ def sync_single_messenger_session(session_id):
             'error': str(e)
         }), 500
 
+# Web Chat Routes
+@app.route('/chat')
+def web_chat():
+    """Serve the web chat interface"""
+    return render_template('chat.html')
+
+@app.route('/embed-chat')
+def embed_chat():
+    """Serve the embeddable chat widget for iframe"""
+    return render_template('embed_chat.html')
+
+@app.route('/api/chat-message', methods=['POST'])
+def handle_chat_message():
+    """Handle incoming chat messages from web chat widget"""
+    try:
+        data = request.get_json()
+        
+        # Extract message data
+        session_id = data.get('session_id')
+        message = data.get('message', '')
+        user_type = data.get('user_type', 'user')  # 'user' or 'ai'
+        first_name = data.get('firstName', '')
+        last_name = data.get('lastName', '')
+        contact_id = data.get('contactID', '')
+        session_source = data.get('session_source', 'web_chat')
+        
+        # Validate required fields
+        if not session_id or not message:
+            return jsonify({
+                'status': 'error',
+                'message': 'session_id and message are required'
+            }), 400
+        
+        # Create chat message record
+        chat_message = ChatSessionForDashboard(
+            session_id=session_id,
+            firstName=first_name,
+            lastName=last_name,
+            contactID=contact_id,
+            dateTime=datetime.utcnow(),
+            userAi=user_type,
+            messageStr=message,
+            session_source=session_source
+        )
+        
+        db.session.add(chat_message)
+        
+        # Ensure MessengerSession exists for this web chat
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if not messenger_session:
+            # Create new session for web chat
+            messenger_session = MessengerSession(
+                session_id=session_id,
+                customer_name=f"{first_name} {last_name}".strip() if first_name or last_name else 'Web Chat User',
+                customer_id=contact_id or session_id,
+                conversation_start=datetime.utcnow(),
+                last_message_time=datetime.utcnow(),
+                message_count=1,
+                session_source=session_source,
+                ai_engaged=(user_type == 'ai'),
+                completion_status='in_progress',
+                status='active'
+            )
+            db.session.add(messenger_session)
+        else:
+            # Update existing session
+            messenger_session.last_message_time = datetime.utcnow()
+            messenger_session.message_count = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=session_id
+            ).count() + 1
+            
+            if user_type == 'ai':
+                messenger_session.ai_engaged = True
+            
+            # Update customer info if provided
+            if first_name or last_name:
+                messenger_session.customer_name = f"{first_name} {last_name}".strip()
+            if contact_id:
+                messenger_session.customer_id = contact_id
+                messenger_session.lead_email = contact_id if '@' in contact_id else messenger_session.lead_email
+                
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Chat message saved successfully',
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error handling chat message: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to save chat message',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/webhook-delivery', methods=['POST'])
+def handle_webhook_delivery():
+    """Handle webhook delivery for completed lead generation sessions"""
+    try:
+        data = request.get_json()
+        
+        # Extract webhook data
+        session_id = data.get('session_id')
+        name = data.get('name', '')
+        email = data.get('email', '')
+        chat_transcript = data.get('chat_transcript', [])
+        completed = data.get('completed', False)
+        source = data.get('source', 'web_chat')
+        
+        # Validate required fields
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'session_id is required'
+            }), 400
+        
+        # Get or create MessengerSession
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if not messenger_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+        
+        # Update session with lead data
+        messenger_session.lead_name = name
+        messenger_session.lead_email = email
+        messenger_session.customer_name = name if name else messenger_session.customer_name
+        messenger_session.customer_id = email if email else messenger_session.customer_id
+        
+        if completed:
+            messenger_session.completion_status = 'complete'
+        
+        # Prepare webhook payload
+        webhook_payload = {
+            'session_id': session_id,
+            'name': name,
+            'email': email,
+            'chat_transcript': chat_transcript,
+            'completed': completed,
+            'source': source,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Get webhook URL from environment (can be configured later)
+        webhook_url = os.environ.get('N8N_WEBHOOK_URL')
+        
+        if webhook_url:
+            try:
+                # Send to webhook
+                webhook_response = requests.post(
+                    webhook_url,
+                    json=webhook_payload,
+                    timeout=30,
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                # Update session with webhook delivery status
+                messenger_session.webhook_delivered = webhook_response.status_code == 200
+                messenger_session.webhook_delivery_at = datetime.utcnow()
+                messenger_session.webhook_url = webhook_url
+                messenger_session.webhook_response = f"Status: {webhook_response.status_code}, Response: {webhook_response.text[:500]}"
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Webhook delivered successfully',
+                    'webhook_status': webhook_response.status_code,
+                    'session_updated': True
+                })
+                
+            except requests.exceptions.RequestException as e:
+                # Webhook failed, but still update session
+                messenger_session.webhook_delivered = False
+                messenger_session.webhook_delivery_at = datetime.utcnow()
+                messenger_session.webhook_url = webhook_url
+                messenger_session.webhook_response = f"Error: {str(e)}"
+                
+                db.session.commit()
+                
+                return jsonify({
+                    'status': 'warning',
+                    'message': 'Session updated but webhook delivery failed',
+                    'error': str(e),
+                    'session_updated': True
+                }), 200
+        else:
+            # No webhook URL configured, just update session
+            messenger_session.webhook_delivered = False
+            messenger_session.webhook_delivery_at = datetime.utcnow()
+            messenger_session.webhook_response = "No webhook URL configured"
+            
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Session updated (no webhook configured)',
+                'session_updated': True
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error handling webhook delivery: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to process webhook delivery',
+            'error': str(e)
+        }), 500
+
 
