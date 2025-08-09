@@ -66,6 +66,8 @@ Preferred communication style: Simple, everyday language.
   - `errors`: Error logging for automation workflows
 
 ## Changelog
+- August 9, 2025: **WEBHOOK URL UPDATE** - Updated test AI webhook to new N8n endpoint: `https://n8n-g0cw.onrender.com/webhook/44e68b37-d078-44b3-b3bc-2a51a9822aca`
+- August 9, 2025: **DATABASE STRUCTURE UPDATE** - Updated chat_sessions_for_dashboard table structure to simplified format (removed firstName, lastName, contactID fields), updated all models and API endpoints accordingly
 - August 8, 2025: **DEPLOYMENT OPTIMIZATION** - Applied comprehensive deployment fixes for production readiness
   - **HEALTH CHECK ENDPOINT**: Added `/health` endpoint for deployment service verification with database connectivity testing
   - **ROOT STATUS ENDPOINT**: Added `/` endpoint providing API status and basic information
