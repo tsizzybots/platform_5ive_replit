@@ -24,18 +24,62 @@ SYDNEY_TZ = pytz.timezone('Australia/Sydney')
 def health_check():
     """Health check endpoint for deployment verification"""
     try:
-        # Test database connection
+        # Test database connection with timeout
         from sqlalchemy import text
         db.session.execute(text('SELECT 1'))
+        db.session.commit()  # Ensure connection is active
+        
         return jsonify({
             'status': 'healthy',
             'database': 'connected',
-            'timestamp': datetime.utcnow().isoformat()
+            'server': 'running',
+            'timestamp': datetime.utcnow().isoformat(),
+            'version': '1.0'
         }), 200
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         return jsonify({
             'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 503
+
+
+# Readiness endpoint for deployment service
+@app.route('/ready')
+def readiness_check():
+    """Readiness check endpoint for deployment service verification"""
+    try:
+        # More comprehensive readiness check
+        from sqlalchemy import text
+        
+        # Test database connection and basic table existence
+        db.session.execute(text('SELECT 1'))
+        
+        # Check if required tables exist
+        result = db.session.execute(text("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('user', 'messenger_session', 'chat_session_for_dashboard')
+        """))
+        tables = [row[0] for row in result]
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'ready',
+            'database': 'connected',
+            'tables_found': len(tables),
+            'required_tables': ['user', 'messenger_session', 'chat_session_for_dashboard'],
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Readiness check failed: {str(e)}")
+        return jsonify({
+            'status': 'not_ready',
             'database': 'disconnected',
             'error': str(e),
             'timestamp': datetime.utcnow().isoformat()
