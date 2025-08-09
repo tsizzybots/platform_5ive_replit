@@ -99,6 +99,100 @@ def api_status():
     })
 
 
+@app.route('/api/conversation/<session_id>', methods=['GET'])
+def get_conversation(session_id):
+    """Get full conversation for a session ID with API key authentication"""
+    try:
+        # Check for API key in headers
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
+        if api_key and api_key.startswith('Bearer '):
+            api_key = api_key.replace('Bearer ', '')
+        
+        # Get expected API key from environment
+        expected_api_key = os.environ.get('CONVERSATION_API_KEY')
+        
+        if not expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'API key not configured on server'
+            }), 500
+            
+        if not api_key or api_key != expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or missing API key'
+            }), 401
+        
+        # Validate session ID
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session ID is required'
+            }), 400
+        
+        # Get session metadata
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        if not messenger_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+        
+        # Get lead information
+        lead = Lead.query.filter_by(session_id=session_id).first()
+        
+        # Get all messages for this session, ordered chronologically
+        messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).order_by(ChatSessionForDashboard.dateTime.asc()).all()
+        
+        # Format conversation messages
+        conversation = []
+        for msg in messages:
+            conversation.append({
+                'id': msg.id,
+                'timestamp': msg.dateTime.isoformat() if msg.dateTime else None,
+                'sender': 'ai' if msg.userAi == 'ai' else 'user',
+                'message': msg.messageStr or '',
+                'session_id': msg.session_id
+            })
+        
+        # Build response
+        response_data = {
+            'status': 'success',
+            'data': {
+                'session_id': session_id,
+                'session_info': {
+                    'conversation_start': messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
+                    'last_message_time': messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
+                    'message_count': len(messages),
+                    'completion_status': messenger_session.completion_status,
+                    'ai_engaged': messenger_session.ai_engaged,
+                    'session_source': messenger_session.session_source
+                },
+                'lead_info': {
+                    'full_name': lead.full_name if lead and lead.full_name else None,
+                    'email': lead.email if lead and lead.email else None,
+                    'company_name': lead.company_name if lead and lead.company_name else None,
+                    'phone_number': lead.phone_number if lead and lead.phone_number else None
+                },
+                'conversation': conversation,
+                'total_messages': len(conversation)
+            }
+        }
+        
+        logger.info(f"Conversation retrieved for session {session_id}: {len(conversation)} messages")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error retrieving conversation for session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve conversation',
+            'error': str(e)
+        }), 500
+
+
 def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)

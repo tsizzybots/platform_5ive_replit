@@ -29,7 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **Webhook Integration**: Sends completed lead data to N8n automation workflows for further processing.
 - **User Management**: Handles user authentication, role-based access (admin/agent), and session control.
 - **Error Logging**: Captures and logs automation workflow errors.
-- **API Endpoints**: Comprehensive set of RESTful APIs for managing web chat sessions, QA updates, statistics, and error logging.
+- **API Endpoints**: Comprehensive set of RESTful APIs for managing web chat sessions, QA updates, statistics, error logging, and secure conversation retrieval.
 - **Quality Assurance System**: Implements a four-state QA workflow (unchecked → passed/issue → fixed) with user attribution and developer feedback.
 - **Data Flow**: Sessions are created via web chat widget, processed by AI agent, lead data sent to webhook, displayed on dashboard, and reviewed via QA system.
 
@@ -68,6 +68,12 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
+  - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
+  - **COMPREHENSIVE DATA**: Returns complete conversation with session metadata, lead information, and chronologically ordered messages
+  - **SECURITY**: Implements API key validation via X-API-Key or Authorization headers (Bearer token support)
+  - **ERROR HANDLING**: Proper HTTP status codes and error messages for authentication, validation, and not found scenarios
+  - **MESSAGE ORDERING**: Conversations ordered chronologically with most recent messages at the bottom as requested
 - August 9, 2025: **LEAD DATA SEPARATION** - Successfully refactored database architecture to separate lead information from session management
   - **NEW LEAD TABLE**: Created dedicated `leads` table with comprehensive lead qualification fields (full_name, company_name, email, phone_number, AI interest data)
   - **DATA MIGRATION**: Migrated 6 existing lead records from messenger_sessions to new leads table structure
