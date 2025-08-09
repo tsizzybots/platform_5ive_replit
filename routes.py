@@ -165,7 +165,6 @@ def ensure_messenger_session_exists(session_id):
         # Create new messenger session
         messenger_session = MessengerSession(
             session_id=session_id,
-            full_name=full_name,
             conversation_start=conversation_start,
             last_message_time=last_message_time,
             message_count=message_count,
@@ -177,6 +176,14 @@ def ensure_messenger_session_exists(session_id):
             updated_at=datetime.utcnow())
 
         db.session.add(messenger_session)
+        
+        # Create corresponding lead record
+        lead = Lead(
+            session_id=session_id,
+            full_name=full_name
+        )
+        db.session.add(lead)
+        
         db.session.commit()
 
         logger.info(

@@ -59,13 +59,21 @@ Preferred communication style: Simple, everyday language.
 - `Font Awesome 6.0`: Icon library.
 
 ## Database Architecture Update
-- **Current Active Tables**: Only 4 essential tables remain after cleanup:
+- **Current Active Tables**: 5 essential tables provide complete functionality:
   - `chat_sessions_for_dashboard`: Individual chat messages/interactions 
   - `messenger_sessions`: Session metadata with integrated QA functionality
+  - `leads`: Dedicated lead qualification and contact information (NEW)
   - `users`: User authentication and role management
   - `errors`: Error logging for automation workflows
+- **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 9, 2025: **LEAD DATA SEPARATION** - Successfully refactored database architecture to separate lead information from session management
+  - **NEW LEAD TABLE**: Created dedicated `leads` table with comprehensive lead qualification fields (full_name, company_name, email, phone_number, AI interest data)
+  - **DATA MIGRATION**: Migrated 6 existing lead records from messenger_sessions to new leads table structure
+  - **API REFACTORING**: Updated all API endpoints to integrate with separated Lead model while maintaining frontend compatibility
+  - **SESSION CLEANUP**: Removed lead-related fields from MessengerSession model for cleaner data separation
+  - **IMPROVED ARCHITECTURE**: Enhanced data integrity with proper foreign key relationships and dedicated lead management
 - August 9, 2025: **COMPLETION LOGIC UPDATE** - Updated conversation completion detection from "https://shorturl.at/9u9oh" to "within 24 hours" phrase matching
 - August 9, 2025: **WEBHOOK URL UPDATE** - Updated test AI webhook to new N8n endpoint: `https://n8n-g0cw.onrender.com/webhook/44e68b37-d078-44b3-b3bc-2a51a9822aca`
 - August 9, 2025: **DATABASE STRUCTURE UPDATE** - Updated chat_sessions_for_dashboard table structure to simplified format (removed firstName, lastName, contactID fields), updated all models and API endpoints accordingly
