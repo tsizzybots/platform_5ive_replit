@@ -177,33 +177,24 @@ class ChatSessionForDashboard(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.String, nullable=False)
-    firstName = db.Column(db.String, nullable=True)
-    lastName = db.Column(db.String, nullable=True)
-    contactID = db.Column(db.String, nullable=True)
     dateTime = db.Column(db.DateTime(timezone=True), nullable=True, default=db.func.now())
-    userAi = db.Column(db.String, nullable=True)  # 'user' or 'ai'
+    userAi = db.Column(db.String, nullable=True)  # 'human' or 'ai'
     messageStr = db.Column(db.String, nullable=True)
-    session_source = db.Column(db.String(50), nullable=False, default='messenger')  # 'messenger' or 'web_chat'
     
     # Add indexes for frequently queried fields
     __table_args__ = (
         Index('idx_chat_session_id', 'session_id'),
         Index('idx_chat_datetime', 'dateTime'),
         Index('idx_chat_user_ai', 'userAi'),
-        Index('idx_chat_session_source', 'session_source'),
     )
     
     def to_dict(self):
         return {
             'id': self.id,
             'session_id': self.session_id,
-            'firstName': self.firstName,
-            'lastName': self.lastName,
-            'contactID': self.contactID,
             'dateTime': self.dateTime.isoformat() if self.dateTime else None,
             'userAi': self.userAi,
-            'messageStr': self.messageStr,
-            'session_source': self.session_source
+            'messageStr': self.messageStr
         }
     
     def __repr__(self):

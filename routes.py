@@ -74,8 +74,8 @@ def ensure_messenger_session_exists(session_id):
             
         # Extract info from first message
         first_msg = messages[0]
-        full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
-        contact_id = first_msg.contactID or 'Unknown'
+        full_name = 'Unknown'  # Individual messages no longer store names
+        contact_id = 'Unknown'  # Contact ID moved to messenger_sessions
         
         # Calculate session stats
         conversation_start = first_msg.dateTime
@@ -341,11 +341,8 @@ def get_messenger_session(session_id):
             session_id=messenger_session.session_id
         ).order_by(ChatSessionForDashboard.dateTime).all()
         
-        # Build customer name from first message
+        # Use full name from messenger session
         full_name = messenger_session.full_name or 'Unknown'
-        if messages and not full_name:
-            first_msg = messages[0]
-            full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
         
         # Determine completion status
         completion_status = 'incomplete'
@@ -430,11 +427,8 @@ def export_messenger_session(session_id):
             session_id=messenger_session.session_id
         ).order_by(ChatSessionForDashboard.dateTime).all()
         
-        # Build customer name from first message
+        # Use full name from messenger session
         full_name = messenger_session.full_name or 'Unknown'
-        if messages and not full_name:
-            first_msg = messages[0]
-            full_name = f"{first_msg.firstName} {first_msg.lastName}".strip() if first_msg.firstName and first_msg.lastName else 'Unknown'
         
         # Build the export content
         export_content = []
@@ -469,7 +463,7 @@ def export_messenger_session(session_id):
                 if msg.userAi == 'ai':
                     export_content.append(f"[{timestamp}] Platform 5ive AI Agent:")
                 else:
-                    user_name = f"{msg.firstName or ''} {msg.lastName or ''}".strip() or 'User'
+                    user_name = 'User'  # Individual messages no longer store user names
                     export_content.append(f"[{timestamp}] {user_name}:")
                 
                 # Format message content with proper line breaks
@@ -826,17 +820,12 @@ def delete_testing_session(session_id):
         
         session_id_str = messenger_session.session_id
         
-        # Get customer name from chat messages to verify it's a testing session
-        first_message = ChatSessionForDashboard.query.filter_by(session_id=session_id_str).first()
-        if first_message:
-            full_name = f"{first_message.firstName} {first_message.lastName}".strip()
-            
-            # Only allow deletion of testing sessions
-            if full_name != 'Testing Session':
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Can only delete testing sessions'
-                }), 403
+        # Only allow deletion if it's a testing session (check messenger session name)
+        if messenger_session.full_name != 'Testing Session':
+            return jsonify({
+                'status': 'error',
+                'message': 'Can only delete testing sessions'
+            }), 403
         
         logger.info(f"Starting deletion of testing session: {session_id} ({session_id_str})")
         
@@ -1534,13 +1523,9 @@ def handle_chat_message():
         # Create chat message record
         chat_message = ChatSessionForDashboard(
             session_id=session_id,
-            firstName=first_name,
-            lastName=last_name,
-            contactID=contact_id,
             dateTime=datetime.utcnow(),
             userAi=user_type,
-            messageStr=message,
-            session_source=session_source
+            messageStr=message
         )
         
         db.session.add(chat_message)
@@ -1767,11 +1752,11 @@ def export_session(session_id):
         
         if chat_messages:
             for message in chat_messages:
-                user_type = "AI Agent" if message.userAi == 'ai' else message.firstName or "User"
+                user_type = "AI Agent" if message.userAi == 'ai' else "User"
                 if message.userAi == 'ai':
                     user_name = "IzzyBots AI Agent"  # You can customize this based on your branding
                 else:
-                    user_name = f"{message.firstName or ''} {message.lastName or ''}".strip() or "User"
+                    user_name = "User"  # Individual messages no longer store user names
                 
                 timestamp = message.dateTime.strftime('%Y-%m-%d %H:%M:%S') if message.dateTime else 'Unknown time'
                 export_content.append(f"[{timestamp}] {user_name}:")
