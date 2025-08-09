@@ -138,9 +138,6 @@ def get_conversation(session_id):
                 'message': 'Session not found'
             }), 404
         
-        # Get lead information
-        lead = Lead.query.filter_by(session_id=session_id).first()
-        
         # Get all messages for this session, ordered chronologically
         messages = db.session.query(ChatSessionForDashboard).filter_by(
             session_id=session_id
@@ -162,20 +159,6 @@ def get_conversation(session_id):
             'status': 'success',
             'data': {
                 'session_id': session_id,
-                'session_info': {
-                    'conversation_start': messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
-                    'last_message_time': messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
-                    'message_count': len(messages),
-                    'completion_status': messenger_session.completion_status,
-                    'ai_engaged': messenger_session.ai_engaged,
-                    'session_source': messenger_session.session_source
-                },
-                'lead_info': {
-                    'full_name': lead.full_name if lead and lead.full_name else None,
-                    'email': lead.email if lead and lead.email else None,
-                    'company_name': lead.company_name if lead and lead.company_name else None,
-                    'phone_number': lead.phone_number if lead and lead.phone_number else None
-                },
                 'conversation': conversation,
                 'total_messages': len(conversation)
             }

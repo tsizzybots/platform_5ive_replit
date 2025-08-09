@@ -70,7 +70,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 - August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
   - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
-  - **COMPREHENSIVE DATA**: Returns complete conversation with session metadata, lead information, and chronologically ordered messages
+  - **STREAMLINED RESPONSE**: Returns clean conversation data with chronologically ordered messages (most recent at bottom)
   - **SECURITY**: Implements API key validation via X-API-Key or Authorization headers (Bearer token support)
   - **ERROR HANDLING**: Proper HTTP status codes and error messages for authentication, validation, and not found scenarios
   - **MESSAGE ORDERING**: Conversations ordered chronologically with most recent messages at the bottom as requested

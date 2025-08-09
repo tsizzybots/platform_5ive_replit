@@ -1,0 +1,107 @@
+{
+    "data": {
+        "conversation": [
+            {
+                "id": 10,
+                "message": "hi",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:00.656261+00:00"
+            },
+            {
+                "id": 11,
+                "message": "Hi there! Thanks for reaching out. May I start by asking your name?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:01.088640+00:00"
+            },
+            {
+                "id": 12,
+                "message": "Tim",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:04.404778+00:00"
+            },
+            {
+                "id": 13,
+                "message": "Nice to meet you, Tim! What's the name of your company?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:04.839937+00:00"
+            },
+            {
+                "id": 14,
+                "message": "IzzyAgents",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:18.254558+00:00"
+            },
+            {
+                "id": 15,
+                "message": "Great! Now, what's the best email address to reach you?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:18.663488+00:00"
+            },
+            {
+                "id": 16,
+                "message": "tim@izzyagents.ai",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:30.927802+00:00"
+            },
+            {
+                "id": 17,
+                "message": "Thank you, Tim. Do you have a phone number you'd like to share?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:31.366787+00:00"
+            },
+            {
+                "id": 18,
+                "message": "0844544443",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:45.792821+00:00"
+            },
+            {
+                "id": 19,
+                "message": "Excellent! Do you mind sharing briefly what's got you interested in AI for your business?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:35:46.226378+00:00"
+            },
+            {
+                "id": 20,
+                "message": "I want to automate 80% of my customer service emails",
+                "sender": "user",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:36:10.166065+00:00"
+            },
+            {
+                "id": 21,
+                "message": "That sounds like an excellent goal! Automating customer service emails can really help save time and improve efficiency. Our team at Platform 5ive specializes in creating custom AI solutions like that. \n\nThanks for sharing! Would you like to tell me more about your specific challenges or what you're aiming to achieve with automation?",
+                "sender": "ai",
+                "session_id": "session_frilnnnfhk8ec29g55opiv",
+                "timestamp": "2025-08-09T07:36:10.584143+00:00"
+            }
+        ],
+        "lead_info": {
+            "company_name": null,
+            "email": null,
+            "full_name": "Unknown",
+            "phone_number": null
+        },
+        "session_id": "session_frilnnnfhk8ec29g55opiv",
+        "session_info": {
+            "ai_engaged": true,
+            "completion_status": "in_progress",
+            "conversation_start": "2025-08-09T07:35:00.656261",
+            "last_message_time": "2025-08-09T07:35:01.088640",
+            "message_count": 12,
+            "session_source": "messenger"
+        },
+        "total_messages": 12
+    },
+    "status": "success"
+}
