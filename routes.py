@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, session, redirect, url_for, flash
 from app import app, db
-from models import Error, User, MessengerSession, ChatSessionForDashboard
+from models import Error, User, MessengerSession, ChatSessionForDashboard, Lead
 from schemas import (error_schema, error_query_schema, chat_session_schema,
                      chat_session_update_schema, chat_session_query_schema)
 # Using PostgreSQL for all data storage
@@ -421,8 +421,9 @@ def get_messenger_session(session_id):
             session_id=messenger_session.session_id).order_by(
                 ChatSessionForDashboard.dateTime).all()
 
-        # Use full name from messenger session
-        full_name = messenger_session.full_name or 'Unknown'
+        # Use full name from lead data
+        lead = Lead.query.filter_by(session_id=messenger_session.session_id).first()
+        full_name = lead.full_name if lead and lead.full_name else 'Unknown'
 
         # Determine completion status
         completion_status = 'incomplete'
@@ -451,7 +452,7 @@ def get_messenger_session(session_id):
             'full_name':
             full_name,
             'contact_id':
-            messenger_session.email,
+            lead.email if lead and lead.email else '',
             'conversation_start':
             messenger_session.conversation_start.isoformat()
             if messenger_session.conversation_start else None,
@@ -492,7 +493,17 @@ def get_messenger_session(session_id):
             'created_at':
             messenger_session.created_at.isoformat()
             if messenger_session.created_at else None,
-            'messages': [msg.to_dict() for msg in messages]
+            'messages': [msg.to_dict() for msg in messages],
+            # Add lead data fields for frontend compatibility
+            'email': lead.email if lead and lead.email else None,
+            'phone_number': lead.phone_number if lead and lead.phone_number else None,
+            'company_name': lead.company_name if lead and lead.company_name else None,
+            'ai_interest_reason': lead.ai_interest_reason if lead and lead.ai_interest_reason else None,
+            'ai_implementation_known': lead.ai_implementation_known if lead and lead.ai_implementation_known else None,
+            'business_challenges': lead.business_challenges if lead and lead.business_challenges else None,
+            'business_goals_6_12m': lead.business_goals_6_12m if lead and lead.business_goals_6_12m else None,
+            'ai_budget_allocated': lead.ai_budget_allocated if lead and lead.ai_budget_allocated else None,
+            'ai_implementation_timeline': lead.ai_implementation_timeline if lead and lead.ai_implementation_timeline else None
         }
 
         return jsonify({'status': 'success', 'data': session_data})
@@ -535,8 +546,9 @@ def export_messenger_session(session_id):
             session_id=messenger_session.session_id).order_by(
                 ChatSessionForDashboard.dateTime).all()
 
-        # Use full name from messenger session
-        full_name = messenger_session.full_name or 'Unknown'
+        # Get lead information for this session
+        lead = Lead.query.filter_by(session_id=messenger_session.session_id).first()
+        full_name = lead.full_name if lead and lead.full_name else 'Unknown'
 
         # Build the export content
         export_content = []
@@ -551,7 +563,7 @@ def export_messenger_session(session_id):
         export_content.append(f"Session ID: {messenger_session.session_id}")
         export_content.append(f"Customer Name: {full_name}")
         export_content.append(
-            f"Contact ID: {messenger_session.customer_id or 'N/A'}")
+            f"Contact ID: {lead.email if lead and lead.email else 'N/A'}")
         export_content.append(
             f"Started: {messenger_session.conversation_start.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.conversation_start else 'N/A'}"
         )
@@ -798,11 +810,10 @@ def get_messenger_sessions():
         page = query_params.get('page', 1)
         per_page = query_params.get('per_page', 20)
 
-        # Start with MessengerSession records and left join chat messages
+        # Start with MessengerSession records
         query = db.session.query(
-            MessengerSession.id.label('messenger_session_id'),
-            MessengerSession.session_id, MessengerSession.full_name,
-            MessengerSession.email.label('contact_id'),
+            MessengerSession.id,
+            MessengerSession.session_id,
             MessengerSession.conversation_start,
             MessengerSession.last_message_time, MessengerSession.message_count,
             MessengerSession.status, MessengerSession.completion_status,
@@ -821,12 +832,8 @@ def get_messenger_sessions():
         if 'date_to' in query_params:
             query = query.filter(
                 MessengerSession.last_message_time <= query_params['date_to'])
-        if 'email' in query_params:
-            query = query.filter(
-                MessengerSession.email == query_params['email'])
-        if 'contact_id' in query_params:  # Keep backward compatibility
-            query = query.filter(
-                MessengerSession.email == query_params['contact_id'])
+        # Remove email/contact_id filters as these are now in Lead table
+        # TODO: Implement filters through Lead table joins if needed
         if 'session_id' in query_params:
             query = query.filter(
                 MessengerSession.session_id == query_params['session_id'])
@@ -883,8 +890,9 @@ def get_messenger_sessions():
                 session_id=result.session_id).order_by(
                     ChatSessionForDashboard.dateTime).all()
 
-            # Use customer name from MessengerSession record
-            full_name = result.full_name or 'Unknown'
+            # Use customer name from Lead record
+            lead = Lead.query.filter_by(session_id=result.session_id).first()
+            full_name = lead.full_name if lead and lead.full_name else 'Unknown'
 
             # Get completion status from database (now stored as field)
             completion_status = result.completion_status or 'incomplete'
@@ -898,13 +906,13 @@ def get_messenger_sessions():
 
             session_data = {
                 'id':
-                result.messenger_session_id,
+                result.id,
                 'session_id':
                 result.session_id,
                 'full_name':
                 full_name,
                 'contact_id':
-                result.contact_id or '',
+                lead.email if lead and lead.email else '',
                 'conversation_start':
                 result.conversation_start.isoformat()
                 if result.conversation_start else None,
@@ -945,7 +953,17 @@ def get_messenger_sessions():
                 if result.dev_feedback_at else None,
                 'created_at':
                 result.created_at.isoformat() if result.created_at else None,
-                'messages': [msg.to_dict() for msg in messages]
+                'messages': [msg.to_dict() for msg in messages],
+                # Add lead data fields for frontend compatibility
+                'email': lead.email if lead and lead.email else None,
+                'phone_number': lead.phone_number if lead and lead.phone_number else None,
+                'company_name': lead.company_name if lead and lead.company_name else None,
+                'ai_interest_reason': lead.ai_interest_reason if lead and lead.ai_interest_reason else None,
+                'ai_implementation_known': lead.ai_implementation_known if lead and lead.ai_implementation_known else None,
+                'business_challenges': lead.business_challenges if lead and lead.business_challenges else None,
+                'business_goals_6_12m': lead.business_goals_6_12m if lead and lead.business_goals_6_12m else None,
+                'ai_budget_allocated': lead.ai_budget_allocated if lead and lead.ai_budget_allocated else None,
+                'ai_implementation_timeline': lead.ai_implementation_timeline if lead and lead.ai_implementation_timeline else None
             }
 
             sessions.append(session_data)
@@ -1004,11 +1022,15 @@ def delete_testing_session(session_id):
         session_id_str = messenger_session.session_id
 
         # Only allow deletion if it's a testing session (check multiple criteria)
+        # Get lead information to check names
+        lead = Lead.query.filter_by(session_id=messenger_session.session_id).first()
+        lead_name = lead.full_name if lead and lead.full_name else 'Unknown'
+        
         is_testing_session = (
-            messenger_session.full_name == 'Testing Session' or
-            messenger_session.full_name == 'Unknown' or
-            messenger_session.full_name == '' or
-            messenger_session.full_name is None or
+            lead_name == 'Testing Session' or
+            lead_name == 'Unknown' or
+            lead_name == '' or
+            lead_name is None or
             'test' in messenger_session.session_id.lower() or
             messenger_session.session_source == 'web_chat'
         )
@@ -1029,6 +1051,12 @@ def delete_testing_session(session_id):
         logger.info(
             f"Deleted {deleted_messages} chat messages for session {session_id_str}"
         )
+
+        # Delete associated lead record if it exists
+        lead = Lead.query.filter_by(session_id=session_id_str).first()
+        if lead:
+            db.session.delete(lead)
+            logger.info(f"Deleted lead record for session {session_id_str}")
 
         # Delete the messenger session record
         db.session.delete(messenger_session)
@@ -1790,9 +1818,6 @@ def handle_chat_message():
             # Create new session for web chat
             messenger_session = MessengerSession(
                 session_id=session_id,
-                full_name=f"{first_name} {last_name}".strip()
-                if first_name or last_name else 'Web Chat User',
-                email=contact_id if '@' in contact_id else None,
                 conversation_start=datetime.utcnow(),
                 last_message_time=datetime.utcnow(),
                 message_count=1,
@@ -1801,6 +1826,14 @@ def handle_chat_message():
                 completion_status='in_progress',
                 status='active')
             db.session.add(messenger_session)
+            
+            # Create corresponding lead record
+            lead = Lead(
+                session_id=session_id,
+                full_name=f"{first_name} {last_name}".strip() if first_name or last_name else 'Web Chat User',
+                email=contact_id if '@' in contact_id else None
+            )
+            db.session.add(lead)
         else:
             # Update existing session
             messenger_session.last_message_time = datetime.utcnow()
@@ -1811,12 +1844,16 @@ def handle_chat_message():
             if user_type == 'ai':
                 messenger_session.ai_engaged = True
 
-            # Update customer info if provided
+            # Update customer info in lead record if provided
+            lead = Lead.query.filter_by(session_id=session_id).first()
+            if not lead:
+                lead = Lead(session_id=session_id)
+                db.session.add(lead)
+            
             if first_name or last_name:
-                messenger_session.full_name = f"{first_name} {last_name}".strip(
-                )
+                lead.full_name = f"{first_name} {last_name}".strip()
             if contact_id:
-                messenger_session.email = contact_id if '@' in contact_id else messenger_session.email
+                lead.email = contact_id if '@' in contact_id else lead.email
 
         db.session.commit()
 
@@ -1866,11 +1903,16 @@ def handle_webhook_delivery():
                 'message': 'Session not found'
             }), 404
 
-        # Update session with lead data
-        messenger_session.lead_name = name
-        messenger_session.lead_email = email
-        messenger_session.full_name = name if name else messenger_session.full_name
-        messenger_session.customer_id = email if email else messenger_session.customer_id
+        # Update lead data
+        lead = Lead.query.filter_by(session_id=session_id).first()
+        if not lead:
+            lead = Lead(session_id=session_id)
+            db.session.add(lead)
+        
+        if name:
+            lead.full_name = name
+        if email:
+            lead.email = email
 
         if completed:
             messenger_session.completion_status = 'complete'
@@ -1985,10 +2027,13 @@ def export_session(session_id):
         export_content.append("SESSION DETAILS:")
         export_content.append("-" * 40)
         export_content.append(f"Session ID: {messenger_session.session_id}")
+        
+        # Get lead information
+        lead = Lead.query.filter_by(session_id=session_id).first()
         export_content.append(
-            f"Customer Name: {messenger_session.full_name or 'Unknown'}")
+            f"Customer Name: {lead.full_name if lead and lead.full_name else 'Unknown'}")
         export_content.append(
-            f"Contact ID: {messenger_session.customer_id or 'Unknown'}")
+            f"Contact ID: {lead.email if lead and lead.email else 'Unknown'}")
 
         # Format dates in UTC
         start_time = messenger_session.conversation_start

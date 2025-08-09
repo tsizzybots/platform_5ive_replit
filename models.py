@@ -65,6 +65,57 @@ class Error(db.Model):
     def __repr__(self):
         return f'<Error {self.id}: {self.workflow} - {self.error_message[:50]}...>'
 
+class Lead(db.Model):
+    """Model for storing lead information separately from chat sessions"""
+    __tablename__ = 'leads'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False, unique=True)
+    
+    # Lead information fields
+    full_name = db.Column(db.String(255), nullable=True)
+    company_name = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=True)
+    phone_number = db.Column(db.String(50), nullable=True)
+    ai_interest_reason = db.Column(db.Text, nullable=True)
+    ai_implementation_known = db.Column(db.Text, nullable=True)
+    business_challenges = db.Column(db.Text, nullable=True)
+    business_goals_6_12m = db.Column(db.Text, nullable=True)
+    ai_budget_allocated = db.Column(db.Text, nullable=True)
+    ai_implementation_timeline = db.Column(db.Text, nullable=True)
+    
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Indexes for better query performance
+    __table_args__ = (
+        Index('idx_lead_session_id', 'session_id'),
+        Index('idx_lead_email', 'email'),
+        Index('idx_lead_created', 'created_at'),
+    )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'full_name': self.full_name,
+            'company_name': self.company_name,
+            'email': self.email,
+            'phone_number': self.phone_number,
+            'ai_interest_reason': self.ai_interest_reason,
+            'ai_implementation_known': self.ai_implementation_known,
+            'business_challenges': self.business_challenges,
+            'business_goals_6_12m': self.business_goals_6_12m,
+            'ai_budget_allocated': self.ai_budget_allocated,
+            'ai_implementation_timeline': self.ai_implementation_timeline,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Lead {self.id}: {self.full_name} - {self.email}>'
+
+
 class MessengerSession(db.Model):
     """Model for chat sessions stored in PostgreSQL - supports both messenger and web chat"""
     __tablename__ = 'messenger_sessions'
@@ -85,18 +136,6 @@ class MessengerSession(db.Model):
     
     # Session source tracking (messenger, web_chat)
     session_source = db.Column(db.String(50), nullable=False, default='messenger')
-    
-    # Lead generation data fields
-    full_name = db.Column(db.String(255), nullable=True)
-    company_name = db.Column(db.String(255), nullable=True)
-    email = db.Column(db.String(255), nullable=True)
-    phone_number = db.Column(db.String(50), nullable=True)
-    ai_interest_reason = db.Column(db.Text, nullable=True)
-    ai_implementation_known = db.Column(db.Text, nullable=True)
-    business_challenges = db.Column(db.Text, nullable=True)
-    business_goals_6_12m = db.Column(db.Text, nullable=True)
-    ai_budget_allocated = db.Column(db.Text, nullable=True)
-    ai_implementation_timeline = db.Column(db.Text, nullable=True)
     
     # Webhook tracking
     webhook_delivered = db.Column(db.Boolean, nullable=False, default=False)
@@ -141,17 +180,6 @@ class MessengerSession(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'session_source': self.session_source,
-            # Lead generation fields
-            'full_name': self.full_name,
-            'company_name': self.company_name,
-            'email': self.email,
-            'phone_number': self.phone_number,
-            'ai_interest_reason': self.ai_interest_reason,
-            'ai_implementation_known': self.ai_implementation_known,
-            'business_challenges': self.business_challenges,
-            'business_goals_6_12m': self.business_goals_6_12m,
-            'ai_budget_allocated': self.ai_budget_allocated,
-            'ai_implementation_timeline': self.ai_implementation_timeline,
             'webhook_delivered': self.webhook_delivered,
             'webhook_delivery_at': self.webhook_delivery_at.isoformat() if self.webhook_delivery_at else None,
             'webhook_url': self.webhook_url,
