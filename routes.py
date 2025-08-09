@@ -538,7 +538,7 @@ def export_messenger_session(session_id):
 
                 if msg.userAi == 'ai':
                     export_content.append(
-                        f"[{timestamp}] Platform 5ive AI Agent:")
+                        f"[{timestamp}] IzzyBots AI Agent:")
                 else:
                     user_name = 'User'  # Individual messages no longer store user names
                     export_content.append(f"[{timestamp}] {user_name}:")
@@ -1229,7 +1229,7 @@ def update_messenger_session_qa(session_id):
                 resend.api_key = os.environ.get("RESEND_API_KEY")
 
                 # Email content
-                subject = f"⚠️ Platform 5ive - QA Issue Detected - Session {qa_session.session_id[:20]}..."
+                subject = f"⚠️ IzzyBots - QA Issue Detected - Session {qa_session.session_id[:20]}..."
 
                 html_content = f"""
                 <html>
@@ -1238,7 +1238,7 @@ def update_messenger_session_qa(session_id):
                         <!-- Header -->
                         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
                             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
-                                🚨 Platform 5ive
+                                🚨 IzzyBots
                             </h1>
                             <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
                                 QA Issue Detection Alert
@@ -1286,7 +1286,7 @@ def update_messenger_session_qa(session_id):
                         <!-- Footer -->
                         <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
                             <p style="font-size: 13px; color: #6c757d; margin: 0;">
-                                This is an automated notification from <strong>Platform 5ive</strong> AI Lead Generation Dashboard.
+                                This is an automated notification from <strong>IzzyBots</strong> AI Lead Generation Dashboard.
                             </p>
                             <p style="font-size: 12px; color: #adb5bd; margin: 10px 0 0 0;">
                                 If you have any questions, please contact our support team.
@@ -1316,7 +1316,7 @@ Dashboard: https://stay-golden-health-messenger-sessions.replit.app/
 Please review this issue in the dashboard and provide appropriate feedback.
 
 ---
-This is an automated notification from Platform 5ive AI Lead Generation Dashboard.
+This is an automated notification from IzzyBots AI Lead Generation Dashboard.
                 """
 
                 # Send email to team
@@ -1630,7 +1630,7 @@ def preview_chat():
 
 @app.route('/demo/email-template')
 def demo_email_template():
-    """Demo page to preview the QA issue email template with Platform 5ive branding"""
+    """Demo page to preview the QA issue email template with IzzyBots branding"""
     # Generate sample email content with dummy data
     html_content = """
     <html>
@@ -1639,7 +1639,7 @@ def demo_email_template():
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
                 <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
-                    🚨 Platform 5ive
+                    🚨 IzzyBots
                 </h1>
                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
                     QA Issue Detection Alert
@@ -1687,7 +1687,7 @@ def demo_email_template():
             <!-- Footer -->
             <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
                 <p style="font-size: 13px; color: #6c757d; margin: 0;">
-                    This is an automated notification from <strong>Platform 5ive</strong> AI Lead Generation Dashboard.
+                    This is an automated notification from <strong>IzzyBots</strong> AI Lead Generation Dashboard.
                 </p>
                 <p style="font-size: 12px; color: #adb5bd; margin: 10px 0 0 0;">
                     If you have any questions, please contact our support team.
