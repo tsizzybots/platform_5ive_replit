@@ -302,9 +302,9 @@ async function sendTestMessage() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         // INSTANT COMPLETION DETECTION: Check if booking URL was provided
-        const bookingUrl = 'https://shorturl.at/9u9oh';
-        if (aiMessage.includes(bookingUrl) && testAISessionId) {
-            console.log('🎯 BOOKING URL DETECTED! Triggering instant completion update for session:', testAISessionId);
+        const completionPhrase = 'within 24 hours';
+        if (aiMessage.toLowerCase().includes(completionPhrase) && testAISessionId) {
+            console.log('🎯 COMPLETION PHRASE DETECTED! Triggering instant completion update for session:', testAISessionId);
             
             // Immediately trigger session refresh to show completion status
             setTimeout(() => {

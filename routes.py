@@ -98,7 +98,7 @@ def ensure_messenger_session_exists(session_id):
         # Check if AI engaged and completion status
         ai_engaged = any(msg.userAi == 'ai' for msg in messages)
         has_booking_url = any(
-            msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr
+            msg.messageStr and 'within 24 hours' in msg.messageStr.lower()
             for msg in messages)
 
         if has_booking_url:
@@ -169,8 +169,7 @@ def sync_messenger_session_data(session_id):
         # Check for booking URL completion
         has_booking_url = db.session.query(ChatSessionForDashboard).filter(
             ChatSessionForDashboard.session_id == session_id,
-            ChatSessionForDashboard.messageStr.contains(
-                'https://shorturl.at/9u9oh')).first() is not None
+            func.lower(ChatSessionForDashboard.messageStr).contains('within 24 hours')).first() is not None
 
         completion_status = 'complete' if has_booking_url else 'in_progress'
 
@@ -389,7 +388,7 @@ def get_messenger_session(session_id):
         for msg in messages:
             if msg.userAi == 'ai':
                 ai_engaged = True
-            if msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr:
+            if msg.messageStr and 'within 24 hours' in msg.messageStr.lower():
                 has_booking_url = True
                 break
 
@@ -849,7 +848,7 @@ def get_messenger_sessions():
             # Check if session has booking URL for legacy completed field
             has_booking_url = False
             for msg in messages:
-                if msg.messageStr and 'https://shorturl.at/9u9oh' in msg.messageStr:
+                if msg.messageStr and 'within 24 hours' in msg.messageStr.lower():
                     has_booking_url = True
                     break
 

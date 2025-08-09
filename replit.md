@@ -66,6 +66,7 @@ Preferred communication style: Simple, everyday language.
   - `errors`: Error logging for automation workflows
 
 ## Changelog
+- August 9, 2025: **COMPLETION LOGIC UPDATE** - Updated conversation completion detection from "https://shorturl.at/9u9oh" to "within 24 hours" phrase matching
 - August 9, 2025: **WEBHOOK URL UPDATE** - Updated test AI webhook to new N8n endpoint: `https://n8n-g0cw.onrender.com/webhook/44e68b37-d078-44b3-b3bc-2a51a9822aca`
 - August 9, 2025: **DATABASE STRUCTURE UPDATE** - Updated chat_sessions_for_dashboard table structure to simplified format (removed firstName, lastName, contactID fields), updated all models and API endpoints accordingly
 - August 8, 2025: **DEPLOYMENT OPTIMIZATION** - Applied comprehensive deployment fixes for production readiness
