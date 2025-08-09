@@ -1003,8 +1003,17 @@ def delete_testing_session(session_id):
 
         session_id_str = messenger_session.session_id
 
-        # Only allow deletion if it's a testing session (check messenger session name)
-        if messenger_session.full_name != 'Testing Session':
+        # Only allow deletion if it's a testing session (check multiple criteria)
+        is_testing_session = (
+            messenger_session.full_name == 'Testing Session' or
+            messenger_session.full_name == 'Unknown' or
+            messenger_session.full_name == '' or
+            messenger_session.full_name is None or
+            'test' in messenger_session.session_id.lower() or
+            messenger_session.session_source == 'web_chat'
+        )
+        
+        if not is_testing_session:
             return jsonify({
                 'status': 'error',
                 'message': 'Can only delete testing sessions'
