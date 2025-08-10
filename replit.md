@@ -74,6 +74,12 @@ Preferred communication style: Simple, everyday language.
   - **SECURITY**: Implements API key validation via X-API-Key or Authorization headers (Bearer token support)
   - **ERROR HANDLING**: Proper HTTP status codes and error messages for authentication, validation, and not found scenarios
   - **MESSAGE ORDERING**: Conversations ordered chronologically with most recent messages at the bottom as requested
+- August 10, 2025: **LEAD UPSERT API ENDPOINT** - Added intelligent lead data management endpoint
+  - **NEW ENDPOINT**: `/api/lead/<session_id>` for creating and updating lead information
+  - **SMART UPSERT**: Automatically detects if session exists and creates new record or updates existing one
+  - **PARTIAL UPDATES**: Supports updating individual fields without affecting other data
+  - **COMPREHENSIVE FIELDS**: Handles all lead qualification fields (contact info, AI interest data, business goals)
+  - **DETAILED RESPONSES**: Returns action taken (created/updated), affected fields, and lead ID for tracking
 - August 9, 2025: **LEAD DATA SEPARATION** - Successfully refactored database architecture to separate lead information from session management
   - **NEW LEAD TABLE**: Created dedicated `leads` table with comprehensive lead qualification fields (full_name, company_name, email, phone_number, AI interest data)
   - **DATA MIGRATION**: Migrated 6 existing lead records from messenger_sessions to new leads table structure

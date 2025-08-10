@@ -176,6 +176,121 @@ def get_conversation(session_id):
         }), 500
 
 
+@app.route('/api/lead/<session_id>', methods=['POST', 'PUT'])
+def upsert_lead(session_id):
+    """Create or update lead information for a session ID"""
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No data provided'
+            }), 400
+        
+        # Validate session ID
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session ID is required'
+            }), 400
+        
+        # Check if lead record already exists
+        existing_lead = Lead.query.filter_by(session_id=session_id).first()
+        
+        if existing_lead:
+            # Update existing record
+            updated_fields = []
+            
+            # Update only provided fields
+            if 'full_name' in data:
+                existing_lead.full_name = data['full_name']
+                updated_fields.append('full_name')
+            if 'company_name' in data:
+                existing_lead.company_name = data['company_name']
+                updated_fields.append('company_name')
+            if 'email' in data:
+                existing_lead.email = data['email']
+                updated_fields.append('email')
+            if 'phone_number' in data:
+                existing_lead.phone_number = data['phone_number']
+                updated_fields.append('phone_number')
+            if 'ai_interest_reason' in data:
+                existing_lead.ai_interest_reason = data['ai_interest_reason']
+                updated_fields.append('ai_interest_reason')
+            if 'ai_implementation_known' in data:
+                existing_lead.ai_implementation_known = data['ai_implementation_known']
+                updated_fields.append('ai_implementation_known')
+            if 'business_challenges' in data:
+                existing_lead.business_challenges = data['business_challenges']
+                updated_fields.append('business_challenges')
+            if 'business_goals_6_12m' in data:
+                existing_lead.business_goals_6_12m = data['business_goals_6_12m']
+                updated_fields.append('business_goals_6_12m')
+            if 'ai_budget_allocated' in data:
+                existing_lead.ai_budget_allocated = data['ai_budget_allocated']
+                updated_fields.append('ai_budget_allocated')
+            if 'ai_implementation_timeline' in data:
+                existing_lead.ai_implementation_timeline = data['ai_implementation_timeline']
+                updated_fields.append('ai_implementation_timeline')
+            
+            # Update timestamp
+            existing_lead.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            logger.info(f"Updated lead for session {session_id}, fields: {', '.join(updated_fields)}")
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Lead updated successfully',
+                'action': 'updated',
+                'session_id': session_id,
+                'updated_fields': updated_fields,
+                'lead_id': existing_lead.id
+            }), 200
+            
+        else:
+            # Create new record
+            new_lead = Lead(
+                session_id=session_id,
+                full_name=data.get('full_name'),
+                company_name=data.get('company_name'),
+                email=data.get('email'),
+                phone_number=data.get('phone_number'),
+                ai_interest_reason=data.get('ai_interest_reason'),
+                ai_implementation_known=data.get('ai_implementation_known'),
+                business_challenges=data.get('business_challenges'),
+                business_goals_6_12m=data.get('business_goals_6_12m'),
+                ai_budget_allocated=data.get('ai_budget_allocated'),
+                ai_implementation_timeline=data.get('ai_implementation_timeline'),
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            db.session.add(new_lead)
+            db.session.commit()
+            
+            logger.info(f"Created new lead for session {session_id}")
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Lead created successfully',
+                'action': 'created',
+                'session_id': session_id,
+                'lead_id': new_lead.id
+            }), 201
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error upserting lead for session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to create/update lead',
+            'error': str(e)
+        }), 500
+
+
 def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
