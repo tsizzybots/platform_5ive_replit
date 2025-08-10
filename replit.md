@@ -77,6 +77,9 @@ Preferred communication style: Simple, everyday language.
   - **MANUAL API ENDPOINT**: `/api/extract-lead/<session_id>` for on-demand processing with API key authentication
   - **INTELLIGENT FIELD MAPPING**: Clean values for contact fields, complete explanations for qualification fields
   - **ENHANCED PROMPTING**: Advanced prompt engineering for maximum extraction accuracy and context understanding
+  - **QUESTION-ANSWER MATCHING**: AI analyzes conversation flow to match user responses with AI questions for perfect context understanding
+  - **CONVERSATIONAL INTELLIGENCE**: System understands patterns like "AI asks name → User responds → AI acknowledges" for 100% accuracy
+  - **SMART FIELD REPLACEMENT**: Enhanced logic replaces "Unknown" and default values with extracted information automatically
 - August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
   - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
   - **STREAMLINED RESPONSE**: Returns clean conversation data with chronologically ordered messages (most recent at bottom)

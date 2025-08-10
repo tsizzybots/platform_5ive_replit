@@ -55,11 +55,19 @@ class AILeadExtractor:
             return None
     
     def _format_conversation_for_ai(self, messages: List) -> str:
-        """Format conversation messages for AI analysis"""
+        """Format conversation messages for AI analysis with clear question-answer structure"""
         conversation = []
-        for msg in messages:
-            role = "AI" if msg.userAi == "ai" else "User"
-            conversation.append(f"{role}: {msg.messageStr}")
+        
+        for i, msg in enumerate(messages):
+            role = "AI AGENT" if msg.userAi == "ai" else "USER"
+            
+            # Add conversation flow indicators for question-answer pairs
+            if msg.userAi == "ai" and "?" in msg.messageStr:
+                conversation.append(f"{role} ASKS: {msg.messageStr}")
+            elif msg.userAi == "user" and i > 0 and messages[i-1].userAi == "ai" and "?" in messages[i-1].messageStr:
+                conversation.append(f"{role} RESPONDS: {msg.messageStr}")
+            else:
+                conversation.append(f"{role}: {msg.messageStr}")
         
         return "\n".join(conversation)
     
@@ -67,33 +75,49 @@ class AILeadExtractor:
         """Use OpenAI to analyze the conversation and extract lead information"""
         try:
             system_prompt = """
-You are an advanced lead information extraction system using GPT-4o. Analyze conversations and extract lead qualification data with maximum accuracy.
+You are an expert AI conversation analyst specializing in lead qualification data extraction. Analyze conversational patterns where AI agents ask questions and users provide answers.
 
-EXTRACTION RULES:
-1. CONTACT FIELDS (extract clean values only):
-   - full_name: Extract name only (e.g., "John Doe" from "My name is John Doe")
-   - email: Extract email address only
-   - phone_number: Extract phone number only  
-   - company_name: Extract company name only
+CONVERSATION ANALYSIS APPROACH:
+1. QUESTION-ANSWER MATCHING: When you see patterns like:
+   - AI asks: "What's your full name?" → User responds: "John Doe" = Extract full_name: "John Doe"
+   - AI asks: "What's your company called?" → User responds: "Tech Corp" = Extract company_name: "Tech Corp"  
+   - AI asks: "What's your email?" → User responds: "john@email.com" = Extract email: "john@email.com"
 
-2. QUALIFICATION FIELDS (extract full user responses):
-   - ai_interest_reason: Complete explanation of their AI interest
-   - business_challenges: Full description of current challenges
-   - business_goals_6_12m: Complete explanation of 6-12 month business goals
-   - ai_implementation_known: Full response about AI implementation areas/knowledge
-   - ai_implementation_timeline: Complete timeline preferences and explanation
+2. DIRECT STATEMENTS: Look for users directly stating information:
+   - "My name is Sarah Johnson" = Extract full_name: "Sarah Johnson"
+   - "I work at Microsoft" = Extract company_name: "Microsoft"
+   - "You can reach me at contact@company.com" = Extract email: "contact@company.com"
 
-3. BUDGET FIELD:
-   - ai_budget_allocated: true if budget allocated, false if not allocated, null if unclear
+3. CONTEXTUAL UNDERSTANDING: 
+   - If AI asks a question and user gives a direct response, that response answers the question
+   - If AI acknowledges the answer (e.g., "Thanks, John"), this confirms the extraction
+   - User responses immediately following AI questions are answers to those questions
 
-CRITICAL REQUIREMENTS:
-- Extract ONLY information explicitly stated by the user
-- Never infer, assume, or extrapolate information
-- Return null for fields where no information was provided
-- Be extremely precise with contact information
-- Capture full context for business qualification fields
+EXTRACTION FIELDS:
+CONTACT INFO (extract clean values):
+- full_name: Person's complete name
+- email: Email address  
+- phone_number: Phone number
+- company_name: Company/organization name
 
-Return valid JSON with all fields.
+BUSINESS QUALIFICATION (extract full explanations):
+- ai_interest_reason: Why they're interested in AI
+- business_challenges: Current business challenges they face
+- business_goals_6_12m: Their 6-12 month business objectives
+- ai_implementation_known: Their knowledge of AI implementation areas
+- ai_implementation_timeline: When they want to implement AI
+
+BUDGET STATUS:
+- ai_budget_allocated: true/false/null based on budget allocation status
+
+CRITICAL RULES:
+- Analyze the FULL conversation flow, not just individual messages
+- Match user responses to AI questions that immediately preceded them
+- Extract clean contact values, full explanatory responses for business fields
+- Only extract explicitly provided information
+- Return null for unavailable information
+
+Return valid JSON with extracted data.
 """
 
             response = self.openai_client.chat.completions.create(
@@ -139,7 +163,7 @@ Return valid JSON with all fields.
                             current_value is None or 
                             current_value == "" or 
                             current_value == "Unknown" or
-                            (field == "full_name" and current_value == "Web Chat User")
+                            (field == "full_name" and current_value in ["Web Chat User", "Unknown"])
                         )
                         
                         if should_update:
