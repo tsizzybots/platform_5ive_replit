@@ -130,9 +130,9 @@ Respond in JSON format with the extracted fields.
                 updated_fields = []
                 for field, value in clean_data.items():
                     if hasattr(existing_lead, field):
-                        # Only update if we have new information and field is currently empty
+                        # Only update if we have new information and field is currently empty or "Unknown"
                         current_value = getattr(existing_lead, field)
-                        if current_value is None or current_value == "":
+                        if current_value is None or current_value == "" or current_value == "Unknown":
                             setattr(existing_lead, field, value)
                             updated_fields.append(field)
                 
