@@ -11,8 +11,8 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI client
-# the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-# do not change this unless explicitly requested by the user
+# Updated to use the newest available GPT model for enhanced lead extraction
+# GPT-4o is the current best model for this task with superior context understanding
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -67,41 +67,44 @@ class AILeadExtractor:
         """Use OpenAI to analyze the conversation and extract lead information"""
         try:
             system_prompt = """
-You are an expert lead information extraction system. Analyze the conversation and extract relevant lead information.
+You are an advanced lead information extraction system using GPT-4o. Analyze conversations and extract lead qualification data with maximum accuracy.
 
 EXTRACTION RULES:
-1. For SINGLE VALUES (extract clean values only):
-   - full_name: Extract just the name (e.g., "John Doe", not "My name is John Doe")
-   - email: Extract just the email address
-   - phone_number: Extract just the phone number
-   - company_name: Extract just the company name
+1. CONTACT FIELDS (extract clean values only):
+   - full_name: Extract name only (e.g., "John Doe" from "My name is John Doe")
+   - email: Extract email address only
+   - phone_number: Extract phone number only  
+   - company_name: Extract company name only
 
-2. For EXPLANATORY FIELDS (extract full user responses):
-   - ai_interest_reason: Full explanation of why they're interested in AI
-   - business_challenges: Complete description of their challenges
-   - business_goals_6_12m: Full explanation of their 6-12 month goals
-   - ai_implementation_known: Their complete response about AI implementation knowledge
-   - ai_implementation_timeline: Their timeline preference/explanation
+2. QUALIFICATION FIELDS (extract full user responses):
+   - ai_interest_reason: Complete explanation of their AI interest
+   - business_challenges: Full description of current challenges
+   - business_goals_6_12m: Complete explanation of 6-12 month business goals
+   - ai_implementation_known: Full response about AI implementation areas/knowledge
+   - ai_implementation_timeline: Complete timeline preferences and explanation
 
-3. For BOOLEAN FIELDS:
-   - ai_budget_allocated: true if they indicate budget is allocated, false if not, null if unclear
+3. BUDGET FIELD:
+   - ai_budget_allocated: true if budget allocated, false if not allocated, null if unclear
 
-4. Only extract information that is explicitly provided by the user in their responses.
-5. Do not infer or assume information that isn't clearly stated.
-6. Return null for any field where information wasn't provided.
+CRITICAL REQUIREMENTS:
+- Extract ONLY information explicitly stated by the user
+- Never infer, assume, or extrapolate information
+- Return null for fields where no information was provided
+- Be extremely precise with contact information
+- Capture full context for business qualification fields
 
-Respond in JSON format with the extracted fields.
+Return valid JSON with all fields.
 """
 
             response = self.openai_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o",  # Latest GPT model for superior accuracy
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Extract lead information from this conversation:\n\n{conversation}"}
+                    {"role": "user", "content": f"Extract lead qualification data from this conversation:\n\n{conversation}"}
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.1,
-                max_tokens=1000
+                temperature=0.0,  # Maximum precision for data extraction
+                max_tokens=1500   # Increased tokens for comprehensive responses
             )
             
             result = json.loads(response.choices[0].message.content)
@@ -130,9 +133,16 @@ Respond in JSON format with the extracted fields.
                 updated_fields = []
                 for field, value in clean_data.items():
                     if hasattr(existing_lead, field):
-                        # Only update if we have new information and field is currently empty or "Unknown"
+                        # Update if field is empty, "Unknown", or generic default values
                         current_value = getattr(existing_lead, field)
-                        if current_value is None or current_value == "" or current_value == "Unknown":
+                        should_update = (
+                            current_value is None or 
+                            current_value == "" or 
+                            current_value == "Unknown" or
+                            (field == "full_name" and current_value == "Web Chat User")
+                        )
+                        
+                        if should_update:
                             setattr(existing_lead, field, value)
                             updated_fields.append(field)
                 

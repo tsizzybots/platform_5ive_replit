@@ -2157,6 +2157,16 @@ def handle_chat_message():
 
         db.session.commit()
 
+        # Trigger instant AI lead extraction after each message for real-time updates
+        try:
+            from ai_lead_extractor import ai_lead_extractor
+            # Process lead extraction immediately when messages are added
+            ai_lead_extractor.process_session_for_lead_extraction(session_id)
+            logger.info(f"Real-time AI extraction triggered for session {session_id}")
+        except Exception as e:
+            # Don't fail the message saving if extraction fails
+            logger.warning(f"Real-time AI extraction failed for session {session_id}: {str(e)}")
+
         return jsonify({
             'status': 'success',
             'message': 'Chat message saved successfully',
