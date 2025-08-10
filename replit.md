@@ -76,6 +76,7 @@ Preferred communication style: Simple, everyday language.
   - **MESSAGE ORDERING**: Conversations ordered chronologically with most recent messages at the bottom as requested
 - August 10, 2025: **LEAD UPSERT API ENDPOINT** - Added intelligent lead data management endpoint
   - **NEW ENDPOINT**: `/api/lead/<session_id>` for creating and updating lead information
+  - **SECURITY**: Uses same CONVERSATION_API_KEY authentication as conversation endpoint (X-API-Key or Authorization Bearer)
   - **SMART UPSERT**: Automatically detects if session exists and creates new record or updates existing one
   - **PARTIAL UPDATES**: Supports updating individual fields without affecting other data
   - **COMPREHENSIVE FIELDS**: Handles all lead qualification fields (contact info, AI interest data, business goals)

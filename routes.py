@@ -178,8 +178,28 @@ def get_conversation(session_id):
 
 @app.route('/api/lead/<session_id>', methods=['POST', 'PUT'])
 def upsert_lead(session_id):
-    """Create or update lead information for a session ID"""
+    """Create or update lead information for a session ID with API key authentication"""
     try:
+        # Check for API key in headers
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
+        if api_key and api_key.startswith('Bearer '):
+            api_key = api_key.replace('Bearer ', '')
+        
+        # Get expected API key from environment
+        expected_api_key = os.environ.get('CONVERSATION_API_KEY')
+        
+        if not expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'API key not configured on server'
+            }), 500
+            
+        if not api_key or api_key != expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or missing API key'
+            }), 401
+        
         # Get JSON data from request
         data = request.get_json()
         if not data:
