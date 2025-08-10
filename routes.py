@@ -311,6 +311,87 @@ def upsert_lead(session_id):
         }), 500
 
 
+@app.route('/api/extract-lead/<session_id>', methods=['POST'])
+def extract_lead_data(session_id):
+    """Manually trigger AI lead extraction for a specific session"""
+    try:
+        # Check for API key in headers
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
+        if api_key and api_key.startswith('Bearer '):
+            api_key = api_key.replace('Bearer ', '')
+        
+        # Get expected API key from environment
+        expected_api_key = os.environ.get('CONVERSATION_API_KEY')
+        
+        if not expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'API key not configured on server'
+            }), 500
+            
+        if not api_key or api_key != expected_api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid or missing API key'
+            }), 401
+        
+        # Validate session ID
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session ID is required'
+            }), 400
+        
+        # Import the AI lead extractor
+        from ai_lead_extractor import ai_lead_extractor
+        
+        # Process the session
+        success = ai_lead_extractor.process_session_for_lead_extraction(session_id)
+        
+        if success:
+            # Get the updated lead information
+            lead = Lead.query.filter_by(session_id=session_id).first()
+            lead_data = None
+            if lead:
+                lead_data = {
+                    'id': lead.id,
+                    'session_id': lead.session_id,
+                    'full_name': lead.full_name,
+                    'company_name': lead.company_name,
+                    'email': lead.email,
+                    'phone_number': lead.phone_number,
+                    'ai_interest_reason': lead.ai_interest_reason,
+                    'ai_implementation_known': lead.ai_implementation_known,
+                    'business_challenges': lead.business_challenges,
+                    'business_goals_6_12m': lead.business_goals_6_12m,
+                    'ai_budget_allocated': lead.ai_budget_allocated,
+                    'ai_implementation_timeline': lead.ai_implementation_timeline,
+                    'created_at': lead.created_at.isoformat() if lead.created_at else None,
+                    'updated_at': lead.updated_at.isoformat() if lead.updated_at else None
+                }
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Lead extraction completed successfully',
+                'session_id': session_id,
+                'lead_data': lead_data
+            }), 200
+        else:
+            return jsonify({
+                'status': 'warning',
+                'message': 'Lead extraction completed but no data was extracted',
+                'session_id': session_id
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"Error in manual lead extraction for session {session_id}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to extract lead data',
+            'error': str(e)
+        }), 500
+
+
 def get_sydney_time():
     """Get current time in Sydney timezone"""
     return datetime.now(SYDNEY_TZ)
@@ -2167,6 +2248,14 @@ def handle_webhook_delivery():
 
                 db.session.commit()
 
+                # Trigger automatic AI lead extraction for this session
+                try:
+                    from ai_lead_extractor import ai_lead_extractor
+                    extraction_success = ai_lead_extractor.process_session_for_lead_extraction(session_id)
+                    logger.info(f"AI lead extraction completed for session {session_id}: {'success' if extraction_success else 'no data extracted'}")
+                except Exception as e:
+                    logger.warning(f"AI lead extraction failed for session {session_id}: {str(e)}")
+
                 return jsonify({
                     'status': 'success',
                     'message': 'Webhook delivered successfully',
@@ -2196,6 +2285,14 @@ def handle_webhook_delivery():
             messenger_session.webhook_response = "No webhook URL configured"
 
             db.session.commit()
+
+            # Trigger automatic AI lead extraction for this session
+            try:
+                from ai_lead_extractor import ai_lead_extractor
+                extraction_success = ai_lead_extractor.process_session_for_lead_extraction(session_id)
+                logger.info(f"AI lead extraction completed for session {session_id}: {'success' if extraction_success else 'no data extracted'}")
+            except Exception as e:
+                logger.warning(f"AI lead extraction failed for session {session_id}: {str(e)}")
 
             return jsonify({
                 'status': 'success',
