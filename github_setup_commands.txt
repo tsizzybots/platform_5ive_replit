@@ -1,0 +1,102 @@
+# GitHub Setup Commands for Platform 5ive Repository
+
+## Manual Git Setup Instructions
+
+Since Replit has restrictions on automated Git operations, please run these commands manually in the Shell:
+
+### 1. Remove any lock files (if they exist)
+```bash
+rm -f .git/index.lock .git/config.lock
+```
+
+### 2. Configure Git user
+```bash
+git config user.email "your-email@example.com"
+git config user.name "Your Name"
+```
+
+### 3. Add the GitHub remote repository
+```bash
+git remote add origin https://github.com/tsizzybots/platform_5ive_replit.git
+```
+
+### 4. Check current Git status
+```bash
+git status
+```
+
+### 5. Add all files to staging
+```bash
+git add .
+```
+
+### 6. Create initial commit
+```bash
+git commit -m "Initial commit: Platform 5ive AI Lead Generation Dashboard
+
+✅ Comprehensive Flask-based lead generation system
+✅ Real-time completion detection with multi-layer automation  
+✅ Robust session management and QA workflow
+✅ Auto-sync system preventing orphaned sessions
+✅ Dashboard with instant status updates
+✅ PostgreSQL database with data integrity
+✅ Embeddable chat widget for lead capture
+✅ Webhook integration for automation workflows
+
+Features:
+- Multi-layer completion detection (4 mechanisms)
+- Real-time dashboard updates
+- Background processing and auto-sync
+- Quality assurance workflow system
+- User role management (admin/agent)
+- Comprehensive API endpoints
+- Session synchronization system"
+```
+
+### 7. Push to GitHub
+```bash
+git push -u origin main
+```
+
+If the push fails due to authentication, use this format:
+```bash
+git push https://<YOUR_GITHUB_TOKEN>@github.com/tsizzybots/platform_5ive_replit.git main
+```
+
+### Alternative: Create a new branch for safety
+```bash
+git checkout -b initial-commit
+git push -u origin initial-commit
+```
+
+## What's Included in This Commit
+
+### Core Application Files:
+- `main.py` - Application entry point
+- `app.py` - Flask application setup
+- `routes.py` - API endpoints and route handlers
+- `models.py` - Database models and schemas
+- `schemas.py` - Data validation schemas
+
+### Frontend Assets:
+- `templates/` - HTML templates
+- `static/` - CSS, JavaScript, and static assets
+
+### Configuration:
+- `pyproject.toml` - Python dependencies
+- `replit.md` - Project documentation and architecture
+- `.gitignore` - Git ignore rules
+- `README.md` - Comprehensive project documentation
+
+### Key Features Included:
+✅ Robust completion status automation
+✅ Multi-layer completion detection system
+✅ Real-time dashboard updates
+✅ Session synchronization and auto-sync
+✅ Quality assurance workflow
+✅ User authentication and role management
+✅ Comprehensive API endpoints
+✅ Database integrity and consistency
+
+## Repository URL
+https://github.com/tsizzybots/platform_5ive_replit
