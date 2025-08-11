@@ -64,15 +64,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### August 11, 2025: Completion Status Dashboard Sync Fix
-**ISSUE RESOLVED**: Dashboard completion status not updating in real-time when sessions become complete.
+### August 11, 2025: Robust Completion Status Sync System Implementation
+**ISSUE RESOLVED**: Dashboard and session details completion status not updating consistently when sessions become complete, even when toast notifications appeared.
 
-**ROOT CAUSE**: The messenger session completion status wasn't being automatically updated when AI responses contained the "within 24 hours" booking message, causing dashboard to show stale "In Progress" status even after sessions were complete.
+**ROOT CAUSE ANALYSIS**: 
+- Auto-sync mechanism created messenger sessions with outdated data before completion messages arrived
+- Completion detection logic only ran during active chat message processing, missing sessions created via auto-sync
+- Database inconsistency between chat_sessions_for_dashboard (with completion messages) and messenger_sessions (with stale status)
 
-**SOLUTION IMPLEMENTED**:
-- **Real-Time Completion Detection**: Enhanced chat message handler to automatically detect "within 24 hours" messages and immediately update completion_status to "complete"
-- **Database-First Display**: Modified session endpoint to use stored completion_status from database instead of recalculating from messages
-- **Immediate UI Updates**: Dashboard now reflects completion status changes without requiring manual refresh
-- **Logging Enhancement**: Added detailed logging when sessions are marked as complete for better troubleshooting
+**COMPREHENSIVE SOLUTION IMPLEMENTED**:
+1. **Enhanced Auto-Sync Completion Detection**: Updated `ensure_messenger_session_exists()` to detect "within 24 hours" messages during session creation and set completion_status to "complete"
+2. **Robust Sync Functions**: Enhanced `sync_messenger_session_data()` with completion detection and detailed logging
+3. **Completion Status Sync API**: Added `/api/sync-completion-status` endpoint to batch-update all sessions with completion messages
+4. **Fixed Runtime Error**: Resolved `has_booking_url` undefined variable error in session details endpoint
+5. **Database-First Display**: All endpoints now use stored completion_status from database for consistent display
+6. **Real-Time Updates**: Both dashboard stats and session details now update immediately when completion status changes
+7. **Comprehensive Logging**: Added detailed logging for all completion status changes and sync operations
 
-**VERIFIED WORKING**: Test session completion now properly updates dashboard from "In Progress" to "Complete" status immediately upon AI agent sending booking confirmation message.
+**IMMEDIATE FIXES APPLIED**:
+- Fixed session_cxunukm7npon98a25965pi and session_s6jswb91ossugqldf5n4l completion status
+- Updated message counts and timestamps to reflect actual completion times
+- Verified all 3 test sessions now show "Complete" status in both dashboard and session details
+
+**VERIFIED WORKING**: Dashboard shows 3 completed sessions, 0 in progress. Session details modal opens successfully with accurate completion status and message data. System now automatically detects and updates completion status during both real-time chat processing and auto-sync operations.

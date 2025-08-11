@@ -362,6 +362,7 @@ def ensure_messenger_session_exists(session_id):
 
         if has_booking_url:
             completion_status = 'complete'
+            logger.info(f"Auto-sync detected completion for session {session_id} - found 'within 24 hours' message")
         elif ai_engaged:
             # Convert timezone-aware datetime to UTC for comparison
             if last_message_time.tzinfo is not None:
@@ -441,6 +442,9 @@ def sync_messenger_session_data(session_id):
             func.lower(ChatSessionForDashboard.messageStr).contains('within 24 hours')).first() is not None
 
         completion_status = 'complete' if has_booking_url else 'in_progress'
+        
+        if has_booking_url:
+            logger.info(f"Sync detected completion for session {session_id} - found 'within 24 hours' message")
 
         # Update messenger session with latest data
         messenger_session.message_count = message_count
@@ -514,6 +518,71 @@ def sync_orphaned_sessions_endpoint():
         return jsonify({
             'status': 'error',
             'message': 'Failed to sync orphaned sessions',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/sync-completion-status', methods=['POST'])
+def sync_completion_status_endpoint():
+    """API endpoint to update completion status for all sessions with 'within 24 hours' messages"""
+    try:
+        # Find all sessions that have completion messages but aren't marked as complete
+        sessions_to_update = db.session.execute(text("""
+            SELECT DISTINCT m.session_id, m.id 
+            FROM messenger_sessions m
+            WHERE m.completion_status != 'complete'
+            AND EXISTS (
+                SELECT 1 FROM chat_sessions_for_dashboard c
+                WHERE c.session_id = m.session_id
+                AND LOWER(c."messageStr") LIKE '%within 24 hours%'
+            )
+        """)).fetchall()
+        
+        updated_count = 0
+        for row in sessions_to_update:
+            session_id = row[0]
+            session_db_id = row[1]
+            
+            # Get latest message info for this session
+            latest_message = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=session_id
+            ).order_by(ChatSessionForDashboard.dateTime.desc()).first()
+            
+            message_count = db.session.query(ChatSessionForDashboard).filter_by(
+                session_id=session_id
+            ).count()
+            
+            # Update the messenger session
+            messenger_session = MessengerSession.query.get(session_db_id)
+            if messenger_session:
+                messenger_session.completion_status = 'complete'
+                messenger_session.message_count = message_count
+                if latest_message:
+                    # Convert timezone-aware datetime to UTC naive for storage
+                    if latest_message.dateTime.tzinfo is not None:
+                        messenger_session.last_message_time = latest_message.dateTime.astimezone(
+                            pytz.UTC).replace(tzinfo=None)
+                    else:
+                        messenger_session.last_message_time = latest_message.dateTime
+                messenger_session.updated_at = datetime.utcnow()
+                
+                updated_count += 1
+                logger.info(f"Updated completion status for session {session_id}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Updated completion status for {updated_count} sessions',
+            'updated_count': updated_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in completion status sync: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to sync completion status',
             'error': str(e)
         }), 500
 
