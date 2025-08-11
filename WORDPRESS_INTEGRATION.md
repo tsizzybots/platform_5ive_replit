@@ -14,7 +14,7 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
 <div id="ai-chat-container" style="width: 100%; max-width: 550px; margin: 20px auto;">
     <iframe 
         id="replit-chat-iframe" 
-        src="https://YOUR-REPLIT-DOMAIN.replit.app/embed-chat" 
+        src="https://platform-5ive-lead-ai.replit.app/embed-chat" 
         style="width: 100%; border: none; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);"
         scrolling="no">
     </iframe>
@@ -26,17 +26,19 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
   // Initialize iframe resizer
   iFrameResize({ 
     log: false,
-    minHeight: 480,
+    minHeight: 600,
     autoResize: true,
     checkOrigin: false
   }, '#replit-chat-iframe');
 </script>
 ```
 
-### 2. Replace the Domain
+### 2. Production Domain Ready
 
-Replace `YOUR-REPLIT-DOMAIN` with your actual Replit app domain, for example:
-- `https://web-chat-ai-lead-generation.your-username.replit.app/embed-chat`
+The embed code is already configured for the production domain:
+- `https://platform-5ive-lead-ai.replit.app/embed-chat`
+
+No changes needed - simply paste the code into your WordPress page.
 
 ### 3. Configure N8n Webhook (Optional)
 
@@ -141,7 +143,7 @@ When a lead is completed, the following data is sent to your N8n webhook:
 
 ### Admin Dashboard
 Access the admin dashboard at:
-- `https://YOUR-REPLIT-DOMAIN.replit.app/`
+- `https://platform-5ive-lead-ai.replit.app/`
 
 ### Dashboard Features
 - View all chat sessions (Messenger + Web Chat)

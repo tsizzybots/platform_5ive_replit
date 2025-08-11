@@ -552,7 +552,7 @@
             if (window.parentIFrame) {
                 // Small delay to ensure DOM updates are complete
                 setTimeout(() => {
-                    const height = Math.max(document.body.scrollHeight, 500);
+                    const height = Math.max(document.body.scrollHeight, 600);
                     window.parentIFrame.size(height);
                 }, 50);
             }
@@ -578,5 +578,8 @@
             };
         };
     </script>
+    
+    <!-- iframe-resizer content script for height communication -->
+    <script src="https://unpkg.com/iframe-resizer/js/iframeResizer.contentWindow.min.js"></script>
 </body>
 </html>
