@@ -18,19 +18,22 @@
             margin: 0;
             padding: 0;
             background: transparent;
-            min-height: 100vh;
+            height: 600px;
             overflow-x: hidden;
         }
         
         .chat-widget {
             width: 100%;
             max-width: 550px;
+            height: 600px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             overflow: hidden;
             border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
         }
         
         .chat-header {
@@ -81,7 +84,7 @@
         #chat-container {
             display: flex;
             flex-direction: column;
-            height: 600px;
+            flex: 1;
             background: #f8f9fa;
         }
         
@@ -549,12 +552,10 @@
         }
         
         function updateIframeSize() {
+            // The iframe content now has a fixed height, so resizing should be automatic
+            // This function is kept for compatibility but may not be needed
             if (window.parentIFrame) {
-                // Small delay to ensure DOM updates are complete
-                setTimeout(() => {
-                    const height = Math.max(document.body.scrollHeight, 600);
-                    window.parentIFrame.size(height);
-                }, 50);
+                window.parentIFrame.size(600);
             }
         }
         
