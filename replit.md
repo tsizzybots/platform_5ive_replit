@@ -68,18 +68,6 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
-- August 10, 2025: **REAL-TIME AI LEAD EXTRACTION SYSTEM** - Implemented intelligent conversation analysis with instant database updates
-  - **REAL-TIME PROCESSING**: Every chat message triggers instant AI lead extraction for immediate database updates
-  - **GPT-4O POWERED**: Uses latest OpenAI GPT-4o model with maximum precision (temperature=0.0) for superior accuracy
-  - **INSTANT UPDATES**: Lead information updates immediately as users provide details during conversations
-  - **COMPREHENSIVE EXTRACTION**: Captures all 10 lead qualification fields (contact info + business qualification data)
-  - **DUAL TRIGGERS**: Both real-time chat processing AND webhook delivery trigger AI extraction
-  - **MANUAL API ENDPOINT**: `/api/extract-lead/<session_id>` for on-demand processing with API key authentication
-  - **INTELLIGENT FIELD MAPPING**: Clean values for contact fields, complete explanations for qualification fields
-  - **ENHANCED PROMPTING**: Advanced prompt engineering for maximum extraction accuracy and context understanding
-  - **QUESTION-ANSWER MATCHING**: AI analyzes conversation flow to match user responses with AI questions for perfect context understanding
-  - **CONVERSATIONAL INTELLIGENCE**: System understands patterns like "AI asks name → User responds → AI acknowledges" for 100% accuracy
-  - **SMART FIELD REPLACEMENT**: Enhanced logic replaces "Unknown" and default values with extracted information automatically
 - August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
   - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
   - **STREAMLINED RESPONSE**: Returns clean conversation data with chronologically ordered messages (most recent at bottom)
