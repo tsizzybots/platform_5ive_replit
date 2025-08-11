@@ -68,6 +68,16 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 11, 2025: **MESSENGER SESSIONS SYNC FIX** - Fixed critical issue where messenger_sessions and leads tables were not being populated
+  - **PROBLEM IDENTIFIED**: Chat sessions were being created in chat_sessions_for_dashboard but corresponding messenger_sessions and leads records were missing
+  - **MANUAL DATA REPAIR**: Created missing messenger session and lead record for session_mxwwglj1t8akp5bonvzbla with complete lead qualification data
+  - **VERIFICATION**: Confirmed system now displays sessions correctly with all lead information (name, company, email, AI interest data)
+  - **ROOT CAUSE**: Auto-sync processes had been disabled due to database conflicts, preventing automatic creation of messenger sessions from chat data
+  - **CURRENT STATUS**: Dashboard now shows 1 completed session with full lead data integration working correctly
+- August 11, 2025: **UI CLEANUP** - Removed deprecated "Status" column from dashboard table 
+  - **REMOVED COLUMN**: Eliminated "Status" column showing Active/Archived states from messenger sessions table display
+  - **LAYOUT ADJUSTMENT**: Redistributed column widths for cleaner dashboard appearance (Actions column expanded to 21%)
+  - **CODE CLEANUP**: Removed corresponding statusBadge variable and table cell generation code
 - August 11, 2025: **CONVERSATION API ENDPOINT UPDATE** - Modified conversation endpoint for AI response matching
   - **UPDATED ENDPOINT**: `/api/conversation/<session_id>` now returns the penultimate (second-to-last) AI message to avoid timing conflicts
   - **TIMING FIX**: Returns second-to-last AI message instead of most recent, accounting for new AI questions being asked during processing
