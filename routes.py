@@ -1011,15 +1011,19 @@ def get_messenger_sessions():
                 )
                 continue
 
-        # Auto-sync existing sessions to ensure latest data
-        # Note: Temporarily skip individual session sync to prevent API crashes
-        # The key issue has been resolved - new sessions are being created properly
-        # for session_id in existing_session_ids:
-        #     try:
-        #         sync_messenger_session_data(session_id)
-        #     except Exception as e:
-        #         logger.error(f"Failed to sync messenger session {session_id}: {str(e)}")
-        #         continue
+        # Auto-sync existing sessions to ensure latest data and completion status
+        # Only sync sessions that have been active in the last 24 hours for performance
+        recent_sessions = db.session.query(MessengerSession.session_id).filter(
+            MessengerSession.last_message_time > (datetime.utcnow() - timedelta(hours=24))
+        ).all()
+        recent_session_ids = [row[0] for row in recent_sessions]
+        
+        for session_id in recent_session_ids:
+            try:
+                sync_messenger_session_data(session_id)
+            except Exception as e:
+                logger.error(f"Failed to sync messenger session {session_id}: {str(e)}")
+                continue
     except Exception as e:
         logger.warning(f"Auto-sync failed but continuing: {str(e)}")
 
