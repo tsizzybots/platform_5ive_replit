@@ -1248,10 +1248,15 @@ def delete_testing_session(session_id):
         is_testing_session = (
             lead_name == 'Testing Session' or
             lead_name == 'Unknown' or
+            lead_name == 'Web Chat User' or
             lead_name == '' or
             lead_name is None or
             'test' in messenger_session.session_id.lower() or
-            messenger_session.session_source == 'web_chat'
+            'realtime' in messenger_session.session_id.lower() or
+            'verification' in messenger_session.session_id.lower() or
+            getattr(messenger_session, 'session_source', None) == 'web_chat' or
+            messenger_session.session_id.startswith('test_') or
+            messenger_session.session_id.startswith('session_')
         )
         
         if not is_testing_session:

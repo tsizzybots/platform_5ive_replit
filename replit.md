@@ -81,6 +81,10 @@ Preferred communication style: Simple, everyday language.
   - **PARTIAL UPDATES**: Supports updating individual fields without affecting other data
   - **COMPREHENSIVE FIELDS**: Handles all lead qualification fields (contact info, AI interest data, business goals)
   - **DETAILED RESPONSES**: Returns action taken (created/updated), affected fields, and lead ID for tracking
+- August 10, 2025: **DELETION SYSTEM FIX** - Enhanced session deletion to properly handle testing and web chat sessions
+  - **IMPROVED CRITERIA**: Now properly identifies testing sessions including 'Web Chat User', sessions with 'test'/'realtime'/'verification' patterns
+  - **COMPLETE DELETION**: Ensures both chat_sessions_for_dashboard messages and leads table records are removed
+  - **ENHANCED PATTERNS**: Supports sessions starting with 'test_' or 'session_' and web_chat source sessions
 - August 9, 2025: **LEAD DATA SEPARATION** - Successfully refactored database architecture to separate lead information from session management
   - **NEW LEAD TABLE**: Created dedicated `leads` table with comprehensive lead qualification fields (full_name, company_name, email, phone_number, AI interest data)
   - **DATA MIGRATION**: Migrated 6 existing lead records from messenger_sessions to new leads table structure
