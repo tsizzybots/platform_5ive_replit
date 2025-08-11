@@ -47,6 +47,16 @@
             padding: 16px;
         }
         
+        .botui-app-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .botui-messages-container {
+            min-height: 300px;
+            padding: 10px;
+        }
+        
         .botui-container {
             padding: 16px;
         }
@@ -202,12 +212,12 @@
     <script src="https://unpkg.com/iframe-resizer/js/iframeResizer.contentWindow.min.js"></script>
     
     <script>
-        // Initialize session
-        const sessionId = 'webchat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // Check if there's an existing session in browser storage
+        let existingSessionId = localStorage.getItem('chat_session_id');
         
         // Chat state
         let chatState = {
-            sessionId: sessionId,
+            sessionId: existingSessionId || '', // Will be set after first webhook call
             step: 'greeting',
             userData: {
                 name: '',
@@ -321,22 +331,18 @@
             return re.test(email);
         }
         
-        // Auto-start chat with AI agent's first message (like dashboard does)
+        // Start chat with initial "start" message (exactly like dashboard)
         async function startChat() {
             await showTyping();
             
-            // Send initial trigger to webhook to get AI's first message automatically
-            // This mimics the dashboard pattern where no sessionId triggers auto-initialization
             try {
+                // Send initial "start" message to webhook - exactly like dashboard test
                 const payload = {
+                    sessionId: "", // Empty for initial message
                     action: "sendMessage",
-                    chatInput: "Hi", // Triggers the AI agent to start
-                    firstName: "Web",
-                    lastName: "Visitor",
-                    contactID: "web_chat_visitor"
+                    chatInput: "start"
                 };
                 
-                // Don't include sessionId to trigger new session creation
                 const response = await fetch('https://hook.us2.make.com/q0gxj1olt9dfqfn2jb10k1pfb6oitl46', {
                     method: 'POST',
                     headers: {
@@ -352,9 +358,10 @@
                 const aiResponse = await response.json();
                 
                 if (aiResponse.success && aiResponse.message) {
-                    // Store the session ID for future messages
+                    // Store session ID in browser memory
                     if (aiResponse.sessionId) {
                         chatState.sessionId = aiResponse.sessionId;
+                        localStorage.setItem('chat_session_id', aiResponse.sessionId);
                     }
                     
                     // Display the AI's first message
@@ -362,26 +369,23 @@
                         content: aiResponse.message
                     }).then(() => {
                         addToHistory('ai', aiResponse.message);
-                        // Send to our API to record the message
                         sendToChatAPI(chatState.sessionId, aiResponse.message, 'ai');
                         
-                        // Set up user input for real-time chat
+                        // Set up real-time chat
                         setupRealTimeChat();
                     });
                 } else {
-                    // Fallback to manual greeting if webhook fails
                     fallbackToManualGreeting();
                 }
             } catch (error) {
                 console.error('Error initializing AI chat:', error);
-                // Fallback to manual greeting
                 fallbackToManualGreeting();
             }
         }
         
         // Fallback function for manual greeting
         function fallbackToManualGreeting() {
-            const welcomeMessage = "👋 Hello! I'm here to help you learn more about our services. How can I assist you today?";
+            const welcomeMessage = "Hello! I'm here to help you. How can I assist you today?";
             
             botui.message.add({
                 content: welcomeMessage
@@ -392,7 +396,7 @@
             });
         }
         
-        // Set up real-time chat interface
+        // Set up real-time chat interface - continuous conversation
         function setupRealTimeChat() {
             botui.action.text({
                 action: {
@@ -404,6 +408,7 @@
                     return setupRealTimeChat(); // Continue listening
                 }
                 
+                // Add user message to chat
                 addToHistory('user', userMessage);
                 sendToChatAPI(chatState.sessionId, userMessage, 'user');
                 
@@ -412,18 +417,16 @@
             });
         }
         
-        // Handle user message and get AI response
+        // Handle user message and get AI response - real-time exchange
         async function handleUserMessage(message) {
             await showTyping();
             
             try {
+                // Send message with stored session ID
                 const payload = {
+                    sessionId: chatState.sessionId,
                     action: "sendMessage",
-                    chatInput: message,
-                    firstName: chatState.userData.name || "Web",
-                    lastName: chatState.userData.lastName || "Visitor",
-                    contactID: chatState.userData.email || "web_chat_visitor",
-                    sessionId: chatState.sessionId
+                    chatInput: message
                 };
                 
                 const response = await fetch('https://hook.us2.make.com/q0gxj1olt9dfqfn2jb10k1pfb6oitl46', {
@@ -477,13 +480,20 @@
                 return;
             }
             
-            // Initialize BotUI now that dependencies are loaded
-            botui = new BotUI('botui-app');
-            
-            // Dependencies are loaded, start the chat
-            setTimeout(() => {
-                startChat();
-            }, 300);
+            try {
+                // Initialize BotUI now that dependencies are loaded
+                botui = new BotUI('botui-app');
+                console.log('BotUI initialized successfully');
+                
+                // Dependencies are loaded, start the chat
+                setTimeout(() => {
+                    startChat();
+                }, 500); // Slightly longer delay to ensure full initialization
+            } catch (error) {
+                console.error('Error initializing BotUI:', error);
+                // Try again after a delay
+                setTimeout(initializeChat, 200);
+            }
         }
         
         // Start initialization when page loads
