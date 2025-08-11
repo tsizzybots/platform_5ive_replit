@@ -11,7 +11,7 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
 
 ```html
 <!-- AI Chat Widget -->
-<div id="ai-chat-container" style="width: 100%; max-width: 500px; margin: 20px auto;">
+<div id="ai-chat-container" style="width: 100%; max-width: 550px; margin: 20px auto;">
     <iframe 
         id="replit-chat-iframe" 
         src="https://YOUR-REPLIT-DOMAIN.replit.app/embed-chat" 
@@ -26,7 +26,7 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
   // Initialize iframe resizer
   iFrameResize({ 
     log: false,
-    minHeight: 400,
+    minHeight: 480,
     autoResize: true,
     checkOrigin: false
   }, '#replit-chat-iframe');
@@ -52,7 +52,7 @@ N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/your-webhook-id
 You can adjust the widget container size:
 
 ```html
-<div id="ai-chat-container" style="width: 100%; max-width: 600px; height: 500px; margin: 20px auto;">
+<div id="ai-chat-container" style="width: 100%; max-width: 550px; height: 600px; margin: 20px auto;">
     <!-- iframe here -->
 </div>
 ```
@@ -96,19 +96,23 @@ For better mobile experience:
 ## Widget Features
 
 ### Lead Collection Flow
-1. **Greeting**: AI welcomes the visitor
-2. **Name Collection**: Asks for visitor's name
-3. **Email Collection**: Requests email with validation
-4. **Interest Selection**: Multiple choice for business needs
-5. **Lead Completion**: Sends data to webhook and database
+1. **AI-Initiated Greeting**: AI automatically sends welcome message when chat loads
+2. **Name Collection**: AI asks for visitor's full name
+3. **Company Information**: Requests company name
+4. **Email Collection**: Requests email with validation
+5. **Phone Number**: Optional phone number collection
+6. **Lead Completion**: Sends data to webhook and database with booking confirmation
 
 ### Data Captured
 - Full name
+- Company name
 - Email address (validated)
-- Interest/inquiry type
-- Complete chat transcript
+- Phone number (optional)
+- Complete chat transcript with AI responses
+- Session ID for conversation continuity
 - Session timestamp
-- Source tracking (web_chat)
+- Source tracking (embed_chat)
+- AI engagement status
 
 ## N8n Webhook Payload
 
@@ -116,24 +120,20 @@ When a lead is completed, the following data is sent to your N8n webhook:
 
 ```json
 {
-  "session_id": "webchat_1642345678901_abc123",
-  "name": "John Smith",
-  "email": "john@example.com",
-  "chat_transcript": [
-    {
-      "type": "ai",
-      "message": "Hello! I'm here to help...",
-      "timestamp": "2024-01-16T10:30:00.000Z"
-    },
-    {
-      "type": "user", 
-      "message": "John Smith",
-      "timestamp": "2024-01-16T10:30:15.000Z"
-    }
-  ],
-  "completed": true,
-  "source": "web_chat",
-  "timestamp": "2024-01-16T10:35:00.000Z"
+  "action": "sendMessage",
+  "chatInput": "John Smith",
+  "firstName": "Website",
+  "lastName": "Visitor", 
+  "contactID": "embed_visitor_1642345678901",
+  "sessionId": "session_abc123def456"
+}
+```
+
+**AI Response Format:**
+```json
+{
+  "aiResponse": "Thanks, John. What's your company called?",
+  "sessionId": "session_abc123def456"
 }
 ```
 

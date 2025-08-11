@@ -100,6 +100,12 @@ Preferred communication style: Simple, everyday language.
 - `getChatSession()`: View current session details
 - Console logging for webhook requests/responses
 
+**WORDPRESS INTEGRATION UPDATE**:
+- Updated embed code in WORDPRESS_INTEGRATION.md to match current design
+- Corrected container width (500px → 550px) and minHeight (400px → 480px)
+- Updated documentation to reflect AI-initiated conversations and current data flow
+- Fixed webhook payload examples to match production endpoint format
+
 ### August 11, 2025: Robust Completion Status Sync System Implementation
 **ISSUE RESOLVED**: Dashboard and session details completion status not updating consistently when sessions become complete, even when toast notifications appeared.
 
