@@ -15,21 +15,22 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
     <iframe 
         id="replit-chat-iframe" 
         src="https://platform-5ive-lead-ai.replit.app/embed-chat" 
-        style="width: 100%; border: none; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);"
+        style="width: 100%; height: 600px; border: none; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);"
         scrolling="no">
     </iframe>
 </div>
 
-<!-- iframe-resizer script for responsive sizing -->
-<script src="https://unpkg.com/iframe-resizer/js/iframeResizer.min.js"></script>
+<!-- Simple resize handler (optional) -->
 <script>
-  // Initialize iframe resizer
-  iFrameResize({ 
-    log: false,
-    minHeight: 600,
-    autoResize: true,
-    checkOrigin: false
-  }, '#replit-chat-iframe');
+  // Listen for resize messages from iframe
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resize') {
+      const iframe = document.getElementById('replit-chat-iframe');
+      if (iframe) {
+        iframe.style.height = event.data.height + 'px';
+      }
+    }
+  });
 </script>
 ```
 

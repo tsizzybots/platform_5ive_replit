@@ -552,10 +552,15 @@
         }
         
         function updateIframeSize() {
-            // The iframe content now has a fixed height, so resizing should be automatic
-            // This function is kept for compatibility but may not be needed
-            if (window.parentIFrame) {
-                window.parentIFrame.size(600);
+            // Simple postMessage approach to communicate height to parent
+            try {
+                const height = Math.max(document.body.scrollHeight, 600);
+                window.parent.postMessage({
+                    type: 'resize',
+                    height: height
+                }, '*');
+            } catch (error) {
+                // Fallback - do nothing if postMessage fails
             }
         }
         
@@ -580,7 +585,22 @@
         };
     </script>
     
-    <!-- iframe-resizer content script for height communication -->
-    <script src="https://unpkg.com/iframe-resizer/js/iframeResizer.contentWindow.min.js"></script>
+    <!-- Simple height communication script -->
+    <script>
+        // Send initial height to parent
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                try {
+                    const height = Math.max(document.body.scrollHeight, 600);
+                    window.parent.postMessage({
+                        type: 'resize',
+                        height: height
+                    }, '*');
+                } catch (error) {
+                    // Silently fail if postMessage is blocked
+                }
+            }, 100);
+        });
+    </script>
 </body>
 </html>
