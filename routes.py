@@ -150,22 +150,10 @@ def get_conversation(session_id):
                 'message': 'No AI messages found for this session'
             }), 404
         
-        # Format the last AI message
-        last_message_data = {
-            'id': last_ai_message.id,
-            'timestamp': last_ai_message.dateTime.isoformat() if last_ai_message.dateTime else None,
-            'sender': 'ai',
-            'message': last_ai_message.messageStr or '',
-            'session_id': last_ai_message.session_id
-        }
-        
-        # Build response
+        # Build simplified response
         response_data = {
-            'status': 'success',
-            'data': {
-                'session_id': session_id,
-                'last_ai_message': last_message_data
-            }
+            'last_ai_message': last_ai_message.messageStr or '',
+            'session_id': session_id
         }
         
         logger.info(f"Last AI message retrieved for session {session_id}: message ID {last_ai_message.id}")
