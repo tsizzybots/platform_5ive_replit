@@ -189,14 +189,7 @@
         
         <div id="chat-container">
             <div id="messages-container" class="messages-container">
-                <div class="welcome-message">
-                    <div class="ai-message">
-                        <div class="message-content">
-                            <strong>Platform 5ive Team</strong><br>
-                            Hi! I'm here to help you explore how AI and automation can streamline your business operations. What would you like to know about our services?
-                        </div>
-                    </div>
-                </div>
+                <!-- Messages will be loaded dynamically -->
             </div>
             <div class="typing-indicator" id="typing-indicator" style="display: none;">
                 <div class="ai-message">
@@ -225,6 +218,8 @@
         // Chat state - embed widget session management
         let chatSessionId = null;
         let isWaitingForResponse = false;
+        let chatMessages = [];
+        const STORAGE_KEY = 'embed_chat_session';
         
         // DOM elements
         const chatInput = document.getElementById('chat-input');
@@ -238,6 +233,9 @@
         });
         
         function initializeChat() {
+            // Load existing session from localStorage
+            loadExistingSession();
+            
             // Focus on input
             chatInput.focus();
             
@@ -257,6 +255,109 @@
                 childList: true,
                 subtree: true
             });
+            
+            // Start new conversation if no existing session
+            if (!chatSessionId) {
+                setTimeout(() => {
+                    startNewConversation();
+                }, 500);
+            }
+        }
+        
+        function loadExistingSession() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const sessionData = JSON.parse(saved);
+                    chatSessionId = sessionData.sessionId;
+                    chatMessages = sessionData.messages || [];
+                    
+                    // Restore chat messages
+                    chatMessages.forEach(msg => {
+                        if (msg.type === 'user') {
+                            addUserMessage(msg.content, false);
+                        } else {
+                            addAIMessage(msg.content, false);
+                        }
+                    });
+                    
+                    console.log('Loaded existing session:', chatSessionId);
+                    updateIframeSize();
+                }
+            } catch (error) {
+                console.error('Error loading session:', error);
+                // Clear corrupted data
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+        
+        function saveSession() {
+            try {
+                const sessionData = {
+                    sessionId: chatSessionId,
+                    messages: chatMessages,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+            } catch (error) {
+                console.error('Error saving session:', error);
+            }
+        }
+        
+        async function startNewConversation() {
+            if (isWaitingForResponse) return;
+            
+            setUIState(false);
+            showTyping();
+            
+            try {
+                // Send initial message to start conversation
+                const response = await fetch('/api/embed-chat/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Hi',  // Simple greeting to start conversation
+                        sessionId: null, // No session ID for new conversation
+                        firstName: 'Website',
+                        lastName: 'Visitor',
+                        contactId: 'embed_visitor_' + Date.now()
+                    })
+                });
+                
+                hideTyping();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Store session ID for future messages
+                    if (result.sessionId) {
+                        chatSessionId = result.sessionId;
+                        console.log('New session started:', chatSessionId);
+                    }
+                    
+                    // Add AI's first message to start conversation
+                    if (result.aiResponse) {
+                        addAIMessage(result.aiResponse, true);
+                    }
+                    
+                    saveSession();
+                } else {
+                    throw new Error(result.message || 'Failed to start conversation');
+                }
+                
+            } catch (error) {
+                console.error('Error starting conversation:', error);
+                hideTyping();
+                addAIMessage('Hi! I\'m here to help you explore how our services can benefit your business. What would you like to know?', true);
+            }
+            
+            setUIState(true);
         }
         
         async function sendMessage() {
@@ -265,7 +366,7 @@
             if (!message || isWaitingForResponse) return;
             
             // Add user message to chat
-            addUserMessage(message);
+            addUserMessage(message, true);
             
             // Clear input and disable while waiting
             chatInput.value = '';
@@ -311,10 +412,13 @@
                     
                     // Add AI response to chat
                     if (result.aiResponse) {
-                        addAIMessage(result.aiResponse);
+                        addAIMessage(result.aiResponse, true);
                     } else {
-                        addAIMessage('I received your message. How can I help you further?');
+                        addAIMessage('I received your message. How can I help you further?', true);
                     }
+                    
+                    // Save session after successful exchange
+                    saveSession();
                 } else {
                     throw new Error(result.message || 'Unknown error occurred');
                 }
@@ -322,13 +426,13 @@
             } catch (error) {
                 console.error('Error sending message:', error);
                 hideTyping();
-                addAIMessage('Sorry, there was an error sending your message. Please try again.');
+                addAIMessage('Sorry, there was an error sending your message. Please try again.', true);
             }
             
             setUIState(true);
         }
         
-        function addUserMessage(message) {
+        function addUserMessage(message, saveToStorage = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'user-message';
             messageDiv.innerHTML = `
@@ -337,11 +441,21 @@
                 </div>
             `;
             messagesContainer.appendChild(messageDiv);
+            
+            // Save to message history
+            if (saveToStorage) {
+                chatMessages.push({
+                    type: 'user',
+                    content: message,
+                    timestamp: Date.now()
+                });
+            }
+            
             scrollToBottom();
             updateIframeSize();
         }
         
-        function addAIMessage(message) {
+        function addAIMessage(message, saveToStorage = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'ai-message';
             messageDiv.innerHTML = `
@@ -351,6 +465,16 @@
                 </div>
             `;
             messagesContainer.appendChild(messageDiv);
+            
+            // Save to message history
+            if (saveToStorage) {
+                chatMessages.push({
+                    type: 'ai',
+                    content: message,
+                    timestamp: Date.now()
+                });
+            }
+            
             scrollToBottom();
             updateIframeSize();
         }
@@ -399,6 +523,21 @@
         
         // Handle window resize
         window.addEventListener('resize', updateIframeSize);
+        
+        // Add utility function to clear session (for testing/debugging)
+        window.clearChatSession = function() {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        };
+        
+        // Expose session info for debugging
+        window.getChatSession = function() {
+            return {
+                sessionId: chatSessionId,
+                messageCount: chatMessages.length,
+                messages: chatMessages
+            };
+        };
     </script>
 </body>
 </html>
