@@ -1750,7 +1750,7 @@ async function viewTicketDetails(id) {
                 <div class="col-md-6">
                     <p><strong>Started:</strong> ${formatDate(session.conversation_start)}</p>
                     <p><strong>Last Message:</strong> ${formatDate(session.last_message_time)}</p>
-                    <p><strong>Status:</strong> ${session.completed ? '<span class="badge bg-success">Completed</span>' : '<span class="badge bg-danger">Incomplete</span>'}</p>
+                    <p><strong>Completion Status:</strong> ${getCompletionStatusBadge(session.completion_status)}</p>
                     <p><strong>QA Status:</strong> <span class="session-qa-status">${getQAStatusBadge(session.qa_status)}</span></p>
                 </div>
             </div>
@@ -2291,6 +2291,16 @@ function getQAStatusBadge(qaStatus) {
         'fixed': '<span class="badge bg-primary">Fixed</span>'
     };
     return badges[statusLower] || '<span class="badge bg-secondary">Unchecked</span>';
+}
+
+function getCompletionStatusBadge(completionStatus) {
+    const statusLower = completionStatus ? completionStatus.toLowerCase() : 'incomplete';
+    const badges = {
+        'complete': '<span class="badge bg-success">Complete</span>',
+        'in_progress': '<span class="badge bg-warning">In Progress</span>',
+        'incomplete': '<span class="badge bg-danger">Incomplete</span>'
+    };
+    return badges[statusLower] || '<span class="badge bg-danger">Incomplete</span>';
 }
 
 function formatDate(dateString) {
