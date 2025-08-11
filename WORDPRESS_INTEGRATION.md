@@ -11,7 +11,7 @@ Add this HTML code to any WordPress page or post where you want the chat widget 
 
 ```html
 <!-- AI Chat Widget -->
-<div id="ai-chat-container" style="width: 100%; max-width: 650px; margin: 20px auto;">
+<div id="ai-chat-container" style="width: 100%; max-width: 500px; margin: 20px auto;">
     <iframe 
         id="replit-chat-iframe" 
         src="https://YOUR-REPLIT-DOMAIN.replit.app/embed-chat" 
@@ -52,7 +52,7 @@ N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/your-webhook-id
 You can adjust the widget container size:
 
 ```html
-<div id="ai-chat-container" style="width: 100%; max-width: 700px; height: 600px; margin: 20px auto;">
+<div id="ai-chat-container" style="width: 100%; max-width: 600px; height: 500px; margin: 20px auto;">
     <!-- iframe here -->
 </div>
 ```

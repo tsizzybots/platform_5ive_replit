@@ -1918,14 +1918,6 @@ def web_chat():
 @app.route('/embed-chat')
 def embed_chat():
     """Serve the embeddable chat widget for iframe"""
-    # Check if accessed directly in Replit environment for testing
-    user_agent = request.headers.get('User-Agent', '')
-    referrer = request.headers.get('Referer', '')
-    
-    # If accessed directly (not in iframe) and in Replit environment, redirect to login for testing
-    if ('replit.dev' in request.host or 'replit.app' in request.host) and not referrer:
-        return redirect(url_for('login'))
-    
     return render_template('embed_chat.html')
 
 
@@ -2031,12 +2023,10 @@ def handle_chat_message():
             }), 400
 
         # Create chat message record
-        chat_message = ChatSessionForDashboard(
-            session_id=session_id,
-            dateTime=datetime.utcnow(),
-            userAi=user_type,
-            messageStr=message
-        )
+        chat_message = ChatSessionForDashboard(session_id=session_id,
+                                               dateTime=datetime.utcnow(),
+                                               userAi=user_type,
+                                               messageStr=message)
 
         db.session.add(chat_message)
 
@@ -2053,8 +2043,7 @@ def handle_chat_message():
                 session_source=session_source,
                 ai_engaged=(user_type == 'ai'),
                 completion_status='in_progress',
-                status='active'
-            )
+                status='active')
             db.session.add(messenger_session)
             
             # Create corresponding lead record
