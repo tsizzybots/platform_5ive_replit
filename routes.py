@@ -1918,6 +1918,14 @@ def web_chat():
 @app.route('/embed-chat')
 def embed_chat():
     """Serve the embeddable chat widget for iframe"""
+    # Check if accessed directly in Replit environment for testing
+    user_agent = request.headers.get('User-Agent', '')
+    referrer = request.headers.get('Referer', '')
+    
+    # If accessed directly (not in iframe) and in Replit environment, redirect to login for testing
+    if ('replit.dev' in request.host or 'replit.app' in request.host) and not referrer:
+        return redirect(url_for('login'))
+    
     return render_template('embed_chat.html')
 
 

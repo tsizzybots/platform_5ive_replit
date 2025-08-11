@@ -45,6 +45,8 @@
             overflow-y: auto;
             background: #f8f9fa;
             padding: 16px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
         }
         
         .botui-app-container {
@@ -55,6 +57,22 @@
         .botui-messages-container {
             min-height: 300px;
             padding: 10px;
+        }
+        
+        /* Ensure BotUI elements are visible */
+        .botui-message {
+            margin-bottom: 15px;
+        }
+        
+        .botui-message-content {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .botui-actions-container {
+            margin-top: 15px;
         }
         
         .botui-container {
@@ -196,7 +214,7 @@
 <body>
     <div class="chat-widget">
         <div id="botui-app">
-            <bot-ui></bot-ui>
+            <!-- BotUI will be rendered here -->
         </div>
         
         <div class="powered-by">
@@ -472,9 +490,23 @@
             }
         }
         
+        // Track initialization attempts
+        let initAttempts = 0;
+        const maxAttempts = 50; // 5 seconds total
+        
         // Wait for all dependencies to load before starting chat
         function initializeChat() {
+            initAttempts++;
+            console.log(`Initialization attempt ${initAttempts}/${maxAttempts}`);
+            console.log('Vue available:', typeof Vue !== 'undefined');
+            console.log('BotUI available:', typeof BotUI !== 'undefined');
+            
             if (typeof BotUI === 'undefined' || typeof Vue === 'undefined') {
+                if (initAttempts >= maxAttempts) {
+                    console.error('Failed to load dependencies after', maxAttempts, 'attempts');
+                    showFallbackChat();
+                    return;
+                }
                 // If dependencies aren't loaded yet, wait and try again
                 setTimeout(initializeChat, 100);
                 return;
@@ -491,14 +523,182 @@
                 }, 500); // Slightly longer delay to ensure full initialization
             } catch (error) {
                 console.error('Error initializing BotUI:', error);
-                // Try again after a delay
-                setTimeout(initializeChat, 200);
+                if (initAttempts < maxAttempts) {
+                    // Try again after a delay
+                    setTimeout(initializeChat, 200);
+                } else {
+                    showFallbackChat();
+                }
             }
+        }
+        
+        // Custom chat interface (replaces BotUI entirely)
+        function showCustomChat() {
+            console.log('Showing custom chat interface');
+            const app = document.getElementById('botui-app');
+            app.innerHTML = `
+                <div id="chat-container" style="padding: 20px; height: 100%; display: flex; flex-direction: column;">
+                    <div id="chat-messages" style="flex: 1; overflow-y: auto; margin-bottom: 15px; min-height: 300px;">
+                        <div style="text-align: center; color: #666; padding: 20px;">Starting conversation...</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="chat-input" placeholder="Type your message..." style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <button onclick="sendMessage()" style="padding: 12px 20px; background: #3B82F6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">Send</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listener for Enter key
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Start with the initial "start" message
+            setTimeout(() => {
+                startConversation();
+            }, 500);
+        }
+        
+        // Start conversation with initial "start" message
+        async function startConversation() {
+            console.log('Starting conversation with webhook');
+            
+            try {
+                const payload = {
+                    sessionId: "",
+                    action: "sendMessage", 
+                    chatInput: "start"
+                };
+                
+                const response = await fetch('https://hook.us2.make.com/q0gxj1olt9dfqfn2jb10k1pfb6oitl46', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const aiResponse = await response.json();
+                    console.log('Initial AI response:', aiResponse);
+                    
+                    if (aiResponse.success && aiResponse.message) {
+                        // Store session ID
+                        if (aiResponse.sessionId) {
+                            chatState.sessionId = aiResponse.sessionId;
+                            localStorage.setItem('chat_session_id', aiResponse.sessionId);
+                            console.log('Session ID stored:', aiResponse.sessionId);
+                        }
+                        
+                        // Clear the starting message and show AI response
+                        clearMessages();
+                        addMessage('ai', aiResponse.message);
+                        sendToChatAPI(chatState.sessionId, aiResponse.message, 'ai');
+                    }
+                } else {
+                    console.error('Failed to start conversation:', response.status);
+                    addMessage('ai', 'Hello! I\'m here to help you. How can I assist you today?');
+                }
+            } catch (error) {
+                console.error('Error starting conversation:', error);
+                addMessage('ai', 'Hello! I\'m here to help you. How can I assist you today?');
+            }
+        }
+        
+        // Handle user message sending
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage('user', message);
+            addToHistory('user', message);
+            sendToChatAPI(chatState.sessionId, message, 'user');
+            
+            input.value = '';
+            
+            // Send to webhook for AI response
+            handleMessage(message);
+        }
+        
+        // Add message to chat display
+        function addMessage(type, message) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            
+            if (type === 'user') {
+                messageDiv.style.cssText = 'background: #e3f2fd; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; margin-left: 60px; text-align: right; border: 1px solid #bbdefb;';
+                messageDiv.innerHTML = `<div style="font-weight: 500; color: #1976d2; font-size: 12px; margin-bottom: 4px;">You</div>${message}`;
+            } else {
+                messageDiv.style.cssText = 'background: white; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; margin-right: 60px; border: 1px solid #e0e0e0;';
+                messageDiv.innerHTML = `<div style="font-weight: 500; color: #3B82F6; font-size: 12px; margin-bottom: 4px;">AI Assistant</div>${message}`;
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Clear initial loading message
+        function clearMessages() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = '';
+        }
+        
+        // Handle webhook communication for user messages
+        async function handleMessage(message) {
+            console.log('Sending message to webhook:', message);
+            
+            try {
+                const payload = {
+                    sessionId: chatState.sessionId,
+                    action: "sendMessage",
+                    chatInput: message
+                };
+                
+                const response = await fetch('https://hook.us2.make.com/q0gxj1olt9dfqfn2jb10k1pfb6oitl46', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const aiResponse = await response.json();
+                    console.log('AI response:', aiResponse);
+                    
+                    if (aiResponse.success && aiResponse.message) {
+                        // Add AI response to chat
+                        addMessage('ai', aiResponse.message);
+                        addToHistory('ai', aiResponse.message);
+                        sendToChatAPI(chatState.sessionId, aiResponse.message, 'ai');
+                    } else {
+                        addMessage('ai', 'I\'m sorry, I\'m having trouble responding right now. Please try again.');
+                    }
+                } else {
+                    console.error('Webhook error:', response.status);
+                    addMessage('ai', 'I\'m sorry, I\'m having trouble responding right now. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('ai', 'I\'m sorry, I\'m having trouble responding right now. Please try again.');
+            }
+        }
+        
+        // Add loading indicator
+        function showLoadingIndicator() {
+            const app = document.getElementById('botui-app');
+            app.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">Loading chat...</div>';
         }
         
         // Start initialization when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            initializeChat();
+            console.log('DOM loaded, starting chat directly');
+            // Skip BotUI completely and use our custom interface
+            showCustomChat();
         });
         
         // Handle iframe resizing
