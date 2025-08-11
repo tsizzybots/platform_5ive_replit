@@ -704,23 +704,11 @@ def get_messenger_session(session_id):
         lead = Lead.query.filter_by(session_id=messenger_session.session_id).first()
         full_name = lead.full_name if lead and lead.full_name else 'Unknown'
 
-        # Determine completion status
-        completion_status = 'incomplete'
-        ai_engaged = False
-        has_booking_url = False
-
-        for msg in messages:
-            if msg.userAi == 'ai':
-                ai_engaged = True
-            if msg.messageStr and 'within 24 hours' in msg.messageStr.lower():
-                has_booking_url = True
-                break
-
-        if has_booking_url:
-            completion_status = 'complete'
-        elif ai_engaged and messages:
-            # Use stored completion_status from database
-            completion_status = messenger_session.completion_status or 'incomplete'
+        # Use stored completion status from database (more reliable than recalculating)
+        completion_status = messenger_session.completion_status or 'incomplete'
+        
+        # Determine AI engagement from messages
+        ai_engaged = any(msg.userAi == 'ai' for msg in messages)
 
         # Build session data
         session_data = {
@@ -2125,6 +2113,11 @@ def handle_chat_message():
 
             if user_type == 'ai':
                 messenger_session.ai_engaged = True
+                
+                # Check if this AI message indicates completion (contains booking URL)
+                if message and 'within 24 hours' in message.lower():
+                    messenger_session.completion_status = 'complete'
+                    logger.info(f"Session {session_id} marked as complete due to booking URL message")
 
             # Update customer info in lead record if provided
             lead = Lead.query.filter_by(session_id=session_id).first()
