@@ -64,8 +64,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### August 11, 2025: Production Embed Chat Widget Implementation
+### August 11, 2025: Production Embed Chat Widget Implementation & Height Fix
 **COMPREHENSIVE EMBED CHAT SYSTEM DEPLOYED**: Created fully functional embed chat widget using same webhook infrastructure as dashboard test AI functionality.
+
+**CRITICAL HEIGHT ISSUE RESOLVED**: Fixed 600px height display problems that prevented proper embed chat functionality on external websites.
 
 **KEY FEATURES IMPLEMENTED**:
 1. **Production API Endpoint**: Added `/api/embed-chat/send-message` separate from testing functionality
@@ -80,13 +82,16 @@ Preferred communication style: Simple, everyday language.
 - Removed "powered by AI chat assistant" footer
 - Clean, modern chat interface with proper message bubbles
 - Real-time typing indicators during AI responses
+- Fixed 600px height rendering issues by removing problematic iframe-resizer dependency
+- Implemented reliable fixed-height approach for consistent WordPress embedding
 
 **TECHNICAL ARCHITECTURE**:
 - Session continuity: Existing chats resume from localStorage
 - Message persistence: Full conversation history stored locally
 - Automatic session sync: Session IDs from webhook responses stored for continued conversation
-- Error handling: Graceful fallbacks for network issues
-- iframe optimization: Auto-resizing for WordPress embedding
+- Error handling: Graceful fallbacks for network issues and webhook unavailability
+- iframe optimization: Fixed 600px height for reliable WordPress embedding
+- Fallback responses: Chat continues working even when AI webhook is temporarily unavailable
 
 **SESSION FLOW**:
 1. User opens embed chat → AI automatically sends greeting message
@@ -102,9 +107,11 @@ Preferred communication style: Simple, everyday language.
 
 **WORDPRESS INTEGRATION UPDATE**:
 - Updated embed code in WORDPRESS_INTEGRATION.md to match current design
-- Corrected container width (500px → 550px) and minHeight (400px → 480px)
+- Corrected container width (500px → 550px) and implemented fixed 600px height
+- Removed problematic iframe-resizer dependency causing height display issues
 - Updated documentation to reflect AI-initiated conversations and current data flow
 - Fixed webhook payload examples to match production endpoint format
+- Added fallback responses for webhook unavailability scenarios
 
 ### August 11, 2025: Robust Completion Status Sync System Implementation
 **ISSUE RESOLVED**: Dashboard and session details completion status not updating consistently when sessions become complete, even when toast notifications appeared.
