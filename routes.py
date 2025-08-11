@@ -1269,9 +1269,9 @@ def delete_testing_session(session_id):
             f"Starting deletion of testing session: {session_id} ({session_id_str})"
         )
 
-        # Delete all chat messages for this session (with count verification)
+        # First, delete all chat messages for this session (with count verification)
         deleted_messages = ChatSessionForDashboard.query.filter_by(
-            session_id=session_id_str).delete()
+            session_id=session_id_str).delete(synchronize_session=False)
         logger.info(
             f"Deleted {deleted_messages} chat messages for session {session_id_str}"
         )
@@ -1286,9 +1286,23 @@ def delete_testing_session(session_id):
         db.session.delete(messenger_session)
         logger.info(f"Marked messenger session {session_id} for deletion")
 
-        # Commit the changes with explicit flush first
+        # Force flush to ensure immediate deletion before any auto-sync can interfere
         db.session.flush()
+        
+        # Double-check that messages are actually deleted before committing
+        remaining_messages = ChatSessionForDashboard.query.filter_by(
+            session_id=session_id_str).count()
+        if remaining_messages > 0:
+            logger.error(f"Still found {remaining_messages} messages after deletion attempt for session {session_id_str}")
+            db.session.rollback()
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to delete all chat messages'
+            }), 500
+        
+        # Commit all changes atomically
         db.session.commit()
+        logger.info(f"All deletion changes committed for session {session_id_str}")
 
         # Verify deletion was successful
         verification_session = MessengerSession.query.get(session_id)
