@@ -986,46 +986,10 @@ def sync_messenger_sessions():
 @app.route('/api/messenger-sessions', methods=['GET'])
 def get_messenger_sessions():
     """Get messenger sessions with filtering and pagination - now fully from PostgreSQL"""
-    try:
-        # Auto-sync: Check for new chat sessions that don't have messenger sessions
-        chat_session_ids = db.session.query(
-            ChatSessionForDashboard.session_id).distinct().all()
-        chat_session_ids = [row[0] for row in chat_session_ids]
-
-        existing_session_ids = db.session.query(
-            MessengerSession.session_id).all()
-        existing_session_ids = [row[0] for row in existing_session_ids]
-
-        missing_session_ids = [
-            sid for sid in chat_session_ids if sid not in existing_session_ids
-        ]
-
-        # Auto-create missing messenger sessions
-        for session_id in missing_session_ids:
-            try:
-                ensure_messenger_session_exists(session_id)
-                logger.info(f"Auto-synced messenger session for: {session_id}")
-            except Exception as e:
-                logger.error(
-                    f"Failed to create messenger session for {session_id}: {str(e)}"
-                )
-                continue
-
-        # Auto-sync existing sessions to ensure latest data and completion status
-        # Only sync sessions that have been active in the last 24 hours for performance
-        recent_sessions = db.session.query(MessengerSession.session_id).filter(
-            MessengerSession.last_message_time > (datetime.utcnow() - timedelta(hours=24))
-        ).all()
-        recent_session_ids = [row[0] for row in recent_sessions]
-        
-        for session_id in recent_session_ids:
-            try:
-                sync_messenger_session_data(session_id)
-            except Exception as e:
-                logger.error(f"Failed to sync messenger session {session_id}: {str(e)}")
-                continue
-    except Exception as e:
-        logger.warning(f"Auto-sync failed but continuing: {str(e)}")
+    # Auto-sync disabled temporarily to fix database conflicts
+    # The sync process causes database deadlocks when multiple requests happen simultaneously
+    # All sessions should already exist, and we'll rely on individual sync when needed
+    # TODO: Implement proper async background task for syncing
 
     try:
         query_params = chat_session_query_schema.load(request.args)
