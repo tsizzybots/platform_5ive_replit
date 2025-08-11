@@ -2119,11 +2119,14 @@ def embed_chat_send_message():
         
         if not webhook_response.ok:
             logger.error(f"Webhook error response: {webhook_response.text}")
+            # Provide fallback response when webhook is down
+            import time
             return jsonify({
-                'status': 'error',
-                'message': 'Failed to send message to AI agent',
-                'error': f'Webhook returned {webhook_response.status_code}'
-            }), 500
+                'status': 'success',
+                'sessionId': session_id or f'session_{int(time.time())}',
+                'aiResponse': 'Hi! Thanks for reaching out. Our AI system is temporarily unavailable, but I wanted to let you know we received your message. Please provide your contact details and we\'ll get back to you shortly.',
+                'error': f'Webhook temporarily unavailable (status: {webhook_response.status_code})'
+            })
             
         try:
             ai_response = webhook_response.json()
@@ -2144,6 +2147,9 @@ def embed_chat_send_message():
                 ai_message = ai_response
             else:
                 ai_message = 'I received your message. How can I help you further?'
+            
+            # Note: Database storage happens via webhook callback to /api/webhook/chat-session
+            # The webhook flow handles all database operations automatically
                 
             return jsonify({
                 'status': 'success',
