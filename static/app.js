@@ -1068,8 +1068,7 @@ function displayTickets(tickets, pagination) {
                     <th style="width: 18%;">Email</th>
                     <th style="width: 10%;">Completion</th>
                     <th style="width: 9%;">QA Status</th>
-                    <th style="width: 9%;">Status</th>
-                    <th style="width: 12%; padding-right: 8px;">Actions</th>
+                    <th style="width: 21%; padding-right: 8px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -1115,7 +1114,6 @@ function displayTickets(tickets, pagination) {
                     break;
             }
             const qaStatusBadge = getQAStatusBadge(ticket.qa_status);
-            const statusBadge = getStatusBadge(ticket.status, ticket.archived);
             
             html += `
                 <tr id="ticket-row-${ticket.id}" data-session-id="${ticket.id}" class="ticket-row">
@@ -1128,7 +1126,6 @@ function displayTickets(tickets, pagination) {
                     <td class="text-nowrap">${escapeHtml(ticket.email || 'N/A')}</td>
                     <td class="text-center">${completedBadge}</td>
                     <td class="text-center">${qaStatusBadge}</td>
-                    <td class="text-center">${statusBadge}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-info" onclick="viewTicketDetails(${ticket.id})" title="View Details">
