@@ -934,14 +934,26 @@ def export_messenger_session(session_id):
         if lead:
             export_content.append("LEAD QUALIFICATION DATA:")
             export_content.append("-" * 40)
-            export_content.append(f"AI Engaged: {lead.ai_engaged if lead.ai_engaged is not None else 'Unknown'}")
-            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Unknown'}")
-            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Unknown'}")
-            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Unknown'}")
-            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Unknown'}")
-            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Unknown'}")
-            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Unknown'}")
-            export_content.append("")
+            export_content.append(f"AI Engaged: {messenger_session.ai_engaged if messenger_session.ai_engaged is not None else 'No'}")
+            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Not answered'}")
+            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Not answered'}")
+            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Not answered'}")
+            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Not answered'}")
+            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Not answered'}")
+            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Not answered'}")
+        else:
+            # No lead record found - show all fields as not answered
+            export_content.append("LEAD QUALIFICATION DATA:")
+            export_content.append("-" * 40)
+            export_content.append(f"AI Engaged: {messenger_session.ai_engaged if messenger_session.ai_engaged is not None else 'No'}")
+            export_content.append("AI Interest Reason: Not answered")
+            export_content.append("AI Implementation Known: Not answered")  
+            export_content.append("AI Implementation Timeline: Not answered")
+            export_content.append("AI Budget Allocated: Not answered")
+            export_content.append("Business Goals (6-12m): Not answered")
+            export_content.append("Business Challenges: Not answered")
+        
+        export_content.append("")
 
         # Conversation Thread
         export_content.append("CONVERSATION THREAD:")
@@ -2593,14 +2605,26 @@ def export_session(session_id):
         if lead:
             export_content.append("LEAD QUALIFICATION DATA:")
             export_content.append("-" * 40)
-            export_content.append(f"AI Engaged: {lead.ai_engaged if lead.ai_engaged is not None else 'Unknown'}")
-            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Unknown'}")
-            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Unknown'}")
-            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Unknown'}")
-            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Unknown'}")
-            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Unknown'}")
-            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Unknown'}")
-            export_content.append("")
+            export_content.append(f"AI Engaged: {messenger_session.ai_engaged if messenger_session.ai_engaged is not None else 'No'}")
+            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Not answered'}")
+            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Not answered'}")
+            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Not answered'}")
+            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Not answered'}")
+            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Not answered'}")
+            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Not answered'}")
+        else:
+            # No lead record found - show all fields as not answered
+            export_content.append("LEAD QUALIFICATION DATA:")
+            export_content.append("-" * 40)
+            export_content.append(f"AI Engaged: {messenger_session.ai_engaged if messenger_session.ai_engaged is not None else 'No'}")
+            export_content.append("AI Interest Reason: Not answered")
+            export_content.append("AI Implementation Known: Not answered")  
+            export_content.append("AI Implementation Timeline: Not answered")
+            export_content.append("AI Budget Allocated: Not answered")
+            export_content.append("Business Goals (6-12m): Not answered")
+            export_content.append("Business Challenges: Not answered")
+        
+        export_content.append("")
 
         # Conversation thread
         export_content.append("CONVERSATION THREAD:")
