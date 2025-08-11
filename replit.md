@@ -68,6 +68,12 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 11, 2025: **CONVERSATION API ENDPOINT UPDATE** - Modified conversation endpoint for AI response matching
+  - **UPDATED ENDPOINT**: `/api/conversation/<session_id>` now returns only the last AI message instead of full conversation
+  - **PURPOSE**: Enables matching user responses with AI questions for intelligent data storage and processing
+  - **RESPONSE FORMAT**: Returns single last AI message with ID, timestamp, sender, message content, and session ID
+  - **MAINTAINS SECURITY**: Same CONVERSATION_API_KEY authentication via X-API-Key or Authorization headers
+  - **ERROR HANDLING**: Returns 404 if no AI messages found for session, maintains existing authentication flow
 - August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
   - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
   - **STREAMLINED RESPONSE**: Returns clean conversation data with chronologically ordered messages (most recent at bottom)

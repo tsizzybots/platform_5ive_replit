@@ -101,7 +101,7 @@ def api_status():
 
 @app.route('/api/conversation/<session_id>', methods=['GET'])
 def get_conversation(session_id):
-    """Get full conversation for a session ID with API key authentication"""
+    """Get last AI message for a session ID with API key authentication"""
     try:
         # Check for API key in headers
         api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
@@ -138,40 +138,44 @@ def get_conversation(session_id):
                 'message': 'Session not found'
             }), 404
         
-        # Get all messages for this session, ordered chronologically
-        messages = db.session.query(ChatSessionForDashboard).filter_by(
-            session_id=session_id
-        ).order_by(ChatSessionForDashboard.dateTime.asc()).all()
+        # Get the last AI message for this session, ordered by timestamp descending
+        last_ai_message = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id,
+            userAi='ai'
+        ).order_by(ChatSessionForDashboard.dateTime.desc()).first()
         
-        # Format conversation messages
-        conversation = []
-        for msg in messages:
-            conversation.append({
-                'id': msg.id,
-                'timestamp': msg.dateTime.isoformat() if msg.dateTime else None,
-                'sender': 'ai' if msg.userAi == 'ai' else 'user',
-                'message': msg.messageStr or '',
-                'session_id': msg.session_id
-            })
+        if not last_ai_message:
+            return jsonify({
+                'status': 'error',
+                'message': 'No AI messages found for this session'
+            }), 404
+        
+        # Format the last AI message
+        last_message_data = {
+            'id': last_ai_message.id,
+            'timestamp': last_ai_message.dateTime.isoformat() if last_ai_message.dateTime else None,
+            'sender': 'ai',
+            'message': last_ai_message.messageStr or '',
+            'session_id': last_ai_message.session_id
+        }
         
         # Build response
         response_data = {
             'status': 'success',
             'data': {
                 'session_id': session_id,
-                'conversation': conversation,
-                'total_messages': len(conversation)
+                'last_ai_message': last_message_data
             }
         }
         
-        logger.info(f"Conversation retrieved for session {session_id}: {len(conversation)} messages")
+        logger.info(f"Last AI message retrieved for session {session_id}: message ID {last_ai_message.id}")
         return jsonify(response_data)
         
     except Exception as e:
-        logger.error(f"Error retrieving conversation for session {session_id}: {str(e)}")
+        logger.error(f"Error retrieving last AI message for session {session_id}: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': 'Failed to retrieve conversation',
+            'message': 'Failed to retrieve last AI message',
             'error': str(e)
         }), 500
 
