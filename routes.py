@@ -735,7 +735,7 @@ def get_messenger_session(session_id):
             'archived':
             messenger_session.status == 'archived',
             'completed':
-            has_booking_url,
+            completion_status == 'complete',
             'completion_status':
             completion_status,
             'qa_status':
