@@ -1773,7 +1773,7 @@ async function viewTicketDetails(id) {
             ` : ''}
             
             <!-- Export Session Button - Only visible to QA and Dev users -->
-            ${currentUser?.role === 'qa' || currentUser?.role === 'qa_dev' || currentUser?.role === 'admin' ? `
+            ${currentUser?.username === 'IzzyDevs' ? `
             <div class="mt-3 mb-3">
                 <button type="button" class="btn btn-success" onclick="exportSession('${session.session_id}')">
                     <i class="fas fa-download me-1"></i>Export Session
@@ -2064,9 +2064,9 @@ async function saveDevFeedbackAndMarkFixed() {
 
 // Export Session
 async function exportSession(sessionId) {
-    // Check permission - only allow QA and Dev users
-    if (!currentUser || (currentUser.role !== 'qa' && currentUser.role !== 'qa_dev' && currentUser.role !== 'admin')) {
-        showAlert('Access denied: Only QA and developer users can export sessions', 'danger');
+    // Check permission - only allow IzzyDevs user
+    if (!currentUser || currentUser.username !== 'IzzyDevs') {
+        showAlert('Access denied: Only IzzyDevs user can export sessions', 'danger');
         return;
     }
     

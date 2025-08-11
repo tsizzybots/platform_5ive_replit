@@ -743,14 +743,12 @@ def get_messenger_session(session_id):
 def export_messenger_session(session_id):
     """Export messenger session data to a text file - Only for IzzyDev users"""
     try:
-        # Check permissions - only allow IzzyDev users
+        # Check permissions - only allow IzzyDevs user
         current_user = get_current_user()
-        if not current_user or current_user.username != 'IzzyDev':
+        if not current_user or current_user.username != 'IzzyDevs':
             return jsonify({
-                'status':
-                'error',
-                'message':
-                'Access denied: Only IzzyDev users can export sessions'
+                'status': 'error',
+                'message': 'Access denied: Only IzzyDevs user can export sessions'
             }), 403
 
         # Get the messenger session metadata
@@ -781,9 +779,10 @@ def export_messenger_session(session_id):
         export_content.append("SESSION DETAILS:")
         export_content.append("-" * 40)
         export_content.append(f"Session ID: {messenger_session.session_id}")
-        export_content.append(f"Customer Name: {full_name}")
-        export_content.append(
-            f"Contact ID: {lead.email if lead and lead.email else 'N/A'}")
+        export_content.append(f"Customer Name: {lead.full_name if lead and lead.full_name else 'Unknown'}")
+        export_content.append(f"Company Name: {lead.company_name if lead and lead.company_name else 'Unknown'}")
+        export_content.append(f"Email: {lead.email if lead and lead.email else 'Unknown'}")
+        export_content.append(f"Phone Number: {lead.phone_number if lead and lead.phone_number else 'Unknown'}")
         export_content.append(
             f"Started: {messenger_session.conversation_start.strftime('%Y-%m-%d %H:%M:%S UTC') if messenger_session.conversation_start else 'N/A'}"
         )
@@ -799,6 +798,19 @@ def export_messenger_session(session_id):
         export_content.append(
             f"QA Status: {messenger_session.qa_status or 'Unchecked'}")
         export_content.append("")
+
+        # Lead qualification details
+        if lead:
+            export_content.append("LEAD QUALIFICATION DATA:")
+            export_content.append("-" * 40)
+            export_content.append(f"AI Engaged: {lead.ai_engaged if lead.ai_engaged is not None else 'Unknown'}")
+            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Unknown'}")
+            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Unknown'}")
+            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Unknown'}")
+            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Unknown'}")
+            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Unknown'}")
+            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Unknown'}")
+            export_content.append("")
 
         # Conversation Thread
         export_content.append("CONVERSATION THREAD:")
@@ -2203,11 +2215,18 @@ def handle_webhook_delivery():
 
 @app.route('/api/sessions/<session_id>/export', methods=['GET'])
 @login_required
-@role_required('qa', 'qa_dev', 'admin')
 def export_session(session_id):
-    """Export session data as a formatted text file"""
+    """Export session data as a formatted text file - Only for IzzyDevs user"""
     try:
         from flask import make_response
+        
+        # Check permissions - only allow IzzyDevs user
+        current_user = get_current_user()
+        if not current_user or current_user.username != 'IzzyDevs':
+            return jsonify({
+                'status': 'error',
+                'message': 'Access denied: Only IzzyDevs user can export sessions'
+            }), 403
 
         # Get session data
         messenger_session = MessengerSession.query.filter_by(
@@ -2223,6 +2242,9 @@ def export_session(session_id):
             session_id=session_id).order_by(
                 ChatSessionForDashboard.dateTime).all()
 
+        # Get comprehensive lead information
+        lead = Lead.query.filter_by(session_id=session_id).first()
+
         # Format export content
         export_content = []
         export_content.append("=" * 80)
@@ -2234,13 +2256,10 @@ def export_session(session_id):
         export_content.append("SESSION DETAILS:")
         export_content.append("-" * 40)
         export_content.append(f"Session ID: {messenger_session.session_id}")
-        
-        # Get lead information
-        lead = Lead.query.filter_by(session_id=session_id).first()
-        export_content.append(
-            f"Customer Name: {lead.full_name if lead and lead.full_name else 'Unknown'}")
-        export_content.append(
-            f"Contact ID: {lead.email if lead and lead.email else 'Unknown'}")
+        export_content.append(f"Customer Name: {lead.full_name if lead and lead.full_name else 'Unknown'}")
+        export_content.append(f"Company Name: {lead.company_name if lead and lead.company_name else 'Unknown'}")
+        export_content.append(f"Email: {lead.email if lead and lead.email else 'Unknown'}")
+        export_content.append(f"Phone Number: {lead.phone_number if lead and lead.phone_number else 'Unknown'}")
 
         # Format dates in UTC
         start_time = messenger_session.conversation_start
@@ -2253,13 +2272,24 @@ def export_session(session_id):
             export_content.append(
                 f"Last Message: {last_time.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-        export_content.append(
-            f"Total Messages: {messenger_session.message_count}")
+        export_content.append(f"Total Messages: {messenger_session.message_count}")
         export_content.append(f"Status: {messenger_session.status}")
-        export_content.append(
-            f"Completion Status: {messenger_session.completion_status}")
+        export_content.append(f"Completion Status: {messenger_session.completion_status}")
         export_content.append(f"QA Status: {messenger_session.qa_status}")
         export_content.append("")
+
+        # Lead qualification details
+        if lead:
+            export_content.append("LEAD QUALIFICATION DATA:")
+            export_content.append("-" * 40)
+            export_content.append(f"AI Engaged: {lead.ai_engaged if lead.ai_engaged is not None else 'Unknown'}")
+            export_content.append(f"AI Interest Reason: {lead.ai_interest_reason if lead.ai_interest_reason else 'Unknown'}")
+            export_content.append(f"AI Implementation Known: {lead.ai_implementation_known if lead.ai_implementation_known else 'Unknown'}")
+            export_content.append(f"AI Implementation Timeline: {lead.ai_implementation_timeline if lead.ai_implementation_timeline else 'Unknown'}")
+            export_content.append(f"AI Budget Allocated: {lead.ai_budget_allocated if lead.ai_budget_allocated else 'Unknown'}")
+            export_content.append(f"Business Goals (6-12m): {lead.business_goals_6_12m if lead.business_goals_6_12m else 'Unknown'}")
+            export_content.append(f"Business Challenges: {lead.business_challenges if lead.business_challenges else 'Unknown'}")
+            export_content.append("")
 
         # Conversation thread
         export_content.append("CONVERSATION THREAD:")

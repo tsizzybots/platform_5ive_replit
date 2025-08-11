@@ -68,6 +68,12 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 11, 2025: **EXPORT SECURITY UPDATE** - Restricted session export functionality to only IzzyDevs user with enhanced lead data
+  - **PERMISSION RESTRICTION**: Export access now limited exclusively to IzzyDevs user (removed qa, qa_dev, admin access)
+  - **ENHANCED LEAD DATA**: Session exports now include comprehensive lead qualification information from leads table
+  - **COMPREHENSIVE FIELDS**: Added company name, phone number, AI engagement data, business goals, and challenges to exports
+  - **UI SECURITY**: Export button only visible to IzzyDevs user in dashboard interface
+  - **BACKEND VALIDATION**: Both export endpoints verify user identity server-side for security
 - August 11, 2025: **MESSENGER SESSIONS SYNC FIX** - Fixed critical issue where messenger_sessions and leads tables were not being populated
   - **PROBLEM IDENTIFIED**: Chat sessions were being created in chat_sessions_for_dashboard but corresponding messenger_sessions and leads records were missing
   - **MANUAL DATA REPAIR**: Created missing messenger session and lead record for session_mxwwglj1t8akp5bonvzbla with complete lead qualification data
