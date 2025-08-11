@@ -130,9 +130,11 @@ def get_conversation(session_id):
                 'message': 'Session ID is required'
             }), 400
         
-        # Get session metadata
+        # Check if session exists in either table
         messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
-        if not messenger_session:
+        chat_messages_exist = db.session.query(ChatSessionForDashboard).filter_by(session_id=session_id).first()
+        
+        if not messenger_session and not chat_messages_exist:
             return jsonify({
                 'status': 'error',
                 'message': 'Session not found'
@@ -150,22 +152,22 @@ def get_conversation(session_id):
                 'message': 'No AI messages found for this session'
             }), 404
         
-        # Get the second-to-last AI message (penultimate)
-        if len(ai_messages) < 2:
-            return jsonify({
-                'status': 'error',
-                'message': 'Need at least 2 AI messages to retrieve penultimate message'
-            }), 404
-        
-        penultimate_ai_message = ai_messages[1]  # Second item in desc order = penultimate
+        # Choose which AI message to return based on availability
+        if len(ai_messages) >= 2:
+            # Return the second-to-last AI message (penultimate)
+            selected_message = ai_messages[1]  # Second item in desc order = penultimate
+            logger.info(f"Penultimate AI message retrieved for session {session_id}: message ID {selected_message.id}")
+        else:
+            # Return the last (and only) AI message if only one exists
+            selected_message = ai_messages[0]
+            logger.info(f"Last AI message retrieved for session {session_id}: message ID {selected_message.id} (only one AI message available)")
         
         # Build simplified response
         response_data = {
-            'last_ai_message': penultimate_ai_message.messageStr or '',
+            'last_ai_message': selected_message.messageStr or '',
             'session_id': session_id
         }
         
-        logger.info(f"Penultimate AI message retrieved for session {session_id}: message ID {penultimate_ai_message.id}")
         return jsonify(response_data)
         
     except Exception as e:

@@ -68,6 +68,12 @@ Preferred communication style: Simple, everyday language.
 - **Lead Data Architecture**: Lead information is now properly separated into dedicated `leads` table with foreign key relationship to `messenger_sessions` via `session_id` for better data integrity and query performance
 
 ## Changelog
+- August 11, 2025: **CRITICAL API ENDPOINT FIX** - Fixed /api/conversation/{session_id} endpoint that was returning "Session not found" errors
+  - **ROOT CAUSE**: Sessions existed in chat_sessions_for_dashboard but missing corresponding records in messenger_sessions table
+  - **DATA REPAIR**: Created missing messenger_session and lead records for session_s7f4f7vlq7xpyx1t1tq6h
+  - **ENDPOINT ENHANCEMENT**: Modified endpoint to check both tables and handle sessions that exist in either table
+  - **IMPROVED FLEXIBILITY**: Endpoint now returns penultimate AI message when available, fallback to last AI message if only one exists
+  - **VERIFIED WORKING**: API endpoint now correctly serves AI agent requests with proper authentication and message retrieval
 - August 11, 2025: **EXPORT SECURITY UPDATE** - Restricted session export functionality to only IzzyDevs user with enhanced lead data
   - **PERMISSION RESTRICTION**: Export access now limited exclusively to IzzyDevs user (removed qa, qa_dev, admin access)
   - **ENHANCED LEAD DATA**: Session exports now include comprehensive lead qualification information from leads table
