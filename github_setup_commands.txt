@@ -15,9 +15,10 @@ git config user.email "your-email@example.com"
 git config user.name "Your Name"
 ```
 
-### 3. Add the GitHub remote repository
+### 3. Remove existing remote (if any) and add with token
 ```bash
-git remote add origin https://github.com/tsizzybots/platform_5ive_replit.git
+git remote remove origin 2>/dev/null || true
+git remote add origin https://$GITHUB_TOKEN@github.com/tsizzybots/platform_5ive_replit.git
 ```
 
 ### 4. Check current Git status
@@ -58,9 +59,17 @@ Features:
 git push -u origin main
 ```
 
-If the push fails due to authentication, use this format:
+### If you get authentication errors, try these alternative approaches:
+
+#### Option A: Use environment variable directly
 ```bash
-git push https://<YOUR_GITHUB_TOKEN>@github.com/tsizzybots/platform_5ive_replit.git main
+git push https://$GITHUB_TOKEN@github.com/tsizzybots/platform_5ive_replit.git main
+```
+
+#### Option B: Update the remote URL with token
+```bash
+git remote set-url origin https://$GITHUB_TOKEN@github.com/tsizzybots/platform_5ive_replit.git
+git push -u origin main
 ```
 
 ### Alternative: Create a new branch for safety
