@@ -69,11 +69,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Changelog
 - August 11, 2025: **CONVERSATION API ENDPOINT UPDATE** - Modified conversation endpoint for AI response matching
-  - **UPDATED ENDPOINT**: `/api/conversation/<session_id>` now returns only the last AI message instead of full conversation
+  - **UPDATED ENDPOINT**: `/api/conversation/<session_id>` now returns the penultimate (second-to-last) AI message to avoid timing conflicts
+  - **TIMING FIX**: Returns second-to-last AI message instead of most recent, accounting for new AI questions being asked during processing
   - **PURPOSE**: Enables matching user responses with AI questions for intelligent data storage and processing
   - **SIMPLIFIED RESPONSE**: Returns clean JSON with just `last_ai_message` (text) and `session_id` fields
   - **MAINTAINS SECURITY**: Same CONVERSATION_API_KEY authentication via X-API-Key or Authorization headers
-  - **ERROR HANDLING**: Returns 404 if no AI messages found for session, maintains existing authentication flow
+  - **ERROR HANDLING**: Returns 404 if fewer than 2 AI messages exist, maintains existing authentication flow
 - August 9, 2025: **CONVERSATION API ENDPOINT** - Added secure API endpoint for external conversation retrieval
   - **NEW ENDPOINT**: `/api/conversation/<session_id>` with API key authentication using CONVERSATION_API_KEY
   - **STREAMLINED RESPONSE**: Returns clean conversation data with chronologically ordered messages (most recent at bottom)

@@ -138,25 +138,34 @@ def get_conversation(session_id):
                 'message': 'Session not found'
             }), 404
         
-        # Get the last AI message for this session, ordered by timestamp descending
-        last_ai_message = db.session.query(ChatSessionForDashboard).filter_by(
+        # Get all AI messages for this session, ordered by timestamp descending
+        ai_messages = db.session.query(ChatSessionForDashboard).filter_by(
             session_id=session_id,
             userAi='ai'
-        ).order_by(ChatSessionForDashboard.dateTime.desc()).first()
+        ).order_by(ChatSessionForDashboard.dateTime.desc()).all()
         
-        if not last_ai_message:
+        if not ai_messages:
             return jsonify({
                 'status': 'error',
                 'message': 'No AI messages found for this session'
             }), 404
         
+        # Get the second-to-last AI message (penultimate)
+        if len(ai_messages) < 2:
+            return jsonify({
+                'status': 'error',
+                'message': 'Need at least 2 AI messages to retrieve penultimate message'
+            }), 404
+        
+        penultimate_ai_message = ai_messages[1]  # Second item in desc order = penultimate
+        
         # Build simplified response
         response_data = {
-            'last_ai_message': last_ai_message.messageStr or '',
+            'last_ai_message': penultimate_ai_message.messageStr or '',
             'session_id': session_id
         }
         
-        logger.info(f"Last AI message retrieved for session {session_id}: message ID {last_ai_message.id}")
+        logger.info(f"Penultimate AI message retrieved for session {session_id}: message ID {penultimate_ai_message.id}")
         return jsonify(response_data)
         
     except Exception as e:
