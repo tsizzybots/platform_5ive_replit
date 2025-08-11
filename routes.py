@@ -522,9 +522,8 @@ def sync_orphaned_sessions_endpoint():
         }), 500
 
 
-@app.route('/api/sync-completion-status', methods=['POST'])
-def sync_completion_status_endpoint():
-    """API endpoint to update completion status for all sessions with 'within 24 hours' messages"""
+def auto_update_completion_status():
+    """Automatically update completion status for sessions with completion messages"""
     try:
         # Find all sessions that have completion messages but aren't marked as complete
         sessions_to_update = db.session.execute(text("""
@@ -567,10 +566,25 @@ def sync_completion_status_endpoint():
                 messenger_session.updated_at = datetime.utcnow()
                 
                 updated_count += 1
-                logger.info(f"Updated completion status for session {session_id}")
+                logger.info(f"Auto-updated completion status for session {session_id}")
         
-        db.session.commit()
+        if updated_count > 0:
+            db.session.commit()
+            logger.info(f"Auto-sync: Updated completion status for {updated_count} sessions")
         
+        return updated_count
+        
+    except Exception as e:
+        logger.error(f"Error in auto completion status sync: {str(e)}")
+        db.session.rollback()
+        return 0
+
+
+@app.route('/api/sync-completion-status', methods=['POST'])
+def sync_completion_status_endpoint():
+    """API endpoint to manually trigger completion status sync"""
+    try:
+        updated_count = auto_update_completion_status()
         return jsonify({
             'status': 'success',
             'message': f'Updated completion status for {updated_count} sessions',
@@ -578,8 +592,7 @@ def sync_completion_status_endpoint():
         })
         
     except Exception as e:
-        logger.error(f"Error in completion status sync: {str(e)}")
-        db.session.rollback()
+        logger.error(f"Error in completion status sync endpoint: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': 'Failed to sync completion status',
@@ -756,6 +769,8 @@ def create_messenger_session():
 def get_messenger_session(session_id):
     """Get a specific messenger session by ID from PostgreSQL"""
     try:
+        # Auto-update completion status before retrieving session details
+        auto_update_completion_status()
         # Get the messenger session metadata
         messenger_session = MessengerSession.query.get(session_id)
         if not messenger_session:
@@ -1117,6 +1132,8 @@ def get_messenger_sessions():
     # Smart auto-sync: Check if any orphaned sessions exist and sync them
     try:
         auto_sync_orphaned_sessions()
+        # Auto-update completion status for sessions with completion messages
+        auto_update_completion_status()
     except Exception as e:
         logger.warning(f"Auto-sync failed during session fetch, continuing: {str(e)}")
 
@@ -1443,6 +1460,8 @@ def delete_testing_session(session_id):
 def get_messenger_session_stats():
     """Get comprehensive statistics for messenger sessions from PostgreSQL with date filtering"""
     try:
+        # Auto-update completion status before generating stats
+        auto_update_completion_status()
         # Parse query parameters for date filtering
         query_params = request.args
 
