@@ -2031,10 +2031,12 @@ def handle_chat_message():
             }), 400
 
         # Create chat message record
-        chat_message = ChatSessionForDashboard(session_id=session_id,
-                                               dateTime=datetime.utcnow(),
-                                               userAi=user_type,
-                                               messageStr=message)
+        chat_message = ChatSessionForDashboard(
+            session_id=session_id,
+            dateTime=datetime.utcnow(),
+            userAi=user_type,
+            messageStr=message
+        )
 
         db.session.add(chat_message)
 
@@ -2051,7 +2053,8 @@ def handle_chat_message():
                 session_source=session_source,
                 ai_engaged=(user_type == 'ai'),
                 completion_status='in_progress',
-                status='active')
+                status='active'
+            )
             db.session.add(messenger_session)
             
             # Create corresponding lead record
