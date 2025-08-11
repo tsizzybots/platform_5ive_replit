@@ -5,7 +5,7 @@ from schemas import (error_schema, error_query_schema, chat_session_schema,
                      chat_session_update_schema, chat_session_query_schema)
 # Using PostgreSQL for all data storage
 from marshmallow import ValidationError
-from sqlalchemy import and_, or_, func, case
+from sqlalchemy import and_, or_, func, case, text
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -392,12 +392,15 @@ def ensure_messenger_session_exists(session_id):
 
         db.session.add(messenger_session)
         
-        # Create corresponding lead record
-        lead = Lead(
-            session_id=session_id,
-            full_name=full_name
-        )
-        db.session.add(lead)
+        # Check if lead record already exists (avoid duplicate key constraint)
+        existing_lead = Lead.query.filter_by(session_id=session_id).first()
+        if not existing_lead:
+            # Create corresponding lead record
+            lead = Lead(
+                session_id=session_id,
+                full_name=full_name
+            )
+            db.session.add(lead)
         
         db.session.commit()
 
@@ -459,6 +462,60 @@ def sync_messenger_session_data(session_id):
     except Exception as e:
         logger.error(f"Error syncing messenger session {session_id}: {str(e)}")
         db.session.rollback()
+
+
+def auto_sync_orphaned_sessions():
+    """Automatically detect and sync orphaned chat sessions that lack messenger sessions"""
+    try:
+        # Find sessions in chat_sessions_for_dashboard that don't have messenger_sessions
+        orphaned_sessions = db.session.execute(text("""
+            SELECT DISTINCT c.session_id
+            FROM chat_sessions_for_dashboard c
+            LEFT JOIN messenger_sessions m ON c.session_id = m.session_id
+            WHERE m.session_id IS NULL
+            AND c."dateTime" > NOW() - INTERVAL '24 hours'
+        """)).fetchall()
+
+        synced_count = 0
+        for row in orphaned_sessions:
+            session_id = row[0]
+            logger.info(f"Auto-syncing orphaned session: {session_id}")
+            
+            # Use the existing ensure_messenger_session_exists function
+            result = ensure_messenger_session_exists(session_id)
+            if result:
+                synced_count += 1
+                logger.info(f"Successfully synced orphaned session: {session_id}")
+            else:
+                logger.error(f"Failed to sync orphaned session: {session_id}")
+
+        if synced_count > 0:
+            logger.info(f"Auto-sync completed: {synced_count} orphaned sessions synchronized")
+        
+        return synced_count
+
+    except Exception as e:
+        logger.error(f"Error in auto_sync_orphaned_sessions: {str(e)}")
+        return 0
+
+
+@app.route('/api/sync-orphaned-sessions', methods=['POST'])
+def sync_orphaned_sessions_endpoint():
+    """API endpoint to manually trigger orphaned session sync"""
+    try:
+        synced_count = auto_sync_orphaned_sessions()
+        return jsonify({
+            'status': 'success',
+            'message': f'Synchronized {synced_count} orphaned sessions',
+            'synced_count': synced_count
+        })
+    except Exception as e:
+        logger.error(f"Error in sync endpoint: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to sync orphaned sessions',
+            'error': str(e)
+        }), 500
 
 
 def require_api_key(f):
@@ -1000,10 +1057,11 @@ def sync_messenger_sessions():
 @app.route('/api/messenger-sessions', methods=['GET'])
 def get_messenger_sessions():
     """Get messenger sessions with filtering and pagination - now fully from PostgreSQL"""
-    # Auto-sync disabled temporarily to fix database conflicts
-    # The sync process causes database deadlocks when multiple requests happen simultaneously
-    # All sessions should already exist, and we'll rely on individual sync when needed
-    # TODO: Implement proper async background task for syncing
+    # Smart auto-sync: Check if any orphaned sessions exist and sync them
+    try:
+        auto_sync_orphaned_sessions()
+    except Exception as e:
+        logger.warning(f"Auto-sync failed during session fetch, continuing: {str(e)}")
 
     try:
         query_params = chat_session_query_schema.load(request.args)
@@ -2031,6 +2089,9 @@ def handle_chat_message():
                                                messageStr=message)
 
         db.session.add(chat_message)
+
+        # Always ensure MessengerSession exists and is in sync
+        logger.info(f"Processing chat message for session {session_id}, user_type: {user_type}")
 
         # Ensure MessengerSession exists for this web chat
         messenger_session = MessengerSession.query.filter_by(
