@@ -39,6 +39,31 @@
             padding: 16px 20px;
             text-align: center;
             border-bottom: none;
+            position: relative;
+        }
+        
+        .reset-button {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .reset-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) rotate(180deg);
         }
         
         .chat-header h4 {
@@ -185,6 +210,9 @@
     <div class="chat-widget">
         <div class="chat-header">
             <h4><i class="fas fa-comments"></i> Get in touch with us to discuss your project</h4>
+            <button id="reset-button" class="reset-button" title="Start new conversation">
+                <i class="fas fa-refresh"></i>
+            </button>
         </div>
         
         <div id="chat-container">
@@ -245,6 +273,13 @@
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
+                }
+            });
+            
+            // Reset button event listener
+            document.getElementById('reset-button').addEventListener('click', function() {
+                if (confirm('Are you sure you want to start a new conversation? This will clear your chat history.')) {
+                    clearChatSession();
                 }
             });
             
@@ -430,6 +465,8 @@
             }
             
             setUIState(true);
+            // Restore focus to input after sending message
+            chatInput.focus();
         }
         
         function addUserMessage(message, saveToStorage = false) {
@@ -525,10 +562,12 @@
         window.addEventListener('resize', updateIframeSize);
         
         // Add utility function to clear session (for testing/debugging)
-        window.clearChatSession = function() {
+        function clearChatSession() {
             localStorage.removeItem(STORAGE_KEY);
             location.reload();
-        };
+        }
+        
+        window.clearChatSession = clearChatSession;
         
         // Expose session info for debugging
         window.getChatSession = function() {
