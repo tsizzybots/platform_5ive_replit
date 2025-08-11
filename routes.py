@@ -2324,6 +2324,28 @@ def handle_chat_message():
                 if message and 'within 24 hours' in message.lower():
                     messenger_session.completion_status = 'complete'
                     logger.info(f"Session {session_id} marked as complete due to booking URL message")
+                    
+                    # Store completion notification for real-time dashboard updates
+                    try:
+                        # Store in a simple in-memory notification queue (for real-time updates)
+                        if not hasattr(app, 'completion_notifications'):
+                            app.completion_notifications = []
+                        
+                        notification = {
+                            'session_id': session_id,
+                            'timestamp': datetime.utcnow().isoformat(),
+                            'message': 'Session completed! Booking URL provided.',
+                            'type': 'completion'
+                        }
+                        app.completion_notifications.append(notification)
+                        
+                        # Keep only last 50 notifications to prevent memory issues
+                        if len(app.completion_notifications) > 50:
+                            app.completion_notifications = app.completion_notifications[-50:]
+                            
+                        logger.info(f"Added completion notification for session {session_id}")
+                    except Exception as notify_error:
+                        logger.error(f"Error creating completion notification: {notify_error}")
 
             # Update customer info in lead record if provided
             lead = Lead.query.filter_by(session_id=session_id).first()
@@ -2350,6 +2372,33 @@ def handle_chat_message():
         return jsonify({
             'status': 'error',
             'message': 'Failed to save chat message',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/completion-notifications', methods=['GET'])
+def get_completion_notifications():
+    """Get recent completion notifications for real-time dashboard updates"""
+    try:
+        # Return notifications if any exist
+        if hasattr(app, 'completion_notifications') and app.completion_notifications:
+            notifications = app.completion_notifications.copy()
+            # Clear the notifications after sending them
+            app.completion_notifications = []
+            return jsonify({
+                'status': 'success',
+                'notifications': notifications
+            })
+        else:
+            return jsonify({
+                'status': 'success', 
+                'notifications': []
+            })
+    except Exception as e:
+        logger.error(f"Error getting completion notifications: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to get notifications',
             'error': str(e)
         }), 500
 

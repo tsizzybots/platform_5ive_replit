@@ -2525,6 +2525,49 @@ function showAlert(message, type) {
     }, 5000);
 }
 
+// Real-time completion notification system
+let completionPollingInterval = null;
+
+async function checkCompletionNotifications() {
+    try {
+        const response = await apiRequest('/api/completion-notifications');
+        if (response.data && response.data.status === 'success' && response.data.notifications.length > 0) {
+            response.data.notifications.forEach(notification => {
+                console.log('🎉 Completion notification received:', notification);
+                
+                // Show toast notification
+                showAlert('🎉 ' + notification.message, 'success');
+                
+                // Trigger dashboard refresh
+                setTimeout(() => {
+                    console.log('🔄 Refreshing dashboard due to completion notification...');
+                    loadTickets(currentPage);
+                    updateStatsOnly();
+                }, 1000);
+            });
+        }
+    } catch (error) {
+        console.error('Error checking completion notifications:', error);
+    }
+}
+
+function startCompletionPolling() {
+    // Poll for completion notifications every 3 seconds
+    if (completionPollingInterval) {
+        clearInterval(completionPollingInterval);
+    }
+    completionPollingInterval = setInterval(checkCompletionNotifications, 3000);
+    console.log('✅ Started real-time completion notification polling');
+}
+
+function stopCompletionPolling() {
+    if (completionPollingInterval) {
+        clearInterval(completionPollingInterval);
+        completionPollingInterval = null;
+        console.log('❌ Stopped completion notification polling');
+    }
+}
+
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure calendar icon is displayed in date button
@@ -2545,6 +2588,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadStats();
     loadTickets();
+    
+    // Start real-time completion notification polling
+    startCompletionPolling();
+});
+
+// Stop polling when page is unloaded
+window.addEventListener('beforeunload', function() {
+    stopCompletionPolling();
 });
 
 // Daily Statistics Chart Functions
