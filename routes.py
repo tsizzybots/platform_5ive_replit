@@ -2057,6 +2057,118 @@ def embed_chat():
     return render_template('embed_chat.html')
 
 
+@app.route('/api/embed-chat/send-message', methods=['POST'])
+def embed_chat_send_message():
+    """Production endpoint for embed chat to send messages to AI agent"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'message' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Message is required'
+            }), 400
+            
+        message = data['message'].strip()
+        if not message:
+            return jsonify({
+                'status': 'error', 
+                'message': 'Message cannot be empty'
+            }), 400
+            
+        session_id = data.get('sessionId')
+        first_name = data.get('firstName', 'Website')
+        last_name = data.get('lastName', 'Visitor')  
+        contact_id = data.get('contactId', 'embed_visitor')
+        
+        # Prepare webhook payload matching the test AI format
+        payload = {
+            "action": "sendMessage",
+            "chatInput": message,
+            "firstName": first_name,
+            "lastName": last_name,
+            "contactID": contact_id
+        }
+        
+        # Only include sessionId if we have one from previous messages
+        if session_id:
+            payload["sessionId"] = session_id
+            
+        # Send to the same webhook as test AI
+        webhook_url = 'https://n8n-g0cw.onrender.com/webhook/44e68b37-d078-44b3-b3bc-2a51a9822aca'
+        
+        logger.info(f"=== EMBED CHAT WEBHOOK REQUEST ===")
+        logger.info(f"URL: {webhook_url}")
+        logger.info(f"User Message: {message}")
+        logger.info(f"Payload: {payload}")
+        
+        import requests
+        webhook_response = requests.post(
+            webhook_url,
+            json=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            timeout=30
+        )
+        
+        logger.info(f"=== WEBHOOK RESPONSE ===")
+        logger.info(f"Status: {webhook_response.status_code}")
+        
+        if not webhook_response.ok:
+            logger.error(f"Webhook error response: {webhook_response.text}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to send message to AI agent',
+                'error': f'Webhook returned {webhook_response.status_code}'
+            }), 500
+            
+        try:
+            ai_response = webhook_response.json()
+            logger.info(f"AI Response: {ai_response}")
+            
+            # Extract session ID from response for future messages
+            response_session_id = ai_response.get('sessionId', session_id)
+            
+            # Extract AI message from response - handle different formats
+            ai_message = ''
+            if ai_response.get('aiResponse'):
+                ai_message = ai_response['aiResponse']
+            elif ai_response.get('message'):
+                ai_message = ai_response['message'] 
+            elif ai_response.get('response'):
+                ai_message = ai_response['response']
+            elif isinstance(ai_response, str):
+                ai_message = ai_response
+            else:
+                ai_message = 'I received your message. How can I help you further?'
+                
+            return jsonify({
+                'status': 'success',
+                'sessionId': response_session_id,
+                'aiResponse': ai_message,
+                'data': ai_response
+            })
+            
+        except (ValueError, KeyError) as e:
+            logger.error(f"Error parsing webhook response: {e}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid response from AI agent',
+                'error': str(e)
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in embed chat send message: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Internal server error',
+            'error': str(e)
+        }), 500
+
+
 @app.route('/preview/chat')
 def preview_chat():
     """Preview the chat widget exactly as it will appear on WordPress"""
