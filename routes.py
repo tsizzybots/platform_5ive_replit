@@ -101,7 +101,7 @@ def api_status():
 
 @app.route('/api/conversation/<session_id>', methods=['GET'])
 def get_conversation(session_id):
-    """Get complete conversation history with all messages between AI and user for a session ID with API key authentication"""
+    """Get conversation history excluding the most recent AI message, providing context for AI responses with API key authentication"""
     try:
         # Check for API key in headers
         api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
@@ -159,9 +159,17 @@ def get_conversation(session_id):
                 'message': 'No AI messages found for this session'
             }), 404
         
-        # Format complete conversation history
+        # Exclude the very last AI message from conversation history
+        # Find the most recent AI message to exclude
+        most_recent_ai = ai_messages[-1] if ai_messages else None
+        
+        # Format conversation history excluding the last AI message
         conversation_history = []
         for message in all_messages:
+            # Skip the most recent AI message
+            if most_recent_ai and message.id == most_recent_ai.id:
+                continue
+                
             message_data = {
                 'id': message.id,
                 'message': message.messageStr or '',
@@ -170,25 +178,27 @@ def get_conversation(session_id):
             }
             conversation_history.append(message_data)
         
-        # Get session metadata
+        # Get session metadata (excluding the last AI message from counts)
+        filtered_messages = [msg for msg in all_messages if not (most_recent_ai and msg.id == most_recent_ai.id)]
+        filtered_ai_messages = [msg for msg in filtered_messages if msg.userAi == 'ai']
+        
         session_start = all_messages[0].dateTime.isoformat() if all_messages[0].dateTime else None
-        session_end = all_messages[-1].dateTime.isoformat() if all_messages[-1].dateTime else None
+        # Use the last message in filtered history, or second-to-last overall if last was AI
+        session_end = filtered_messages[-1].dateTime.isoformat() if filtered_messages else session_start
         
-        # Identify most recent AI message for backward compatibility
-        most_recent_ai = ai_messages[-1] if ai_messages else None
-        
-        # Build comprehensive response with full conversation context
+        # Build comprehensive response with conversation context (excluding last AI message)
         response_data = {
             'session_id': session_id,
             'conversation_history': conversation_history,
             'session_metadata': {
-                'total_messages': len(all_messages),
-                'ai_messages_count': len(ai_messages),
-                'user_messages_count': len(all_messages) - len(ai_messages),
+                'total_messages': len(filtered_messages),
+                'ai_messages_count': len(filtered_ai_messages),
+                'user_messages_count': len(filtered_messages) - len(filtered_ai_messages),
                 'session_start': session_start,
-                'session_end': session_end
+                'session_end': session_end,
+                'excluded_last_ai_message': True
             },
-            # Keep backward compatibility fields
+            # Keep backward compatibility fields - but note these refer to the excluded message
             'last_ai_message': most_recent_ai.messageStr if most_recent_ai else '',
             'ai_message_time': most_recent_ai.dateTime.isoformat() if most_recent_ai and most_recent_ai.dateTime else None
         }

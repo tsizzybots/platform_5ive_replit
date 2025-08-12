@@ -114,14 +114,14 @@ Preferred communication style: Simple, everyday language.
 - Added fallback responses for webhook unavailability scenarios
 
 ### August 12, 2025: Complete Conversation History API Implementation
-**MAJOR API ENHANCEMENT**: Transformed `/api/conversation/<session_id>` endpoint to provide complete conversation history between AI and users.
+**MAJOR API ENHANCEMENT**: Transformed `/api/conversation/<session_id>` endpoint to provide conversation context excluding the most recent AI message.
 
 **COMPREHENSIVE FEATURES IMPLEMENTED**:
-1. **Full Conversation History**: Returns complete chronological message thread with all AI and user interactions
+1. **Contextual Conversation History**: Returns chronological message thread excluding the last AI response to provide context for AI decision-making
 2. **Rich Message Data**: Each message includes ID, content, timestamp, and sender identification
-3. **Session Metadata**: Provides comprehensive statistics including total messages, AI/user message counts, session duration
-4. **Chronological Ordering**: Messages arranged in conversation flow order for natural reading
-5. **Backward Compatibility**: Maintains existing `last_ai_message` field for legacy integrations
+3. **Enhanced Session Metadata**: Provides statistics with `excluded_last_ai_message` flag and accurate counts excluding the most recent AI response
+4. **Chronological Ordering**: Messages arranged in conversation flow order for natural reading up to the point before the last AI response
+5. **Backward Compatibility**: Maintains existing `last_ai_message` field referring to the excluded message for legacy integrations
 
 **ENHANCED RESPONSE STRUCTURE**:
 ```json
@@ -139,26 +139,36 @@ Preferred communication style: Simple, everyday language.
       "message": "Hello! How can I help you?",
       "timestamp": "2025-08-12T05:00:05",
       "sender": "ai"
+    },
+    {
+      "id": 125,
+      "message": "I need help with my project",
+      "timestamp": "2025-08-12T05:00:10",
+      "sender": "user"
     }
   ],
   "session_metadata": {
-    "total_messages": 10,
-    "ai_messages_count": 5,
-    "user_messages_count": 5,
+    "total_messages": 3,
+    "ai_messages_count": 1,
+    "user_messages_count": 2,
     "session_start": "2025-08-12T05:00:00",
-    "session_end": "2025-08-12T05:10:00"
-  }
+    "session_end": "2025-08-12T05:00:10",
+    "excluded_last_ai_message": true
+  },
+  "last_ai_message": "How can I help with your project?",
+  "ai_message_time": "2025-08-12T05:00:15"
 }
 ```
 
 **TECHNICAL IMPLEMENTATION**:
-- Retrieves all session messages with single optimized database query
-- Orders messages chronologically for natural conversation flow
+- Retrieves all session messages with optimized database query
+- Identifies and excludes the most recent AI message from conversation history
+- Orders remaining messages chronologically for natural conversation flow
 - Maintains API key authentication and session validation
-- Provides rich metadata for conversation analytics
+- Provides accurate metadata reflecting the filtered conversation state
 - Preserves backward compatibility with existing integrations
 
-**USE CASE**: External AI systems now receive complete conversation context, enabling sophisticated conversation analysis, sentiment tracking, lead qualification assessment, and contextually-aware responses based on entire interaction history.
+**USE CASE**: External AI systems receive conversation context leading up to the current moment, enabling them to understand the full dialogue context without seeing their own most recent response. This is ideal for AI agents that need to analyze conversation state and provide contextually-aware follow-up responses based on the complete interaction history up to that point.
 
 ### August 11, 2025: Fixed Export Session Functionality
 **EXPORT SYSTEM REPAIR**: Resolved critical export session bug that prevented IzzyDevs user from exporting chat sessions.
