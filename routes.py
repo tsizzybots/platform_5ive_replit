@@ -11,12 +11,102 @@ import pytz
 import logging
 import os
 import requests
+import json
 from functools import wraps
 
 logger = logging.getLogger(__name__)
 
 # Sydney timezone
 SYDNEY_TZ = pytz.timezone('Australia/Sydney')
+
+# Webhook configuration
+COMPLETION_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/platform-5ive-update-monday"
+
+
+def send_completion_webhook(session_id):
+    """Send webhook notification when a lead session is completed"""
+    try:
+        # Get session and lead data
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        lead = Lead.query.filter_by(session_id=session_id).first()
+        
+        if not messenger_session:
+            logger.error(f"No messenger session found for webhook: {session_id}")
+            return False
+            
+        # Prepare webhook payload with complete lead information
+        webhook_data = {
+            # Session metadata
+            "session_id": session_id,
+            "completion_timestamp": datetime.utcnow().isoformat(),
+            "conversation_start": messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
+            "last_message_time": messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
+            "message_count": messenger_session.message_count or 0,
+            "ai_engaged": messenger_session.ai_engaged,
+            "session_source": getattr(messenger_session, 'session_source', 'messenger'),
+            
+            # Lead qualification data
+            "lead_data": {
+                "full_name": lead.full_name if lead else None,
+                "company_name": lead.company_name if lead else None,
+                "email": lead.email if lead else None,
+                "phone_number": lead.phone_number if lead else None,
+                "ai_interest_reason": lead.ai_interest_reason if lead else None,
+                "ai_implementation_known": lead.ai_implementation_known if lead else None,
+                "business_challenges": lead.business_challenges if lead else None,
+                "business_goals_6_12m": lead.business_goals_6_12m if lead else None,
+                "ai_budget_allocated": lead.ai_budget_allocated if lead else None,
+                "ai_implementation_timeline": lead.ai_implementation_timeline if lead else None
+            },
+            
+            # Platform information
+            "platform": "Platform 5ive",
+            "webhook_version": "1.0",
+            "data_source": "replit_dashboard"
+        }
+        
+        # Send webhook
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Platform5ive-Webhook/1.0'
+        }
+        
+        logger.info(f"Sending completion webhook for session: {session_id}")
+        response = requests.post(
+            COMPLETION_WEBHOOK_URL, 
+            json=webhook_data, 
+            headers=headers,
+            timeout=30
+        )
+        
+        # Update messenger session with webhook delivery status
+        messenger_session.webhook_delivered = True
+        messenger_session.webhook_delivery_at = datetime.utcnow()
+        messenger_session.webhook_url = COMPLETION_WEBHOOK_URL
+        messenger_session.webhook_response = f"Status: {response.status_code}"
+        
+        db.session.commit()
+        
+        if response.status_code == 200:
+            logger.info(f"Webhook successfully sent for session: {session_id}")
+            return True
+        else:
+            logger.error(f"Webhook failed for session {session_id}. Status: {response.status_code}, Response: {response.text}")
+            return False
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Webhook request failed for session {session_id}: {str(e)}")
+        # Still mark as attempted but failed
+        if messenger_session:
+            messenger_session.webhook_delivered = False
+            messenger_session.webhook_delivery_at = datetime.utcnow()
+            messenger_session.webhook_url = COMPLETION_WEBHOOK_URL
+            messenger_session.webhook_response = f"Error: {str(e)}"
+            db.session.commit()
+        return False
+    except Exception as e:
+        logger.error(f"Webhook processing error for session {session_id}: {str(e)}")
+        return False
 
 
 # Health check endpoint for deployment
@@ -443,6 +533,11 @@ def ensure_messenger_session_exists(session_id):
         
         db.session.commit()
 
+        # Send webhook if session is completed
+        if completion_status == 'complete':
+            logger.info(f"Triggering completion webhook for newly completed session: {session_id}")
+            send_completion_webhook(session_id)
+
         logger.info(
             f"Auto-created messenger session for session_id: {session_id}")
         return messenger_session
@@ -483,6 +578,10 @@ def sync_messenger_session_data(session_id):
         
         if has_booking_url:
             logger.info(f"Sync detected completion for session {session_id} - found 'within 24 hours' message")
+            # Send webhook if this is newly detected completion
+            if messenger_session.completion_status != 'complete':
+                logger.info(f"Triggering completion webhook for updated session: {session_id}")
+                send_completion_webhook(session_id)
 
         # Update messenger session with latest data
         messenger_session.message_count = message_count
@@ -2743,4 +2842,84 @@ def export_session(session_id):
             'status': 'error',
             'message': 'Failed to export session',
             'error': str(e)
+        }), 500
+
+
+@app.route('/api/test-webhook/<session_id>', methods=['POST'])
+def test_completion_webhook(session_id):
+    """Test endpoint to trigger completion webhook for a specific session"""
+    try:
+        result = send_completion_webhook(session_id)
+        if result:
+            return jsonify({
+                'status': 'success',
+                'message': f'Webhook successfully sent for session {session_id}'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Webhook failed for session {session_id}'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error testing webhook: {str(e)}'
+        }), 500
+
+
+@app.route('/api/webhook-example/<session_id>', methods=['GET'])
+def get_webhook_example(session_id):
+    """Generate example webhook payload for a specific session"""
+    try:
+        # Get session and lead data
+        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
+        lead = Lead.query.filter_by(session_id=session_id).first()
+        
+        if not messenger_session:
+            return jsonify({
+                'status': 'error',
+                'message': 'Session not found'
+            }), 404
+            
+        # Generate the same webhook payload that would be sent
+        webhook_data = {
+            # Session metadata
+            "session_id": session_id,
+            "completion_timestamp": datetime.utcnow().isoformat(),
+            "conversation_start": messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None,
+            "last_message_time": messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else None,
+            "message_count": messenger_session.message_count or 0,
+            "ai_engaged": messenger_session.ai_engaged,
+            "session_source": getattr(messenger_session, 'session_source', 'messenger'),
+            
+            # Lead qualification data
+            "lead_data": {
+                "full_name": lead.full_name if lead else None,
+                "company_name": lead.company_name if lead else None,
+                "email": lead.email if lead else None,
+                "phone_number": lead.phone_number if lead else None,
+                "ai_interest_reason": lead.ai_interest_reason if lead else None,
+                "ai_implementation_known": lead.ai_implementation_known if lead else None,
+                "business_challenges": lead.business_challenges if lead else None,
+                "business_goals_6_12m": lead.business_goals_6_12m if lead else None,
+                "ai_budget_allocated": lead.ai_budget_allocated if lead else None,
+                "ai_implementation_timeline": lead.ai_implementation_timeline if lead else None
+            },
+            
+            # Platform information
+            "platform": "Platform 5ive",
+            "webhook_version": "1.0",
+            "data_source": "replit_dashboard"
+        }
+        
+        return jsonify({
+            'status': 'success',
+            'webhook_url': COMPLETION_WEBHOOK_URL,
+            'example_payload': webhook_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error generating webhook example: {str(e)}'
         }), 500
