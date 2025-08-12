@@ -24,21 +24,17 @@ COMPLETION_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/platform-5ive-up
 
 
 def sanitize_lead_data(value):
-    """Sanitize lead data by removing commas and other problematic characters for API calls"""
+    """Sanitize lead data to only include API-safe characters as specified"""
     if value is None:
         return None
     
     # Convert to string and strip whitespace
     sanitized = str(value).strip()
     
-    # Remove commas
-    sanitized = sanitized.replace(',', '')
-    
-    # Remove other potentially problematic characters for API calls
-    # Keep alphanumeric, spaces, basic punctuation but remove problematic chars
+    # Only allow specified characters:
+    # A-Z, a-z, 0-9, space, period, hyphen, underscore, apostrophe
     import re
-    # Allow letters, numbers, spaces, periods, hyphens, underscores, @, +, parentheses
-    sanitized = re.sub(r'[^\w\s@+.()\-$]', '', sanitized)
+    sanitized = re.sub(r"[^A-Za-z0-9 .\-_']", '', sanitized)
     
     # Clean up multiple spaces
     sanitized = re.sub(r'\s+', ' ', sanitized).strip()
