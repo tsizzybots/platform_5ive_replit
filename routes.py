@@ -101,7 +101,7 @@ def api_status():
 
 @app.route('/api/conversation/<session_id>', methods=['GET'])
 def get_conversation(session_id):
-    """Get conversation context including last AI message and most recent user message for a session ID with API key authentication"""
+    """Get complete conversation history with all messages between AI and user for a session ID with API key authentication"""
     try:
         # Check for API key in headers
         api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
@@ -140,41 +140,57 @@ def get_conversation(session_id):
                 'message': 'Session not found'
             }), 404
         
-        # Get all AI messages for this session, ordered by timestamp descending
-        ai_messages = db.session.query(ChatSessionForDashboard).filter_by(
-            session_id=session_id,
-            userAi='ai'
-        ).order_by(ChatSessionForDashboard.dateTime.desc()).all()
+        # Get all messages for this session, ordered by timestamp ascending for chronological order
+        all_messages = db.session.query(ChatSessionForDashboard).filter_by(
+            session_id=session_id
+        ).order_by(ChatSessionForDashboard.dateTime.asc()).all()
         
+        if not all_messages:
+            return jsonify({
+                'status': 'error',
+                'message': 'No messages found for this session'
+            }), 404
+        
+        # Check if AI has participated in conversation
+        ai_messages = [msg for msg in all_messages if msg.userAi == 'ai']
         if not ai_messages:
             return jsonify({
                 'status': 'error',
                 'message': 'No AI messages found for this session'
             }), 404
         
-        # Choose which AI message to return based on availability
-        if len(ai_messages) >= 2:
-            # Return the second-to-last AI message (penultimate)
-            selected_ai_message = ai_messages[1]  # Second item in desc order = penultimate
-            logger.info(f"Penultimate AI message retrieved for session {session_id}: message ID {selected_ai_message.id}")
-        else:
-            # Return the last (and only) AI message if only one exists
-            selected_ai_message = ai_messages[0]
-            logger.info(f"Last AI message retrieved for session {session_id}: message ID {selected_ai_message.id} (only one AI message available)")
+        # Format complete conversation history
+        conversation_history = []
+        for message in all_messages:
+            message_data = {
+                'id': message.id,
+                'message': message.messageStr or '',
+                'timestamp': message.dateTime.isoformat() if message.dateTime else None,
+                'sender': 'ai' if message.userAi == 'ai' else 'user'
+            }
+            conversation_history.append(message_data)
         
-        # Get the most recent user message for context
-        last_user_message = db.session.query(ChatSessionForDashboard).filter_by(
-            session_id=session_id,
-            userAi='user'
-        ).order_by(ChatSessionForDashboard.dateTime.desc()).first()
+        # Get session metadata
+        session_start = all_messages[0].dateTime.isoformat() if all_messages[0].dateTime else None
+        session_end = all_messages[-1].dateTime.isoformat() if all_messages[-1].dateTime else None
         
-        # Build enhanced response with both AI and user messages
+        # Identify most recent AI message for backward compatibility
+        most_recent_ai = ai_messages[-1] if ai_messages else None
+        
+        # Build comprehensive response with full conversation context
         response_data = {
-            'last_ai_message': selected_ai_message.messageStr or '',
-            'last_user_message': last_user_message.messageStr if last_user_message else None,
-            'last_user_message_time': last_user_message.dateTime.isoformat() if last_user_message and last_user_message.dateTime else None,
-            'ai_message_time': selected_ai_message.dateTime.isoformat() if selected_ai_message.dateTime else None,
-            'session_id': session_id
+            'session_id': session_id,
+            'conversation_history': conversation_history,
+            'session_metadata': {
+                'total_messages': len(all_messages),
+                'ai_messages_count': len(ai_messages),
+                'user_messages_count': len(all_messages) - len(ai_messages),
+                'session_start': session_start,
+                'session_end': session_end
+            },
+            # Keep backward compatibility fields
+            'last_ai_message': most_recent_ai.messageStr if most_recent_ai else '',
+            'ai_message_time': most_recent_ai.dateTime.isoformat() if most_recent_ai and most_recent_ai.dateTime else None
         }
         
         return jsonify(response_data)
