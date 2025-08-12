@@ -710,6 +710,9 @@ def auto_update_completion_status():
             # Update the messenger session
             messenger_session = MessengerSession.query.get(session_db_id)
             if messenger_session:
+                # Check if this is a newly detected completion
+                was_incomplete = messenger_session.completion_status != 'complete'
+                
                 messenger_session.completion_status = 'complete'
                 messenger_session.message_count = message_count
                 if latest_message:
@@ -723,6 +726,11 @@ def auto_update_completion_status():
                 
                 updated_count += 1
                 logger.info(f"Auto-updated completion status for session {session_id}")
+                
+                # Send webhook if this is a newly detected completion
+                if was_incomplete:
+                    logger.info(f"Triggering completion webhook for auto-detected completion: {session_id}")
+                    send_completion_webhook(session_id)
         
         if updated_count > 0:
             db.session.commit()
