@@ -32,9 +32,9 @@ def sanitize_lead_data(value):
     sanitized = str(value).strip()
     
     # Only allow specified characters:
-    # A-Z, a-z, 0-9, space, period, hyphen, underscore, apostrophe, plus
+    # A-Z, a-z, 0-9, space, period, hyphen, underscore, apostrophe, plus, percentage
     import re
-    sanitized = re.sub(r"[^A-Za-z0-9 .\-_'+]", '', sanitized)
+    sanitized = re.sub(r"[^A-Za-z0-9 .\-_'+%]", '', sanitized)
     
     # Clean up multiple spaces
     sanitized = re.sub(r'\s+', ' ', sanitized).strip()
