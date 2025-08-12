@@ -43,6 +43,8 @@ class MondayService:
             if variables:
                 payload["variables"] = variables
                 
+            logger.debug(f"Monday.com API request payload: {payload}")
+            
             response = requests.post(
                 self.api_url, 
                 headers=self.headers, 
@@ -50,11 +52,14 @@ class MondayService:
                 timeout=30
             )
             
+            logger.debug(f"Monday.com API response status: {response.status_code}")
+            
             if response.status_code != 200:
                 logger.error(f"Monday.com API request failed: {response.status_code} - {response.text}")
                 return None
                 
             result = response.json()
+            logger.debug(f"Monday.com API response: {result}")
             
             if 'errors' in result:
                 logger.error(f"Monday.com GraphQL errors: {result['errors']}")
@@ -90,7 +95,14 @@ class MondayService:
         ''' % self.board_id
         
         result = self._make_request(query)
-        return result.get('data', {}).get('boards', [{}])[0] if result else None
+        if result and 'data' in result:
+            boards = result['data'].get('boards', [])
+            if boards and len(boards) > 0:
+                return boards[0]
+            else:
+                logger.error(f"No boards found for board ID {self.board_id}")
+                return None
+        return None
     
     def create_lead_item(self, lead_data: Dict, session_data: Dict) -> Optional[Dict]:
         """
