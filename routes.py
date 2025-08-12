@@ -23,6 +23,29 @@ SYDNEY_TZ = pytz.timezone('Australia/Sydney')
 COMPLETION_WEBHOOK_URL = "https://n8n-g0cw.onrender.com/webhook/platform-5ive-update-monday"
 
 
+def sanitize_lead_data(value):
+    """Sanitize lead data by removing commas and other problematic characters for API calls"""
+    if value is None:
+        return None
+    
+    # Convert to string and strip whitespace
+    sanitized = str(value).strip()
+    
+    # Remove commas
+    sanitized = sanitized.replace(',', '')
+    
+    # Remove other potentially problematic characters for API calls
+    # Keep alphanumeric, spaces, basic punctuation but remove problematic chars
+    import re
+    # Allow letters, numbers, spaces, periods, hyphens, underscores, @, +, parentheses
+    sanitized = re.sub(r'[^\w\s@+.()\-$]', '', sanitized)
+    
+    # Clean up multiple spaces
+    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+    
+    return sanitized if sanitized else None
+
+
 def send_completion_webhook(session_id):
     """Send webhook notification when a lead session is completed"""
     try:
@@ -45,18 +68,18 @@ def send_completion_webhook(session_id):
             "ai_engaged": messenger_session.ai_engaged,
             "session_source": getattr(messenger_session, 'session_source', 'messenger'),
             
-            # Lead qualification data
+            # Lead qualification data (sanitized for API compatibility)
             "lead_data": {
-                "full_name": lead.full_name if lead else None,
-                "company_name": lead.company_name if lead else None,
-                "email": lead.email if lead else None,
-                "phone_number": lead.phone_number if lead else None,
-                "ai_interest_reason": lead.ai_interest_reason if lead else None,
-                "ai_implementation_known": lead.ai_implementation_known if lead else None,
-                "business_challenges": lead.business_challenges if lead else None,
-                "business_goals_6_12m": lead.business_goals_6_12m if lead else None,
-                "ai_budget_allocated": lead.ai_budget_allocated if lead else None,
-                "ai_implementation_timeline": lead.ai_implementation_timeline if lead else None
+                "full_name": sanitize_lead_data(lead.full_name if lead else None),
+                "company_name": sanitize_lead_data(lead.company_name if lead else None),
+                "email": sanitize_lead_data(lead.email if lead else None),
+                "phone_number": sanitize_lead_data(lead.phone_number if lead else None),
+                "ai_interest_reason": sanitize_lead_data(lead.ai_interest_reason if lead else None),
+                "ai_implementation_known": sanitize_lead_data(lead.ai_implementation_known if lead else None),
+                "business_challenges": sanitize_lead_data(lead.business_challenges if lead else None),
+                "business_goals_6_12m": sanitize_lead_data(lead.business_goals_6_12m if lead else None),
+                "ai_budget_allocated": sanitize_lead_data(lead.ai_budget_allocated if lead else None),
+                "ai_implementation_timeline": sanitize_lead_data(lead.ai_implementation_timeline if lead else None)
             },
             
             # Platform information
@@ -2892,18 +2915,18 @@ def get_webhook_example(session_id):
             "ai_engaged": messenger_session.ai_engaged,
             "session_source": getattr(messenger_session, 'session_source', 'messenger'),
             
-            # Lead qualification data
+            # Lead qualification data (sanitized for API compatibility)
             "lead_data": {
-                "full_name": lead.full_name if lead else None,
-                "company_name": lead.company_name if lead else None,
-                "email": lead.email if lead else None,
-                "phone_number": lead.phone_number if lead else None,
-                "ai_interest_reason": lead.ai_interest_reason if lead else None,
-                "ai_implementation_known": lead.ai_implementation_known if lead else None,
-                "business_challenges": lead.business_challenges if lead else None,
-                "business_goals_6_12m": lead.business_goals_6_12m if lead else None,
-                "ai_budget_allocated": lead.ai_budget_allocated if lead else None,
-                "ai_implementation_timeline": lead.ai_implementation_timeline if lead else None
+                "full_name": sanitize_lead_data(lead.full_name if lead else None),
+                "company_name": sanitize_lead_data(lead.company_name if lead else None),
+                "email": sanitize_lead_data(lead.email if lead else None),
+                "phone_number": sanitize_lead_data(lead.phone_number if lead else None),
+                "ai_interest_reason": sanitize_lead_data(lead.ai_interest_reason if lead else None),
+                "ai_implementation_known": sanitize_lead_data(lead.ai_implementation_known if lead else None),
+                "business_challenges": sanitize_lead_data(lead.business_challenges if lead else None),
+                "business_goals_6_12m": sanitize_lead_data(lead.business_goals_6_12m if lead else None),
+                "ai_budget_allocated": sanitize_lead_data(lead.ai_budget_allocated if lead else None),
+                "ai_implementation_timeline": sanitize_lead_data(lead.ai_implementation_timeline if lead else None)
             },
             
             # Platform information
