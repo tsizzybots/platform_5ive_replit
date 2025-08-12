@@ -163,6 +163,9 @@ def get_conversation(session_id):
         # Find the most recent AI message to exclude
         most_recent_ai = ai_messages[-1] if ai_messages else None
         
+        # Find the second-to-last AI message (the one that should appear as last in filtered history)
+        second_last_ai = ai_messages[-2] if len(ai_messages) >= 2 else None
+        
         # Format conversation history excluding the last AI message
         conversation_history = []
         for message in all_messages:
@@ -198,9 +201,9 @@ def get_conversation(session_id):
                 'session_end': session_end,
                 'excluded_last_ai_message': True
             },
-            # Keep backward compatibility fields - but note these refer to the excluded message
-            'last_ai_message': most_recent_ai.messageStr if most_recent_ai else '',
-            'ai_message_time': most_recent_ai.dateTime.isoformat() if most_recent_ai and most_recent_ai.dateTime else None
+            # Keep backward compatibility fields - these refer to the last AI message in the filtered history
+            'last_ai_message': second_last_ai.messageStr if second_last_ai else (most_recent_ai.messageStr if most_recent_ai else ''),
+            'ai_message_time': second_last_ai.dateTime.isoformat() if second_last_ai and second_last_ai.dateTime else (most_recent_ai.dateTime.isoformat() if most_recent_ai and most_recent_ai.dateTime else None)
         }
         
         return jsonify(response_data)
