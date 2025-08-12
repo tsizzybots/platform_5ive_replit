@@ -12,72 +12,11 @@ import logging
 import os
 import requests
 from functools import wraps
-from monday_service import monday_service
 
 logger = logging.getLogger(__name__)
 
 # Sydney timezone
 SYDNEY_TZ = pytz.timezone('Australia/Sydney')
-
-
-def send_lead_to_monday(session_id):
-    """
-    Send completed lead information to Monday.com board
-    
-    Args:
-        session_id: The session ID to send to Monday.com
-    """
-    try:
-        if not monday_service.is_configured():
-            logger.info(f"Monday.com not configured. Skipping lead export for session {session_id}")
-            return False
-        
-        # Get the messenger session
-        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
-        if not messenger_session:
-            logger.error(f"No messenger session found for {session_id}")
-            return False
-        
-        # Get the lead data
-        lead = Lead.query.filter_by(session_id=session_id).first()
-        if not lead:
-            logger.warning(f"No lead data found for session {session_id}. Creating Monday.com item with basic info only.")
-            lead_data = {
-                'full_name': 'Unknown',
-                'email': '',
-                'company_name': '',
-                'ai_interest_reason': '',
-                'ai_implementation_known': '',
-                'business_challenges': '',
-                'business_goals_6_12m': '',
-                'ai_budget_allocated': '',
-                'ai_implementation_timeline': '',
-                'phone_number': ''
-            }
-        else:
-            lead_data = lead.to_dict()
-        
-        # Prepare session metadata
-        session_data = {
-            'session_id': session_id,
-            'completion_date': messenger_session.last_message_time.isoformat() if messenger_session.last_message_time else datetime.utcnow().isoformat(),
-            'message_count': messenger_session.message_count,
-            'session_start': messenger_session.conversation_start.isoformat() if messenger_session.conversation_start else None
-        }
-        
-        # Send to Monday.com
-        result = monday_service.create_lead_item(lead_data, session_data)
-        
-        if result:
-            logger.info(f"Successfully sent lead to Monday.com: {result['id']} for session {session_id}")
-            return True
-        else:
-            logger.error(f"Failed to send lead to Monday.com for session {session_id}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error sending lead to Monday.com for session {session_id}: {str(e)}")
-        return False
 
 
 # Health check endpoint for deployment
@@ -666,12 +605,6 @@ def auto_update_completion_status():
                 
                 updated_count += 1
                 logger.info(f"Auto-updated completion status for session {session_id}")
-                
-                # Send lead to Monday.com when session completes
-                try:
-                    send_lead_to_monday(session_id)
-                except Exception as monday_error:
-                    logger.error(f"Error sending lead to Monday.com for session {session_id}: {monday_error}")
         
         if updated_count > 0:
             db.session.commit()
@@ -702,121 +635,6 @@ def sync_completion_status_endpoint():
             'status': 'error',
             'message': 'Failed to sync completion status',
             'error': str(e)
-        }), 500
-
-
-@app.route('/api/test-monday-integration', methods=['POST'])
-def test_monday_integration():
-    """Test Monday.com integration with a sample lead or existing session"""
-    try:
-        data = request.get_json() or {}
-        session_id = data.get('session_id')
-        
-        if session_id:
-            # Test with specific session
-            success = send_lead_to_monday(session_id)
-            return jsonify({
-                'status': 'success' if success else 'failed',
-                'message': f"Monday.com integration test {'successful' if success else 'failed'} for session {session_id}",
-                'configured': monday_service.is_configured()
-            })
-        else:
-            # Test connection only
-            if monday_service.is_configured():
-                connection_test = monday_service.test_connection()
-                return jsonify({
-                    'status': 'success' if connection_test else 'failed',
-                    'message': f"Monday.com connection test {'successful' if connection_test else 'failed'}",
-                    'configured': True
-                })
-            else:
-                return jsonify({
-                    'status': 'not_configured',
-                    'message': 'Monday.com integration not configured. Please set MONDAY_API_TOKEN and MONDAY_BOARD_ID environment variables.',
-                    'configured': False
-                })
-    
-    except Exception as e:
-        logger.error(f"Error testing Monday.com integration: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e),
-            'configured': monday_service.is_configured()
-        }), 500
-
-
-@app.route('/api/monday-board-info', methods=['GET'])
-def get_monday_board_info():
-    """Get Monday.com board structure for configuration help"""
-    try:
-        if not monday_service.is_configured():
-            return jsonify({
-                'status': 'not_configured',
-                'message': 'Monday.com integration not configured. Please set MONDAY_API_TOKEN and MONDAY_BOARD_ID environment variables.'
-            }), 400
-        
-        board_info = monday_service.get_board_structure()
-        
-        if board_info:
-            return jsonify({
-                'status': 'success',
-                'board_info': board_info
-            })
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to retrieve board information'
-            }), 500
-    
-    except Exception as e:
-        logger.error(f"Error getting Monday.com board info: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/send-to-monday/<session_id>', methods=['POST'])
-def send_session_to_monday(session_id):
-    """Send a specific completed session to Monday.com manually"""
-    try:
-        # Verify session exists and is complete
-        messenger_session = MessengerSession.query.filter_by(session_id=session_id).first()
-        if not messenger_session:
-            return jsonify({
-                'status': 'error',
-                'message': f'Session {session_id} not found'
-            }), 404
-        
-        if messenger_session.completion_status != 'complete':
-            return jsonify({
-                'status': 'warning',
-                'message': f'Session {session_id} is not marked as complete (status: {messenger_session.completion_status})',
-                'completion_status': messenger_session.completion_status
-            }), 400
-        
-        # Send to Monday.com
-        success = send_lead_to_monday(session_id)
-        
-        if success:
-            return jsonify({
-                'status': 'success',
-                'message': f'Successfully sent session {session_id} to Monday.com',
-                'session_id': session_id
-            })
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': f'Failed to send session {session_id} to Monday.com',
-                'session_id': session_id
-            }), 500
-    
-    except Exception as e:
-        logger.error(f"Error sending session {session_id} to Monday.com: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e),
-            'session_id': session_id
         }), 500
 
 
@@ -2578,12 +2396,6 @@ def handle_chat_message():
                         logger.info(f"Added completion notification for session {session_id}")
                     except Exception as notify_error:
                         logger.error(f"Error creating completion notification: {notify_error}")
-                    
-                    # Send lead to Monday.com when session completes
-                    try:
-                        send_lead_to_monday(session_id)
-                    except Exception as monday_error:
-                        logger.error(f"Error sending lead to Monday.com for session {session_id}: {monday_error}")
 
             # Update customer info in lead record if provided
             lead = Lead.query.filter_by(session_id=session_id).first()
