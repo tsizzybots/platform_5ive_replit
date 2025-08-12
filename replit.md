@@ -113,6 +113,41 @@ Preferred communication style: Simple, everyday language.
 - Fixed webhook payload examples to match production endpoint format
 - Added fallback responses for webhook unavailability scenarios
 
+### August 12, 2025: Enhanced Conversation Endpoint with User Context
+**CONVERSATION API ENHANCEMENT**: Updated `/api/conversation/<session_id>` endpoint to provide comprehensive conversation context.
+
+**KEY IMPROVEMENTS**:
+1. **User Message Context**: Now includes the most recent user message alongside AI message for complete context
+2. **Timestamp Information**: Provides timestamps for both user and AI messages for chronological understanding
+3. **Enhanced Response Format**: Returns structured data with `last_ai_message`, `last_user_message`, `last_user_message_time`, and `ai_message_time`
+4. **Better Context**: External services can now understand the full conversation flow rather than just AI responses
+
+**TECHNICAL DETAILS**:
+- Added user message retrieval query to complement existing AI message logic
+- Maintained existing penultimate AI message selection logic for consistency
+- Enhanced response structure while preserving backward compatibility with session_id field
+- Updated endpoint documentation to reflect conversation context capabilities
+
+**USE CASE**: This enhancement provides external AI agents and automation tools with complete conversation context, enabling more informed responses and better understanding of conversation state.
+
+### August 11, 2025: Fixed Export Session Functionality
+**EXPORT SYSTEM REPAIR**: Resolved critical export session bug that prevented IzzyDevs user from exporting chat sessions.
+
+**ISSUE RESOLVED**: Fixed `ai_engaged` field access error - corrected to retrieve from MessengerSession table instead of Lead table where it doesn't exist.
+
+**COMPREHENSIVE EXPORT FEATURES**:
+1. **Complete Lead Information**: Export now includes all lead qualification fields even when null
+2. **Question Status Visibility**: Shows "Not answered" vs actual responses to identify unanswered qualification questions
+3. **Fallback Handling**: Proper handling when no lead record exists with all fields marked as "Not answered"
+4. **Dual Export Endpoints**: Fixed both `/api/messenger-sessions/<int:session_id>/export` and `/api/sessions/<session_id>/export` endpoints
+
+**EXPORT CONTENT INCLUDES**:
+- Session metadata (ID, timestamps, status, QA information)
+- Comprehensive lead qualification data with null field handling
+- Complete conversation thread with proper timestamp formatting
+- QA notes and developer feedback sections
+- Professional formatting for external use
+
 ### August 11, 2025: Robust Completion Status Sync System Implementation
 **ISSUE RESOLVED**: Dashboard and session details completion status not updating consistently when sessions become complete, even when toast notifications appeared.
 
