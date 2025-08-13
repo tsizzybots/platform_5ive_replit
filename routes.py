@@ -1834,18 +1834,36 @@ def update_messenger_session_qa(session_id):
 
         # Send email notification for QA issues
         if qa_session.qa_status == 'issue':
+            logger.info(f"Starting email notification process for QA issue - Session: {qa_session.session_id}")
             try:
                 import resend
 
-                resend.api_key = os.environ.get("RESEND_API_KEY")
+                # Check if API key exists
+                api_key = os.environ.get("RESEND_API_KEY")
+                if not api_key:
+                    logger.error("RESEND_API_KEY not found in environment variables")
+                    return jsonify({
+                        'status': 'error',
+                        'message': 'Email configuration error - missing API key'
+                    }), 500
                 
-                # Get customer name from Lead table
+                resend.api_key = api_key
+                logger.info("Resend API key configured successfully")
+                
+                # Get customer information from Lead table
                 lead = Lead.query.filter_by(session_id=qa_session.session_id).first()
-                customer_name = lead.full_name if lead and lead.full_name else 'Unknown'
-                customer_id = qa_session.customer_id or 'N/A'
+                if lead:
+                    customer_name = lead.full_name if lead.full_name else 'Unknown'
+                    customer_contact = lead.email if lead.email else 'N/A'
+                    logger.info(f"Found lead data for session {qa_session.session_id}: {customer_name}")
+                else:
+                    customer_name = 'Unknown'
+                    customer_contact = 'N/A'
+                    logger.warning(f"No lead data found for session {qa_session.session_id}")
 
                 # Email content
                 subject = f"⚠️ Platform 5ive - QA Issue Detected - Session {qa_session.session_id[:20]}..."
+                logger.info(f"Preparing email with subject: {subject}")
 
                 html_content = f"""
                 <html>
@@ -1868,7 +1886,7 @@ def update_messenger_session_qa(session_id):
                                 <div style="display: grid; gap: 8px;">
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Session ID:</strong> <span style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{qa_session.session_id}</span></p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {customer_name}</p>
-                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> {customer_id}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Contact:</strong> {customer_contact}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
                                 </div>
@@ -1920,7 +1938,7 @@ PLATFORM 5IVE - QA ISSUE DETECTED
 Session Details:
 - Session ID: {qa_session.session_id}
 - Customer: {customer_name}
-- Contact ID: {customer_id}
+- Contact: {customer_contact}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
 - Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
 
@@ -1943,16 +1961,33 @@ This is an automated notification from Platform 5ive AI Lead Generation Dashboar
                     "html": html_content,
                     "text": text_content
                 }
-
-                response = resend.Emails.send(email_params)
-                logger.info(
-                    f"Successfully sent QA issue email notification for session {session_id}: {response}"
-                )
+                
+                logger.info(f"Attempting to send email with params: from={email_params['from']}, to={email_params['to']}, subject={email_params['subject'][:50]}...")
+                
+                try:
+                    response = resend.Emails.send(email_params)
+                    logger.info(f"Successfully sent QA issue email notification for session {qa_session.session_id}")
+                    logger.info(f"Email API response: {response}")
+                    
+                except Exception as send_error:
+                    logger.error(f"Resend API error for session {qa_session.session_id}: {str(send_error)}")
+                    logger.error(f"Send error type: {type(send_error).__name__}")
+                    
+                    # Try to get more details from the error
+                    if hasattr(send_error, 'response'):
+                        logger.error(f"API response status: {getattr(send_error.response, 'status_code', 'unknown')}")
+                        logger.error(f"API response text: {getattr(send_error.response, 'text', 'unknown')}")
+                    
+                    raise send_error
 
             except Exception as email_error:
-                logger.error(
-                    f"Failed to send email notification for session {session_id}: {str(email_error)}"
-                )
+                logger.error(f"Email notification failed for session {qa_session.session_id}: {str(email_error)}")
+                logger.error(f"Error type: {type(email_error).__name__}")
+                
+                # Log additional debug information
+                logger.error(f"API key exists: {bool(os.environ.get('RESEND_API_KEY'))}")
+                logger.error(f"API key length: {len(os.environ.get('RESEND_API_KEY', '')) if os.environ.get('RESEND_API_KEY') else 0}")
+                
                 # Don't fail the main request if email fails
 
         logger.info(
