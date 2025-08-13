@@ -1838,6 +1838,11 @@ def update_messenger_session_qa(session_id):
                 import resend
 
                 resend.api_key = os.environ.get("RESEND_API_KEY")
+                
+                # Get customer name from Lead table
+                lead = Lead.query.filter_by(session_id=qa_session.session_id).first()
+                customer_name = lead.full_name if lead and lead.full_name else 'Unknown'
+                customer_id = qa_session.customer_id or 'N/A'
 
                 # Email content
                 subject = f"⚠️ Platform 5ive - QA Issue Detected - Session {qa_session.session_id[:20]}..."
@@ -1862,8 +1867,8 @@ def update_messenger_session_qa(session_id):
                                 <h3 style="margin-top: 0; color: #495057; font-size: 18px;">📋 Session Details</h3>
                                 <div style="display: grid; gap: 8px;">
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Session ID:</strong> <span style="font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px;">{qa_session.session_id}</span></p>
-                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {qa_session.full_name or 'Unknown'}</p>
-                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> {qa_session.customer_id or 'N/A'}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Customer:</strong> {customer_name}</p>
+                                    <p style="margin: 5px 0;"><strong style="color: #495057;">Contact ID:</strong> {customer_id}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">QA Reviewer:</strong> {qa_session.qa_status_updated_by or 'Unknown'}</p>
                                     <p style="margin: 5px 0;"><strong style="color: #495057;">Detected:</strong> {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}</p>
                                 </div>
@@ -1914,8 +1919,8 @@ PLATFORM 5IVE - QA ISSUE DETECTED
 
 Session Details:
 - Session ID: {qa_session.session_id}
-- Customer: {qa_session.full_name or 'Unknown'}
-- Contact ID: {qa_session.customer_id or 'N/A'}
+- Customer: {customer_name}
+- Contact ID: {customer_id}
 - QA Reviewer: {qa_session.qa_status_updated_by or 'Unknown'}
 - Detected: {qa_session.qa_status_updated_at.strftime('%d/%m/%Y %H:%M AEDT') if qa_session.qa_status_updated_at else 'Unknown'}
 
